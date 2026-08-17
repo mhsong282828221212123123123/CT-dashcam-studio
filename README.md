@@ -38,7 +38,7 @@
 
 PyInstaller로 패키징된 실행 파일 특성상, 일부 백신에서 휴리스틱 오탐(False Positive)이 발생할 수 있습니다. 현재 검사 결과는 다음과 같습니다.
 
-* **검사 결과**: [VirusTotal 상세 보기 (1/70)](https://www.virustotal.com/gui/file/6b82fbe507fb196c3f1facae92c93c13008cbbcb08e829844f439ae7dc9a152d?nocache=1)
+* **검사 결과**: [VirusTotal 상세 보기 (1/70)]((https://www.virustotal.com/gui/file/b1e6e9ae801216b2f3620209551dd0cb3e1ffe529fee86c348e8a7c9c4578cf4?nocache=1))
 * **상세 내용**: 주요 백신 엔진 69개는 모두 안전(Clean)으로 판독하였으며, `Bkav Pro` 단일 엔진에서만 오탐이 발생했습니다. 
 * **결론**: 본 실행 파일은 악성 행위를 포함하지 않는 정상적인 프로그램입니다. 불안하신 분들은 GitHub에 공개된 **소스코드**를 직접 검증하거나 파이썬 환경에서 실행하시길 권장합니다.
   
