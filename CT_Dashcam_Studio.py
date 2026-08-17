@@ -1494,7 +1494,7 @@ class TeslaStudioPro(QMainWindow):
             self.timer.setInterval(interval)
 
     def load_directory_dialog(self):
-        default_dir = os.path.dirname(os.path.abspath(__file__))
+        default_dir = os.path.dirname(sys.executable)
         folder = QFileDialog.getExistingDirectory(self, "테슬라 Dashcam 폴더 선택", default_dir)
         if not folder: return
 
