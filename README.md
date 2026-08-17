@@ -47,6 +47,6 @@ PyInstaller로 패키징된 실행 파일 특성상, 일부 백신에서 휴리�
 pip install pyqt6 opencv-python numpy pillow
 
 # 프로그램 실행
-python main.py
+python CT_Dashcam_Studio.py
 
 
