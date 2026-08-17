@@ -36,3 +36,5 @@ pip install pyqt6 opencv-python numpy pillow
 
 # 프로그램 실행
 python main.py
+
+![메인 화면](screenshot1.png)
