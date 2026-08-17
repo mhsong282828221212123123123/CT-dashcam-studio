@@ -20,6 +20,10 @@
   * 0.5x ~ 5.0x 저장 배속 및 맞춤형 프레임레이트(FPS) 지정
   * 원하는 시작점(`[`)과 끝점(`]`) 구간 선택 내보내기 (최대 30분)
 
+![사용 화면](screenshot1.png)
+![사용 화면](screenshot2.png)
+![사용 화면](screenshot3.png)
+
 ---
 
 ## 🚀 사용 방법
@@ -37,4 +41,4 @@ pip install pyqt6 opencv-python numpy pillow
 # 프로그램 실행
 python main.py
 
-![메인 화면](screenshot1.png)
+
