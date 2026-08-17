@@ -21,7 +21,7 @@ from PyQt6.QtGui import QImage, QPixmap, QPainter, QColor, QPen, QBrush, QIcon
 cv2.ocl.setUseOpenCL(True)
 
 
-# 해상도별 현실적인 MP4V 인코딩 비트레이트 반영
+# 해상도별 36fps 기준 인코딩 비트레이트 (Mbps)
 RESOLUTIONS = {
     "QHD (2560x1440) - 최고화질": {"size": (2560, 1440), "bitrate_mbps": 50.0},
     "FHD (1920x1080) - 권장 표준": {"size": (1920, 1080), "bitrate_mbps": 35.0},
@@ -37,6 +37,17 @@ SENSITIVITY_LEVELS = {
 }
 
 OSM_TILE_CACHE = {}
+
+
+class ClickableLabel(QLabel):
+    clicked = pyqtSignal()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+            event.accept()
+            return
+        super().mousePressEvent(event)
 
 
 class HighlightSlider(QSlider):
@@ -140,7 +151,7 @@ class OpenStreetMapTileLoader:
             return OSM_TILE_CACHE[key]
 
         url = f"https://tile.openstreetmap.org/{zoom}/{x}/{y}.png"
-        req = urllib.request.Request(url, headers={'User-Agent': 'DashcamStudioPro/1.0'})
+        req = urllib.request.Request(url, headers={'User-Agent': 'TeslaDashcamStudioPro/1.0'})
         try:
             with urllib.request.urlopen(req, timeout=0.2) as resp:
                 arr = np.frombuffer(resp.read(), dtype=np.uint8)
@@ -637,35 +648,54 @@ class LightMotionScanner(QThread):
 
 
 class OverlayRenderer:
-    @staticmethod
-    def create_tesla_steering_wheel(size=90):
-        img = np.zeros((size, size, 4), dtype=np.uint8)
-        center = (size // 2, size // 2)
-        radius = int(size * 0.45)
-        
-        cv2.circle(img, center, radius, (180, 180, 185, 255), max(2, int(size * 0.06)), cv2.LINE_AA)
-        
-        hub_r = int(size * 0.16)
-        cv2.circle(img, center, hub_r, (100, 100, 105, 255), -1, cv2.LINE_AA)
-        
-        thick = max(2, int(size * 0.08))
-        cv2.line(img, (center[0] - radius, center[1]), (center[0] - hub_r, center[1]), (120, 120, 125, 255), thick, cv2.LINE_AA)
-        cv2.line(img, (center[0] + hub_r, center[1]), (center[0] + radius, center[1]), (120, 120, 125, 255), thick, cv2.LINE_AA)
-        cv2.line(img, (center[0], center[1] + hub_r), (center[0], center[1] + radius), (120, 120, 125, 255), thick, cv2.LINE_AA)
-        
-        cv2.circle(img, center, int(hub_r * 0.5), (150, 150, 155, 255), max(1, int(size * 0.02)), cv2.LINE_AA)
-
-        return img
-
     @classmethod
     def draw_rotated_steering(cls, canvas, center, angle_deg, scale=1.0):
-        wheel_size = int(90 * scale)
-        wheel_img = cls.create_tesla_steering_wheel(wheel_size)
+        wheel_size = max(20, int(90 * scale))
         
+        # 4x 슈퍼샘플링 고해상도 렌더링으로 원형 왜곡 및 계단 현상 방지
+        scale_factor = 4
+        canvas_size = wheel_size * scale_factor
+        cx, cy = canvas_size // 2, canvas_size // 2
+        
+        img = np.zeros((canvas_size, canvas_size, 4), dtype=np.uint8)
+        
+        radius = int(canvas_size * 0.42)
+        rim_thick = max(2, int(canvas_size * 0.075))
+        
+        # 1. 외곽 원형 림 (Rim)
+        cv2.circle(img, (cx, cy), radius, (210, 215, 220, 255), rim_thick, cv2.LINE_AA)
+        cv2.circle(img, (cx, cy), radius + rim_thick // 2, (70, 75, 80, 255), max(1, int(canvas_size * 0.008)), cv2.LINE_AA)
+        cv2.circle(img, (cx, cy), radius - rim_thick // 2, (70, 75, 80, 255), max(1, int(canvas_size * 0.008)), cv2.LINE_AA)
+        
+        # 2. 중앙 허브 (Hub)
+        hub_radius = int(canvas_size * 0.18)
+        cv2.circle(img, (cx, cy), hub_radius, (35, 38, 42, 255), -1, cv2.LINE_AA)
+        cv2.circle(img, (cx, cy), hub_radius, (160, 165, 170, 255), max(2, int(canvas_size * 0.015)), cv2.LINE_AA)
+        
+        # 3. 3방향 스포크 (Spokes)
+        spoke_thick = max(2, int(canvas_size * 0.06))
+        inner_rim_r = radius - rim_thick // 2
+        
+        # 좌측 수평 스포크
+        cv2.line(img, (cx - inner_rim_r, cy), (cx - hub_radius, cy), (140, 145, 150, 255), spoke_thick, cv2.LINE_AA)
+        # 우측 수평 스포크
+        cv2.line(img, (cx + hub_radius, cy), (cx + inner_rim_r, cy), (140, 145, 150, 255), spoke_thick, cv2.LINE_AA)
+        # 하단 수직 스포크
+        cv2.line(img, (cx, cy + hub_radius), (cx, cy + inner_rim_r), (140, 145, 150, 255), spoke_thick, cv2.LINE_AA)
+        
+        # 4. 허브 중앙 미니 링
+        cv2.circle(img, (cx, cy), int(hub_radius * 0.6), (100, 105, 110, 255), -1, cv2.LINE_AA)
+        cv2.circle(img, (cx, cy), int(hub_radius * 0.6), (200, 205, 210, 255), max(1, int(canvas_size * 0.012)), cv2.LINE_AA)
+        
+        # 실제 조향 방향(우회전 시 시계방향, 좌회전 시 반시계방향)과 일치하도록 -angle_deg 적용
+        M = cv2.getRotationMatrix2D((cx, cy), -angle_deg, 1.0)
+        rotated = cv2.warpAffine(img, M, (canvas_size, canvas_size), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+        
+        # INTER_AREA로 다운샘플링하여 완벽한 안티에일리어싱 적용
+        wheel_img = cv2.resize(rotated, (wheel_size, wheel_size), interpolation=cv2.INTER_AREA)
+        
+        # 캔버스에 알파 블렌딩
         h, w = wheel_img.shape[:2]
-        M = cv2.getRotationMatrix2D((w / 2, h / 2), -angle_deg, 1.0)
-        rotated = cv2.warpAffine(wheel_img, M, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0,0))
-        
         x_top = int(center[0] - w / 2)
         y_top = int(center[1] - h / 2)
         
@@ -677,12 +707,9 @@ class OverlayRenderer:
         ry1, ry2 = y1 - y_top, y2 - y_top
         
         if x1 < x2 and y1 < y2:
-            alpha = rotated[ry1:ry2, rx1:rx2, 3] / 255.0
-            for c in range(3):
-                canvas[y1:y2, x1:x2, c] = (
-                    alpha * rotated[ry1:ry2, rx1:rx2, c] +
-                    (1.0 - alpha) * canvas[y1:y2, x1:x2, c]
-                )
+            alpha = wheel_img[ry1:ry2, rx1:rx2, 3:4] / 255.0
+            rgb = wheel_img[ry1:ry2, rx1:rx2, :3]
+            canvas[y1:y2, x1:x2] = (alpha * rgb + (1.0 - alpha) * canvas[y1:y2, x1:x2]).astype(np.uint8)
 
     @staticmethod
     def draw_turn_signals(canvas, center_x, center_y, left_on, right_on, frame_idx, fps=30.0, scale=1.0):
@@ -942,6 +969,11 @@ class OverlayRenderer:
             cv2.putText(canvas, "TIME", (offset_x + int(20 * scale), lbl_y), cv2.FONT_HERSHEY_SIMPLEX, lbl_scale, lbl_color, thick_lbl)
             cv2.putText(canvas, t_str, (offset_x + int(20 * scale), val_y), cv2.FONT_HERSHEY_SIMPLEX, 0.85 * scale, (255, 255, 255), thick_val)
 
+            if options.get("map"):
+                map_src_y = front_h + int(152 * scale)
+                cv2.putText(canvas, "Map: OpenStreetMap", (offset_x + int(20 * scale), map_src_y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.42 * scale, (120, 125, 130), 1, cv2.LINE_AA)
+
         if options.get("speed"):
             cv2.putText(canvas, "SPEED", (offset_x + int(310 * scale), lbl_y), cv2.FONT_HERSHEY_SIMPLEX, lbl_scale, lbl_color, thick_lbl)
             cv2.putText(canvas, f"{data['speed_kmh']} km/h", (offset_x + int(310 * scale), val_y + int(4 * scale)), cv2.FONT_HERSHEY_SIMPLEX, 1.25 * scale, (0, 230, 255), thick_num)
@@ -977,7 +1009,7 @@ class OverlayRenderer:
 
         wm_x = out_w - int(185 * scale)
         wm_y = out_h - int(16 * scale)
-        cv2.putText(canvas, "by Companion Turret", (wm_x, wm_y),
+        cv2.putText(canvas, "Companion Turret", (wm_x, wm_y),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.42 * scale, (100, 105, 115), 1)
 
         return canvas
@@ -1273,10 +1305,11 @@ class TeslaStudioPro(QMainWindow):
         center_layout = QVBoxLayout(center_panel)
         center_layout.setContentsMargins(6, 6, 6, 6)
 
-        self.preview_lbl = QLabel("좌측 '테슬라 폴더 지정'으로 TeslaCam 폴더를 로드하세요.")
+        self.preview_lbl = ClickableLabel("좌측 '테슬라 폴더 지정'으로 TeslaCam 폴더를 로드하세요.")
         self.preview_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_lbl.setStyleSheet("background-color: #000; border-radius: 8px; font-size: 15px; color: #888;")
         self.preview_lbl.setMinimumSize(960, 540)
+        self.preview_lbl.clicked.connect(self.toggle_play)
         center_layout.addWidget(self.preview_lbl, stretch=1)
 
         time_box = QGroupBox("타임라인 컨트롤")
@@ -1382,13 +1415,12 @@ class TeslaStudioPro(QMainWindow):
 
         ctrl_layout.addSpacing(12)
 
-        # 배속 조작부 (구간 초기화 버튼 바로 옆에 고정)
         lbl_title = QLabel("배속:")
         lbl_title.setStyleSheet("font-weight: bold; font-size: 12px; color: #d4d4d4;")
 
         self.slider_preview_speed = QSlider(Qt.Orientation.Horizontal)
-        self.slider_preview_speed.setRange(1, 10)  # 0.5x ~ 5.0x
-        self.slider_preview_speed.setValue(2)     # 기본값 1.0x
+        self.slider_preview_speed.setRange(1, 10)
+        self.slider_preview_speed.setValue(2)
         self.slider_preview_speed.setSingleStep(1)
         self.slider_preview_speed.setFixedWidth(70)
         self.slider_preview_speed.valueChanged.connect(self.on_preview_speed_slider_changed)
@@ -1400,7 +1432,6 @@ class TeslaStudioPro(QMainWindow):
         ctrl_layout.addWidget(self.slider_preview_speed)
         ctrl_layout.addWidget(self.lbl_preview_speed_val)
 
-        # 유일한 가변 여백: 배속 조작부까지 모두 좌측에 고정한 뒤 남은 공간 전체를 벌림
         ctrl_layout.addStretch()
 
         self.lbl_range = QLabel("선택 구간: 미지정 (최대 30분 가능)")
@@ -1619,6 +1650,10 @@ class TeslaStudioPro(QMainWindow):
 
         self.stop_motion_scanner()
 
+        if self.timer.isActive():
+            self.timer.stop()
+            self.btn_play.setText("▶ 재생")
+
         self.current_item = item
         self.active_clip_list = item_data["clip_list"]
         if not self.active_clip_list: return
@@ -1834,7 +1869,7 @@ class TeslaStudioPro(QMainWindow):
         frames = self.read_frames_with_cache(idx, is_seeking=False)
         self.render_and_display(frames, idx)
 
-    def read_frames_with_cache(self, global_idx, is_seeking=False):
+    def read_frames_with_cache(self, global_idx, is_seeking=False, skip_count=0):
         clip_idx = 0
         for i in range(len(self.clip_frame_offsets) - 1):
             if self.clip_frame_offsets[i] <= global_idx < self.clip_frame_offsets[i+1]:
@@ -1855,6 +1890,9 @@ class TeslaStudioPro(QMainWindow):
                 cap = self.caps[k]
                 if is_seeking:
                     cap.set(cv2.CAP_PROP_POS_FRAMES, local_idx)
+                elif skip_count > 0:
+                    for _ in range(skip_count):
+                        cap.grab()
                 ret, img = cap.read()
                 if ret and img is not None and img.size > 0:
                     if k != 'front' and not self.is_exporting:
@@ -1892,14 +1930,19 @@ class TeslaStudioPro(QMainWindow):
         self.preview_lbl.setPixmap(scaled_pixmap)
 
     def toggle_play(self):
-        if self.is_exporting: return
+        if self.is_exporting or not self.active_clip_list: 
+            return
+            
         if self.timer.isActive():
             self.timer.stop()
             self.btn_play.setText("▶ 재생")
         else:
+            if self.slider.value() >= self.total_frames - 1:
+                self.slider.setValue(0)
+                
             speed_val = self.slider_preview_speed.value() * 0.5
             interval = max(10, int(1000 / (self.fps * speed_val)))
-            self.timer.setInterval(interval)
+            self.timer.start(interval)
             self.btn_play.setText("⏸ 일시정지")
 
     def play_next_frame(self):
@@ -1918,7 +1961,8 @@ class TeslaStudioPro(QMainWindow):
         self.slider.setValue(next_idx)
         self.slider.blockSignals(False)
 
-        frames = self.read_frames_with_cache(next_idx, is_seeking=False)
+        skip = step - 1 if step > 1 else 0
+        frames = self.read_frames_with_cache(next_idx, is_seeking=False, skip_count=skip)
         self.render_and_display(frames, next_idx)
 
     def set_in_point(self):
@@ -2006,6 +2050,7 @@ class TeslaStudioPro(QMainWindow):
         m = re.search(r'([\d\.]+)x', exp_speed_str)
         export_speed = float(m.group(1)) if m else 1.0
 
+        # 해당 배속에서 의미 있는 최대 FPS (배속 * 기본FPS)
         max_fps = min(120, int(round(base_fps * export_speed)))
 
         std_fps_list = [12, 15, 18, 24, 30, 36, 48, 50, 54, 60, 72, 90, 100, 120]
@@ -2017,7 +2062,7 @@ class TeslaStudioPro(QMainWindow):
         self.combo_fps.blockSignals(True)
         self.combo_fps.clear()
         for val in filtered_fps_list:
-            tag = f"{val} fps (1배속 기준 표준)" if val == int(base_fps) else f"{val} fps"
+            tag = f"{val} fps (표준)" if val == max_fps else f"{val} fps"
             self.combo_fps.addItem(tag, val)
 
         idx = self.combo_fps.findData(max_fps)
@@ -2026,7 +2071,7 @@ class TeslaStudioPro(QMainWindow):
         self.combo_fps.blockSignals(False)
 
         if not self.is_exporting:
-            self.combo_fps.setEnabled(export_speed > 1.0)
+            self.combo_fps.setEnabled(len(filtered_fps_list) > 1)
 
         self.update_estimated_size()
 
@@ -2049,11 +2094,20 @@ class TeslaStudioPro(QMainWindow):
 
         out_duration_sec = dur_sec / export_speed
 
+        source_fps = self.fps or 36.0
+        target_fps = self.combo_fps.currentData()
+        if target_fps is None or target_fps <= 0:
+            target_fps = min(120, int(round(source_fps * export_speed)))
+
         res_key = self.combo_res.currentText()
         preset = RESOLUTIONS.get(res_key, RESOLUTIONS["QHD (2560x1440) - 최고화질"])
-        mbps = preset["bitrate_mbps"]
-        
-        est_mb = (mbps * 1_000_000 / 8.0 * out_duration_sec) / (1024.0 * 1024.0)
+        mbps_at_36fps = preset["bitrate_mbps"]
+
+        # 36fps 기준 프레임당 바이트 × 출력 총 프레임 수(출력시간 * 선택FPS)
+        bytes_per_frame = (mbps_at_36fps * 1_000_000 / 8.0) / 36.0
+        total_output_frames = out_duration_sec * target_fps
+        est_mb = (total_output_frames * bytes_per_frame) / (1024.0 * 1024.0)
+
         self.lbl_est_size.setText(f"예상 크기: 약 {est_mb:.1f} MB")
 
     def get_current_options(self):
@@ -2148,11 +2202,7 @@ class TeslaStudioPro(QMainWindow):
         self.btn_load.setEnabled(enabled)
         self.combo_res.setEnabled(enabled)
         self.combo_export_speed.setEnabled(enabled)
-        
-        exp_speed_str = self.combo_export_speed.currentText()
-        m = re.search(r'([\d\.]+)x', exp_speed_str)
-        export_speed = float(m.group(1)) if m else 1.0
-        self.combo_fps.setEnabled(enabled and export_speed > 1.0)
+        self.combo_fps.setEnabled(enabled)
 
         self.btn_prev.setEnabled(enabled)
         self.btn_play.setEnabled(enabled)
@@ -2179,7 +2229,8 @@ class TeslaStudioPro(QMainWindow):
         target_clips = self.build_target_clip_chain()
         if not target_clips: return
 
-        default_path = os.path.join(os.getcwd(), "tesla_pro_output.mp4")
+        default_dir = os.path.dirname(sys.executable)
+        default_path = os.path.join(default_dir, "CT_output.mp4")
         path, _ = QFileDialog.getSaveFileName(self, "저장", default_path, "MP4 (*.mp4)")
         if not path: return
 
