@@ -56,6 +56,31 @@ def resource_path(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
+def get_app_dir():
+    """ Nuitka onefile, PyInstaller, 일반 파이썬 환경에서 Temp가 아닌 실제 원본 실행파일 폴더 반환 """
+    # 1. Nuitka onefile 환경 변수
+    nuitka_bin = os.environ.get("NUITKA_ONEFILE_BINARY")
+    if nuitka_bin and os.path.exists(nuitka_bin):
+        return os.path.dirname(os.path.abspath(nuitka_bin))
+    
+    # 2. sys.argv[0] 확인 (Temp 폴더 제외)
+    if sys.argv and sys.argv[0]:
+        cand = os.path.abspath(sys.argv[0])
+        cand_lower = cand.lower()
+        if not ("appdata" in cand_lower and "temp" in cand_lower and ("onefile_" in cand_lower or "_mei" in cand_lower)):
+            if os.path.isdir(cand):
+                return cand
+            elif os.path.exists(cand):
+                return os.path.dirname(cand)
+                
+    # 3. sys.executable 확인 (Temp 폴더 제외)
+    exe_cand = os.path.abspath(sys.executable)
+    exe_lower = exe_cand.lower()
+    if not ("appdata" in exe_lower and "temp" in exe_lower and ("onefile_" in exe_lower or "_mei" in exe_lower)):
+        return os.path.dirname(exe_cand)
+        
+    return os.getcwd()
+
 
 # 해상도별 36fps 기준 인코딩 비트레이트 (Mbps)
 RESOLUTIONS = {
@@ -665,7 +690,7 @@ class QRShareDialog(QDialog):
 
     def open_containing_folder(self):
         if os.path.exists(self.video_path):
-            os.system(f'explorer /select,"{os.path.abspath(self.video_path)}"')
+            subprocess.Popen(["explorer", f'/select,{os.path.abspath(self.video_path)}'])
 
     def closeEvent(self, event):
         self.server.stop()
@@ -1802,7 +1827,14 @@ class ExportWorker(QThread):
                 "-pix_fmt", "yuv420p",
                 self.out_path
             ]
-            ffmpeg_proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            creation_flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+            ffmpeg_proc = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                creationflags=creation_flags
+            )
 
             frame_step = (self.source_fps * self.export_speed) / self.target_fps
 
@@ -2386,7 +2418,7 @@ class TeslaStudioPro(QMainWindow):
             self.play_start_frame = self.slider.value()
 
     def load_directory_dialog(self):
-        default_dir = os.path.dirname(sys.executable)
+        default_dir = get_app_dir()
         folder = QFileDialog.getExistingDirectory(self, "테슬라 Dashcam 폴더 선택", default_dir)
         if not folder: return
 
@@ -3132,7 +3164,7 @@ class TeslaStudioPro(QMainWindow):
         target_clips = self.build_target_clip_chain()
         if not target_clips: return
 
-        default_dir = os.path.dirname(sys.executable)
+        default_dir = get_app_dir()
         default_path = os.path.join(default_dir, "CT_output.mp4")
         path, _ = QFileDialog.getSaveFileName(self, "저장", default_path, "MP4 (*.mp4)")
         if not path: return
@@ -3238,7 +3270,7 @@ class TeslaStudioPro(QMainWindow):
             self.open_qr_share_dialog(path)
         elif clicked == btn_open:
             if os.path.exists(path):
-                os.system(f'explorer /select,"{os.path.abspath(path)}"')
+                subprocess.Popen(["explorer", f'/select,{os.path.abspath(path)}'])
 
     def on_click_qr_share(self):
         if self.last_exported_path and os.path.exists(self.last_exported_path):
