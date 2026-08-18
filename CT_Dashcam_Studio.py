@@ -39,6 +39,12 @@ APP_VERSION = "v1.1"
 GITHUB_REPO = "mhsong282828221212123123123/CT-dashcam-studio"
 # =====================================
 
+def resource_path(relative_path):
+    """ PyInstaller 번들 및 일반 실행 환경에서 안전하게 리소스 절대경로 반환 """
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
+
 # 해상도별 36fps 기준 인코딩 비트레이트 (Mbps)
 RESOLUTIONS = {
     "QHD (2560x1440) - 최고화질": {"size": (2560, 1440), "bitrate_mbps": 50.0},
@@ -1887,7 +1893,11 @@ class TeslaStudioPro(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(f"CT Dashcam Studio {APP_VERSION}")
-        self.setWindowIcon(self.create_camera_icon())
+        ico_file = resource_path("icon.ico")
+        if os.path.exists(ico_file):
+            self.setWindowIcon(QIcon(ico_file))
+        else:
+            self.setWindowIcon(self.create_camera_icon())
         self.setGeometry(50, 50, 1600, 920)
         self.apply_dark_theme()
 
