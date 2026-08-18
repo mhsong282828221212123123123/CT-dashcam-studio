@@ -7,11 +7,11 @@
 ![FFmpeg](https://img.shields.io/badge/Engine-FFmpeg_libx264-007808?style=for-the-badge&logo=ffmpeg&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/Vision-OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D7?style=for-the-badge&logo=windows&logoColor=white)
-![Release](https://img.shields.io/badge/Latest_Release-v1.0.0-00E6FF?style=for-the-badge)
+![Release](https://img.shields.io/badge/Latest_Release-v1.1.0-00E6FF?style=for-the-badge)
 
 **테슬라(Tesla) 순정 블랙박스(TeslaCam / Sentry Mode)의 4채널 멀티캠 영상과<br>H.264 SEI 메타데이터(속도·FSD·스티어링·페달·GPS)를 완벽하게 디코딩하고 시각화하는 고성능 스튜디오입니다.**
 
-[📥 최신 릴리즈 다운로드 (EXE)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [✨ 주요 기능](#-주요-핵심-기능) • [📸 스크린샷](#-스크린샷-미리보기) • [🚀 사용 방법](#-빠른-시작-가이드)
+[📥 최신 릴리즈 다운로드 (v1.1.0)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [✨ 주요 기능](#-주요-핵심-기능) • [📸 스크린샷](#-스크린샷-미리보기) • [🚀 사용 방법](#-빠른-시작-가이드)
 
 </div>
 
@@ -85,12 +85,12 @@
 
 ## 🚀 빠른 시작 가이드
 
-### 방법 1. 독립 실행 파일 (.exe) 사용 (권장)
-> 파이썬이나 FFmpeg 등 별도의 프로그램을 설치할 필요 없이 바로 실행할 수 있습니다.
+### 방법 1. 포터블 무설치 버전 사용 (가장 추천 ⭐)
+> 파이썬이나 외부 코덱 설치 없이 압축만 풀면 즉시 실행할 수 있는 독립형 패키지입니다.
 
-1. [Releases 페이지](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases)에서 최신 `CT_Dashcam_Studio.exe` 파일을 다운로드합니다.
-2. 다운로드한 `.exe` 파일을 실행합니다.
-3. 좌측 상단 **[📁 테슬라 폴더 지정 (TeslaCam)]** 버튼을 눌러 USB 내 `TeslaCam` 폴더를 선택합니다.
+1. [Releases 페이지](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases)에서 최신 `v1.1.0` 압축 파일(`CT_Dashcam_Studio_v1.1.0_Portable.zip`) 또는 `CT_Dashcam_Studio.exe`를 다운로드합니다.
+2. 다운로드한 파일의 압축을 풀고 `CT_Dashcam_Studio.exe`를 실행합니다.
+3. 좌측 상단 **[📁 테슬라 폴더 지정 (TeslaCam)]** 버튼을 눌러 USB의 `TeslaCam` 폴더를 선택하면 모든 영상이 즉시 로드됩니다.
 
 ---
 
@@ -126,7 +126,8 @@ python CT_Dashcam_Studio.py
 ---
 
 ## 🛠️ 기술 스택 & 아키텍처
-
+ 
+- **Binary Compiler**: Nuitka C++ Native Compiler (GCC MinGW-w64, Zstandard Compression)
 - **GUI Framework**: PyQt6 (Fusion Dark Theme & Custom Cyber-Dashboard UI)
 - **Computer Vision**: OpenCV (OpenCL 가속 활성화, Frame Difference Motion Detector)
 - **Video Codec**: FFmpeg `libx264` (Raw Video Pipe Stream, CRF Rate Control, YUV420p)
