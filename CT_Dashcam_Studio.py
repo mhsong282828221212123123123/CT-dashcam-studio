@@ -35,7 +35,7 @@ from PyQt6.QtGui import QImage, QPixmap, QPainter, QColor, QPen, QBrush, QIcon
 cv2.ocl.setUseOpenCL(True)
 
 # === App Version & Update Settings ===
-APP_VERSION = "v1.0"
+APP_VERSION = "v1.1"
 GITHUB_REPO = "mhsong282828221212123123123/CT-dashcam-studio"
 # =====================================
 
