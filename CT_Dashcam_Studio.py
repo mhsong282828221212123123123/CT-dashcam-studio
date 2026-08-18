@@ -35,9 +35,21 @@ from PyQt6.QtGui import QImage, QPixmap, QPainter, QColor, QPen, QBrush, QIcon
 cv2.ocl.setUseOpenCL(True)
 
 # === App Version & Update Settings ===
-APP_VERSION = "v1.1"
+APP_VERSION = "v1.1.0"
 GITHUB_REPO = "mhsong282828221212123123123/CT-dashcam-studio"
 # =====================================
+
+def parse_version_tuple(v_str):
+    """ 'v1.1.0', '1.1', 'V2.0.1' 등의 문자열을 (1, 1, 0) 형태의 정수 튜플로 변환 """
+    if not v_str: return (0, 0, 0)
+    nums = [int(x) for x in re.findall(r'\d+', str(v_str))]
+    while len(nums) < 3:
+        nums.append(0)
+    return tuple(nums)
+
+def is_newer_version(latest_tag, current_ver):
+    """ 깃허브 릴리즈 태그 버전이 현재 앱 버전보다 높은 경우(초과)에만 True 반환 """
+    return parse_version_tuple(latest_tag) > parse_version_tuple(current_ver)
 
 def resource_path(relative_path):
     """ PyInstaller 번들 및 일반 실행 환경에서 안전하게 리소스 절대경로 반환 """
@@ -187,7 +199,7 @@ class UpdateCheckWorker(QThread):
                 data = json.loads(response.read().decode())
                 
             tag_name = data.get("tag_name", "")
-            if tag_name and tag_name != APP_VERSION:
+            if is_newer_version(tag_name, APP_VERSION):
                 html_url = data.get("html_url", "")
                 if html_url:
                     self.update_available.emit(tag_name, html_url)
