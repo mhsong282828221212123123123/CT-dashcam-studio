@@ -2543,6 +2543,7 @@ class TeslaStudioPro(QMainWindow):
 
         self.stop_motion_scanner()
 
+        was_playing = self.timer.isActive()
         if self.timer.isActive():
             self.timer.stop()
             self.btn_play.setText("▶ 재생")
@@ -2643,6 +2644,9 @@ class TeslaStudioPro(QMainWindow):
             self.detected_event_blocks = []
             self.slider.set_event_blocks([])
             self.lbl_motion_status.setText("모션 분석: 비활성화")
+
+        if was_playing:
+            self.toggle_play()
 
     def switch_to_clip_index(self, clip_idx):
         if self.current_active_clip_idx == clip_idx:
@@ -2748,16 +2752,12 @@ class TeslaStudioPro(QMainWindow):
         if target_item:
             self.tree_explorer.setCurrentItem(target_item)
             self.on_tree_item_clicked(target_item, 0)
-            if not self.timer.isActive():
-                self.toggle_play()
 
     def play_next_clip(self):
         target_item = self.get_sibling_clip_item(1)
         if target_item:
             self.tree_explorer.setCurrentItem(target_item)
             self.on_tree_item_clicked(target_item, 0)
-            if not self.timer.isActive():
-                self.toggle_play()
         else:
             if self.timer.isActive():
                 self.toggle_play()
@@ -3022,23 +3022,29 @@ class TeslaStudioPro(QMainWindow):
         m = re.search(r'([\d\.]+)x', exp_speed_str)
         export_speed = float(m.group(1)) if m else 1.0
 
+        # 실제 내보내기 영상의 재생 길이 (배속 반영)
         out_duration_sec = dur_sec / export_speed
 
-        source_fps = self.fps or 36.0
+        has_pillars = False
+        if self.active_clip_list:
+            has_pillars = ('left_pillar' in self.active_clip_list[0]["cams"]) or ('right_pillar' in self.active_clip_list[0]["cams"])
+        base_fps = 24.0 if has_pillars else (self.fps or 36.0)
+
         target_fps = self.combo_fps.currentData()
         if target_fps is None or target_fps <= 0:
-            target_fps = min(120, int(round(source_fps * export_speed)))
+            target_fps = min(120, int(round(base_fps * export_speed)))
 
         res_key = self.combo_res.currentText()
         preset = RESOLUTIONS.get(res_key, RESOLUTIONS["QHD (2560x1440) - 최고화질"])
-        mbps_at_36fps = preset["bitrate_mbps"]
+        base_bitrate_mbps = preset["bitrate_mbps"]
 
-        # 36fps 기준 프레임당 바이트 × 출력 총 프레임 수(출력시간 * 선택FPS)
-        bytes_per_frame = (mbps_at_36fps * 1_000_000 / 8.0) / 36.0
-        total_output_frames = out_duration_sec * target_fps
-        
-        # 고압축 (libx264) 실제 용량 반영
-        est_mb = ((total_output_frames * bytes_per_frame) / (1024.0 * 1024.0)) * 0.16
+        # H.264 (libx264 crf=26) 비트레이트 모델링:
+        # FPS 증가 시 인접 프레임 간 유사도로 인해 비트레이트는 fps^0.45 비율로 완만히 증가
+        fps_ratio = max(0.1, target_fps / max(1.0, base_fps))
+        effective_mbps = base_bitrate_mbps * 0.16 * (fps_ratio ** 0.45)
+
+        # 유효 비트레이트 × 배속이 반영된 실제 재생 시간(초)
+        est_mb = (effective_mbps * 1_000_000 / 8.0 * out_duration_sec) / (1024.0 * 1024.0)
 
         self.lbl_est_size.setText(f"예상 크기: 약 {est_mb:.1f} MB")
 
