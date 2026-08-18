@@ -2,24 +2,42 @@ import sys
 import os
 import re
 import math
+import time
 import struct
+import socket
+import threading
+import subprocess
+import shutil
+import urllib.parse
+import urllib.request
+import json
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
+from datetime import datetime, timedelta
+
+import imageio_ffmpeg
 import cv2
 import numpy as np
-import urllib.request
-from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
+import qrcode
+import webbrowser
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QCheckBox, QSlider, QFileDialog, QGroupBox,
     QProgressBar, QMessageBox, QComboBox, QTreeWidget, QTreeWidgetItem,
-    QSplitter, QStyleFactory, QStyle, QStyleOptionSlider
+    QSplitter, QStyleFactory, QStyle, QStyleOptionSlider, QDialog, QFrame,
+    QSystemTrayIcon, QProgressDialog
 )
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QRect
 from PyQt6.QtGui import QImage, QPixmap, QPainter, QColor, QPen, QBrush, QIcon
 
 cv2.ocl.setUseOpenCL(True)
 
+# === App Version & Update Settings ===
+APP_VERSION = "v1.0"
+GITHUB_REPO = "mhsong282828221212123123123/CT-dashcam-studio"
+# =====================================
 
 # 해상도별 36fps 기준 인코딩 비트레이트 (Mbps)
 RESOLUTIONS = {
@@ -101,6 +119,11 @@ class HighlightSlider(QSlider):
         h = self.height()
         track_y = h // 2
 
+        # 슬라이더 기본 배경 트랙 (밝은 회색)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(100, 105, 115, 255))
+        painter.drawRoundedRect(QRect(0, track_y - 2, w, 4), 2, 2)
+
         if self.in_frame is not None or self.out_frame is not None:
             in_pos = int((self.in_frame / max_val) * w) if self.in_frame is not None else 0
             out_pos = int((self.out_frame / max_val) * w) if self.out_frame is not None else w
@@ -135,6 +158,502 @@ class HighlightSlider(QSlider):
         painter.drawRoundedRect(QRect(x_head - 1, track_y - 9, 2, 18), 1, 1)
 
 
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception:
+            return "127.0.0.1"
+class UpdateCheckWorker(QThread):
+    update_available = pyqtSignal(str, str)
+    
+    def run(self):
+        try:
+            url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+            req = urllib.request.Request(url, headers={'User-Agent': 'CT-Dashcam-Studio'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = json.loads(response.read().decode())
+                
+            tag_name = data.get("tag_name", "")
+            if tag_name and tag_name != APP_VERSION:
+                html_url = data.get("html_url", "")
+                if html_url:
+                    self.update_available.emit(tag_name, html_url)
+        except Exception as e:
+            print(f"Update check failed: {e}")
+
+
+class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):
+        # 스마트폰 브라우저의 비디오 탐색/중단으로 인한 정상적인 연결 끊김은 조용히 무시
+        exc_type, exc_val, _ = sys.exc_info()
+        if exc_type in (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, TimeoutError):
+            return
+        # 그 외 치명적인 서버 오류만 출력
+        super().handle_error(request, client_address)
+
+
+class VideoShareHTTPHandler(BaseHTTPRequestHandler):
+    video_path = ""
+    video_filename = "Tesla_Dashcam_Clip.mp4"
+
+    def log_message(self, format, *args):
+        pass
+
+    def handle(self):
+        try:
+            super().handle()
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, TimeoutError):
+            pass
+        except Exception:
+            pass
+
+    def do_GET(self):
+        try:
+            parsed = urllib.parse.urlparse(self.path)
+            path = parsed.path
+            
+            if not os.path.exists(self.video_path):
+                self.send_error(404, "Video file not found")
+                return
+
+            file_size = os.path.getsize(self.video_path)
+
+            if path == "/" or path == "/index.html":
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                
+                size_mb = file_size / (1024 * 1024)
+                html_content = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CT 대시캠 모바일 다운로드</title>
+    <style>
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{
+            background-color: #0f1115;
+            color: #f0f0f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }}
+        .header {{
+            text-align: center;
+            margin-top: 6px;
+            margin-bottom: 14px;
+        }}
+        .header h1 {{
+            font-size: 19px;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }}
+        .header p {{
+            font-size: 12px;
+            color: #8e95a5;
+            margin-top: 4px;
+        }}
+        .card {{
+            background: #1a1d24;
+            border: 1px solid #2a2e39;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            padding: 16px;
+        }}
+        video {{
+            width: 100%;
+            border-radius: 10px;
+            background: #000;
+            margin-bottom: 12px;
+        }}
+        .info-row {{
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #a0a6b5;
+            margin-bottom: 14px;
+            padding: 0 4px;
+        }}
+        .info-row strong {{
+            color: #00E6FF;
+        }}
+        .btn-download {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            background: linear-gradient(135deg, #0078D7 0%, #00B4D8 100%);
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 120, 215, 0.4);
+            transition: transform 0.1s, opacity 0.2s;
+            margin-bottom: 16px;
+        }}
+        .btn-download:active {{
+            transform: scale(0.98);
+            opacity: 0.9;
+        }}
+        .guide-box {{
+            background: #14171d;
+            border: 1px solid #222630;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 12px;
+            color: #8e95a5;
+            line-height: 1.5;
+        }}
+        .guide-box h3 {{
+            font-size: 13px;
+            color: #FFA726;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }}
+        .guide-box ol {{
+            margin-left: 18px;
+        }}
+        .guide-box li {{
+            margin-top: 4px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚡ CT Dashcam Studio</h1>
+        <p>초고속 무선 비디오 전송</p>
+    </div>
+
+    <div class="card">
+        <video controls playsinline preload="metadata">
+            <source src="/video.mp4" type="video/mp4">
+            브라우저가 비디오 재생을 지원하지 않습니다.
+        </video>
+
+        <div class="info-row">
+            <span>파일명: {self.video_filename}</span>
+            <span>용량: <strong>{size_mb:.1f} MB</strong></span>
+        </div>
+
+        <a href="/download" download="{self.video_filename}" class="btn-download">
+            💾 비디오 직접 다운로드
+        </a>
+
+        <div class="guide-box">
+            <h3>💡 스마트폰 갤러리 저장 방법</h3>
+            <ol>
+                <li>위 <b>[비디오 직접 다운로드]</b> 버튼을 눌러 파일을 다운로드하세요.</li>
+                <li>(안드로이드/갤럭시) 다운로드가 완료되면 브라우저 하단의 [열기]를 누르거나 <b>기본 갤러리 앱</b>에서 영상을 감상할 수 있습니다.</li>
+                <li>(아이폰/iOS) 사파리 주소창 옆 <b>파란색 다운로드 아이콘(↓)</b>을 누른 뒤, 파일을 열고 좌측 하단 <b>공유 버튼(⎋)</b>을 눌러 <span style="color:#00E6FF">비디오 저장</span>을 선택하시면 기본 사진 앱으로 복사됩니다.</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>"""
+                self.wfile.write(html_content.encode("utf-8"))
+                return
+
+            elif path == "/download":
+                self.send_response(200)
+                self.send_header("Content-Type", "video/mp4")
+                self.send_header("Content-Disposition", f'attachment; filename="{self.video_filename}"')
+                self.send_header("Content-Length", str(file_size))
+                self.end_headers()
+
+                with open(self.video_path, "rb") as f:
+                    while chunk := f.read(256 * 1024):
+                        self.wfile.write(chunk)
+                return
+
+            elif path == "/video.mp4":
+                range_header = self.headers.get("Range", None)
+                if range_header:
+                    try:
+                        ranges = range_header.replace("bytes=", "").split("-")
+                        start = int(ranges[0]) if ranges[0] else 0
+                        end = int(ranges[1]) if len(ranges) > 1 and ranges[1] else file_size - 1
+                        end = min(end, file_size - 1)
+                        length = end - start + 1
+
+                        self.send_response(206)
+                        self.send_header("Content-Type", "video/mp4")
+                        self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+                        self.send_header("Content-Length", str(length))
+                        self.send_header("Accept-Ranges", "bytes")
+                        self.end_headers()
+
+                        with open(self.video_path, "rb") as f:
+                            f.seek(start)
+                            remaining = length
+                            while remaining > 0:
+                                chunk_size = min(remaining, 256 * 1024)
+                                data = f.read(chunk_size)
+                                if not data:
+                                    break
+                                self.wfile.write(data)
+                                remaining -= len(data)
+                        return
+                    except Exception:
+                        pass
+
+                self.send_response(200)
+                self.send_header("Content-Type", "video/mp4")
+                self.send_header("Content-Length", str(file_size))
+                self.send_header("Accept-Ranges", "bytes")
+                self.end_headers()
+
+                with open(self.video_path, "rb") as f:
+                    while chunk := f.read(256 * 1024):
+                        self.wfile.write(chunk)
+                return
+
+            self.send_error(404, "Not Found")
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, TimeoutError):
+            pass
+        except Exception:
+            pass
+
+
+class LocalVideoShareServer:
+    def __init__(self, video_path, base_port=8765):
+        self.video_path = video_path
+        self.video_filename = os.path.basename(video_path)
+        self.ip = get_local_ip()
+        self.port = base_port
+        self.server = None
+        self.thread = None
+        self._start_server()
+
+    def _start_server(self):
+        for p in range(self.port, self.port + 50):
+            try:
+                handler = VideoShareHTTPHandler
+                handler.video_path = self.video_path
+                handler.video_filename = self.video_filename
+                
+                self.server = ThreadingHTTPServer(("0.0.0.0", p), handler)
+                self.port = p
+                break
+            except OSError:
+                continue
+        
+        if self.server:
+            self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+            self.thread.start()
+
+    @property
+    def share_url(self):
+        return f"http://{self.ip}:{self.port}/"
+
+    def stop(self):
+        if self.server:
+            try:
+                self.server.shutdown()
+                self.server.server_close()
+            except Exception:
+                pass
+            self.server = None
+
+
+class QRShareDialog(QDialog):
+    def __init__(self, video_path, parent=None):
+        super().__init__(parent)
+        self.video_path = video_path
+        self.video_filename = os.path.basename(video_path)
+        self.server = LocalVideoShareServer(video_path)
+        
+        self.setWindowTitle("📱 스마트폰 무선 전송 (QR 공유)")
+        self.setMinimumSize(460, 600)
+        self.resize(480, 620)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #121418;
+                color: #FFFFFF;
+            }
+            QLabel {
+                color: #E0E0E0;
+            }
+            QPushButton {
+                background-color: #22262E;
+                color: #FFFFFF;
+                border: 1px solid #333842;
+                border-radius: 6px;
+                padding: 6px 14px;
+                font-size: 12px;
+                font-weight: bold;
+                min-height: 32px;
+            }
+            QPushButton:hover {
+                background-color: #2C323D;
+                border-color: #0078D7;
+            }
+            QPushButton:pressed {
+                background-color: #1A1D23;
+            }
+            QPushButton#btnPrimary {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0078D7, stop:1 #00B4D8);
+                border: none;
+            }
+            QPushButton#btnPrimary:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0086F0, stop:1 #00C6EC);
+            }
+            QPushButton#btnCopy {
+                background-color: #2A303C;
+                color: #00E6FF;
+                border: 1px solid #3A4252;
+                padding: 6px 12px;
+            }
+            QPushButton#btnCopy:hover {
+                background-color: #353D4D;
+                border-color: #00E6FF;
+            }
+        """)
+        
+        self.init_ui()
+
+    def init_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(20, 18, 20, 18)
+        main_layout.setSpacing(12)
+
+        # 1. Header Title & File info
+        title_lbl = QLabel("📱 스마트폰으로 비디오 무선 전송")
+        title_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #FFFFFF;")
+        title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        main_layout.addWidget(title_lbl)
+
+        file_size_mb = os.path.getsize(self.video_path) / (1024 * 1024) if os.path.exists(self.video_path) else 0
+        info_lbl = QLabel(f"파일명: {self.video_filename}\n용량: {file_size_mb:.1f} MB  |  IP: {self.server.ip}")
+        info_lbl.setStyleSheet("font-size: 12px; color: #8E95A5;")
+        info_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info_lbl.setWordWrap(True)
+        main_layout.addWidget(info_lbl)
+
+        # 2. QR Code Box (White background card with guaranteed padding)
+        qr_container = QFrame()
+        qr_container.setFixedSize(210, 210)
+        qr_container.setStyleSheet("background-color: #FFFFFF; border-radius: 12px;")
+        qr_layout = QVBoxLayout(qr_container)
+        qr_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        qr_layout.setContentsMargins(10, 10, 10, 10)
+
+        self.lbl_qr = QLabel()
+        self.lbl_qr.setFixedSize(190, 190)
+        self.lbl_qr.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.render_qr_code()
+        qr_layout.addWidget(self.lbl_qr)
+
+        main_layout.addWidget(qr_container, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # 3. Share URL & Copy button
+        url_layout = QHBoxLayout()
+        url_layout.setSpacing(8)
+
+        self.url_lbl = QLabel(self.server.share_url)
+        self.url_lbl.setStyleSheet("font-size: 12px; font-weight: bold; color: #00E6FF; background-color: #1A1D24; border: 1px solid #2A2E39; border-radius: 6px; padding: 6px 12px;")
+        self.url_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.url_lbl.setMinimumHeight(36)
+        url_layout.addWidget(self.url_lbl, stretch=1)
+
+        btn_copy = QPushButton("📋 복사")
+        btn_copy.setObjectName("btnCopy")
+        btn_copy.setMinimumWidth(80)
+        btn_copy.setMinimumHeight(36)
+        btn_copy.clicked.connect(self.copy_url)
+        url_layout.addWidget(btn_copy)
+        main_layout.addLayout(url_layout)
+
+        # 4. Guide text
+        guide_box = QFrame()
+        guide_box.setStyleSheet("background-color: #161920; border: 1px solid #232731; border-radius: 8px; padding: 10px;")
+        g_layout = QVBoxLayout(guide_box)
+        g_layout.setContentsMargins(12, 10, 12, 10)
+        g_layout.setSpacing(5)
+
+        g_title = QLabel("💡 스마트폰 전송 방법")
+        g_title.setStyleSheet("font-size: 12px; font-weight: bold; color: #FFA726;")
+        g_layout.addWidget(g_title)
+
+        g_desc = QLabel(
+            "1. 스마트폰과 PC가 <b>동일한 Wi-Fi(공유기)</b>에 연결되어 있어야 합니다.<br>"
+            "2. 스마트폰 기본 <b>카메라 앱</b>을 켜고 위 QR 코드를 비추세요.<br>"
+            "3. 화면에 뜨는 링크를 누르면 <b>갤러리에 즉시 저장</b>됩니다."
+        )
+        g_desc.setStyleSheet("font-size: 11px; color: #A0A6B5; line-height: 1.45;")
+        g_desc.setWordWrap(True)
+        g_layout.addWidget(g_desc)
+        main_layout.addWidget(guide_box)
+
+        # 5. Bottom action buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(10)
+
+        btn_open_folder = QPushButton("📁 저장 폴더 열기")
+        btn_open_folder.setMinimumHeight(38)
+        btn_open_folder.clicked.connect(self.open_containing_folder)
+        btn_layout.addWidget(btn_open_folder, stretch=1)
+
+        btn_close = QPushButton("닫기")
+        btn_close.setObjectName("btnPrimary")
+        btn_close.setMinimumHeight(38)
+        btn_close.clicked.connect(self.accept)
+        btn_layout.addWidget(btn_close, stretch=1)
+
+        main_layout.addLayout(btn_layout)
+
+    def render_qr_code(self):
+        try:
+            qr = qrcode.QRCode(version=1, box_size=5, border=1)
+            qr.add_data(self.server.share_url)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="#000000", back_color="#FFFFFF").convert("RGB")
+            data = img.tobytes("raw", "RGB")
+            qimg = QImage(data, img.width, img.height, img.width * 3, QImage.Format.Format_RGB888)
+            pix = QPixmap.fromImage(qimg)
+            self.lbl_qr.setPixmap(pix.scaled(185, 185, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        except Exception as e:
+            self.lbl_qr.setText(f"QR 코드 생성 실패:\n{e}")
+
+    def copy_url(self):
+        cb = QApplication.clipboard()
+        cb.setText(self.server.share_url)
+        QMessageBox.information(self, "복사 완료", f"공유 링크가 클립보드에 복사되었습니다.\n\n{self.server.share_url}")
+
+    def open_containing_folder(self):
+        if os.path.exists(self.video_path):
+            os.system(f'explorer /select,"{os.path.abspath(self.video_path)}"')
+
+    def closeEvent(self, event):
+        self.server.stop()
+        super().closeEvent(event)
+
+
 class OpenStreetMapTileLoader:
     @staticmethod
     def latlon_to_pixel(lat, lon, zoom):
@@ -163,10 +682,167 @@ class OpenStreetMapTileLoader:
             pass
         return None
 
+    _CAR_ASSET_CACHE = None
+
     @classmethod
-    def generate_minimap(cls, lat, lon, zoom=16, map_w=360, map_h=180):
+    def _get_base_car_asset(cls):
+        if cls._CAR_ASSET_CACHE is not None:
+            return cls._CAR_ASSET_CACHE
+
+        canvas_dim = 512
+        scale = canvas_dim / 64.0  # 8.0x super-sampling
+        cx, cy = canvas_dim // 2, canvas_dim // 2
+        
+        img = np.zeros((canvas_dim, canvas_dim, 4), dtype=np.uint8)
+        
+        w_body = int(27 * scale)
+        h_body_f = int(35 * scale)
+        h_body_r = int(31 * scale)
+        wb = w_body // 2
+        
+        # 1. 4개 타이어/휠 (펜더 내부 안착)
+        wheel_w = int(3.6 * scale)
+        wheel_h = int(10.0 * scale)
+        wheel_color = (15, 15, 15, 255)
+        
+        fw_y = cy - int(h_body_f * 0.48)
+        rw_y = cy + int(h_body_r * 0.48)
+        
+        for wy in (fw_y, rw_y):
+            cv2.rectangle(img, (cx - wb - int(1.2 * scale), wy - wheel_h // 2),
+                               (cx - wb + wheel_w - int(1.2 * scale), wy + wheel_h // 2), wheel_color, -1)
+            cv2.rectangle(img, (cx + wb - wheel_w + int(1.2 * scale), wy - wheel_h // 2),
+                               (cx + wb + int(1.2 * scale), wy + wheel_h // 2), wheel_color, -1)
+
+        # 2. 사이드 미러 (Side Mirrors)
+        mirror_y = cy - int(h_body_f * 0.20)
+        mirror_w = int(5.6 * scale)
+        mirror_h = int(3.2 * scale)
+        
+        lm_pts = np.array([
+            [cx - wb + int(1 * scale), mirror_y + int(1.5 * scale)],
+            [cx - wb - mirror_w, mirror_y - int(1.5 * scale)],
+            [cx - wb - mirror_w, mirror_y + mirror_h],
+            [cx - wb + int(1 * scale), mirror_y + int(3.5 * scale)],
+        ], dtype=np.int32)
+
+        rm_pts = np.array([
+            [cx + wb - int(1 * scale), mirror_y + int(1.5 * scale)],
+            [cx + wb + mirror_w, mirror_y - int(1.5 * scale)],
+            [cx + wb + mirror_w, mirror_y + mirror_h],
+            [cx + wb - int(1 * scale), mirror_y + int(3.5 * scale)],
+        ], dtype=np.int32)
+
+        # 3. 테슬라 유선형 메인 차체 (Model 3/Y)
+        body_pts = np.array([
+            [cx, cy - h_body_f],                                 # 프론트 범퍼 중앙
+            [cx + int(wb * 0.42), cy - int(h_body_f * 0.95)],   # 전면 곡선
+            [cx + int(wb * 0.82), cy - int(h_body_f * 0.74)],   # 헤드라이트/펜더
+            [cx + int(wb * 0.98), cy - int(h_body_f * 0.38)],   # 프론트 도어
+            [cx + int(wb * 0.90), cy - int(h_body_f * 0.05)],   # 캐빈 웨이스트라인
+            [cx + int(wb * 0.98), cy + int(h_body_r * 0.38)],   # 리어 펜더
+            [cx + int(wb * 0.92), cy + int(h_body_r * 0.82)],   # 리어 테일 코너
+            [cx + int(wb * 0.55), cy + h_body_r],               # 리어 범퍼 곡선
+            [cx, cy + int(h_body_r * 1.02)],                    # 리어 범퍼 중앙
+            [cx - int(wb * 0.55), cy + h_body_r],               # 리어 범퍼 곡선
+            [cx - int(wb * 0.92), cy + int(h_body_r * 0.82)],   # 리어 테일 코너
+            [cx - int(wb * 0.98), cy + int(h_body_r * 0.38)],   # 리어 펜더
+            [cx - int(wb * 0.90), cy - int(h_body_f * 0.05)],   # 캐빈 웨이스트라인
+            [cx - int(wb * 0.98), cy - int(h_body_f * 0.38)],   # 프론트 도어
+            [cx - int(wb * 0.82), cy - int(h_body_f * 0.74)],   # 헤드라이트/펜더
+            [cx - int(wb * 0.42), cy - int(h_body_f * 0.95)],   # 전면 곡선
+        ], dtype=np.int32)
+
+        # 4. 또렷하고 굵은 블랙 외곽선 (Black Outer Border)
+        border_thick = max(2, int(2.4 * scale))
+        cv2.polylines(img, [lm_pts], True, (0, 0, 0, 255), border_thick, cv2.LINE_AA)
+        cv2.polylines(img, [rm_pts], True, (0, 0, 0, 255), border_thick, cv2.LINE_AA)
+        cv2.polylines(img, [body_pts], True, (0, 0, 0, 255), border_thick, cv2.LINE_AA)
+
+        # 5. 비비드 테슬라 레드 바디 채우기 (Vivid Tesla Red)
+        car_red = (28, 32, 235, 255)
+        cv2.fillPoly(img, [lm_pts], car_red, cv2.LINE_AA)
+        cv2.fillPoly(img, [rm_pts], car_red, cv2.LINE_AA)
+        cv2.fillPoly(img, [body_pts], car_red, cv2.LINE_AA)
+        
+        cv2.polylines(img, [body_pts], True, (20, 20, 20, 255), max(1, int(1.0 * scale)), cv2.LINE_AA)
+        cv2.polylines(img, [lm_pts], True, (20, 20, 20, 255), max(1, int(0.8 * scale)), cv2.LINE_AA)
+        cv2.polylines(img, [rm_pts], True, (20, 20, 20, 255), max(1, int(0.8 * scale)), cv2.LINE_AA)
+
+        # 6. 본넷 캐릭터 라인
+        hl_color = (60, 65, 250, 255)
+        cv2.line(img, (cx - int(wb * 0.32), cy - int(h_body_f * 0.85)),
+                      (cx - int(wb * 0.40), cy - int(h_body_f * 0.48)), hl_color, max(1, int(1.2 * scale)), cv2.LINE_AA)
+        cv2.line(img, (cx + int(wb * 0.32), cy - int(h_body_f * 0.85)),
+                      (cx + int(wb * 0.40), cy - int(h_body_f * 0.48)), hl_color, max(1, int(1.2 * scale)), cv2.LINE_AA)
+
+        # 7. 파노라믹 틴티드 글래스 루프
+        gw = int(wb * 0.74)
+        ws_pts = np.array([
+            [cx, cy - int(h_body_f * 0.46)],
+            [cx + int(gw * 0.85), cy - int(h_body_f * 0.33)],
+            [cx + gw, cy - int(h_body_f * 0.05)],
+            [cx - gw, cy - int(h_body_f * 0.05)],
+            [cx - int(gw * 0.85), cy - int(h_body_f * 0.33)],
+        ], dtype=np.int32)
+        cv2.fillPoly(img, [ws_pts], (22, 24, 30, 255), cv2.LINE_AA)
+
+        roof_pts = np.array([
+            [cx - gw, cy - int(h_body_f * 0.02)],
+            [cx + gw, cy - int(h_body_f * 0.02)],
+            [cx + int(gw * 0.92), cy + int(h_body_r * 0.45)],
+            [cx + int(gw * 0.68), cy + int(h_body_r * 0.74)],
+            [cx - int(gw * 0.68), cy + int(h_body_r * 0.74)],
+            [cx - int(gw * 0.92), cy + int(h_body_r * 0.45)],
+        ], dtype=np.int32)
+        cv2.fillPoly(img, [roof_pts], (15, 16, 22, 255), cv2.LINE_AA)
+        
+        cv2.line(img, (cx - gw, cy + int(h_body_r * 0.06)), (cx + gw, cy + int(h_body_r * 0.06)), (28, 32, 235, 255), max(1, int(1.6 * scale)), cv2.LINE_AA)
+
+        cv2.polylines(img, [ws_pts], True, (50, 55, 65, 255), max(1, int(1.0 * scale)), cv2.LINE_AA)
+        cv2.polylines(img, [roof_pts], True, (50, 55, 65, 255), max(1, int(1.0 * scale)), cv2.LINE_AA)
+
+        # 8. 블레이드 LED 헤드라이트 (아이스 화이트)
+        l_hl = np.array([
+            [cx - int(wb * 0.40), cy - int(h_body_f * 0.89)],
+            [cx - int(wb * 0.80), cy - int(h_body_f * 0.71)],
+            [cx - int(wb * 0.64), cy - int(h_body_f * 0.67)],
+        ], dtype=np.int32)
+        cv2.fillPoly(img, [l_hl], (255, 255, 230, 255), cv2.LINE_AA)
+
+        r_hl = np.array([
+            [cx + int(wb * 0.40), cy - int(h_body_f * 0.89)],
+            [cx + int(wb * 0.80), cy - int(h_body_f * 0.71)],
+            [cx + int(wb * 0.64), cy - int(h_body_f * 0.67)],
+        ], dtype=np.int32)
+        cv2.fillPoly(img, [r_hl], (255, 255, 230, 255), cv2.LINE_AA)
+
+        # 9. 리어 테일라이트
+        cv2.line(img, (cx - int(wb * 0.82), cy + int(h_body_r * 0.76)),
+                      (cx - int(wb * 0.40), cy + int(h_body_r * 0.96)), (40, 40, 255, 255), max(1, int(2.2 * scale)), cv2.LINE_AA)
+        cv2.line(img, (cx + int(wb * 0.82), cy + int(h_body_r * 0.76)),
+                      (cx + int(wb * 0.40), cy + int(h_body_r * 0.96)), (40, 40, 255, 255), max(1, int(2.2 * scale)), cv2.LINE_AA)
+
+        cls._CAR_ASSET_CACHE = img
+        return img
+
+    @classmethod
+    def draw_topview_car(cls, heading_deg, size=46):
+        base_asset = cls._get_base_car_asset()
+        canvas_dim = base_asset.shape[0]
+        cx, cy = canvas_dim // 2, canvas_dim // 2
+        
+        # 고해상도 공간에서 Lanczos4로 방위각 회전
+        M = cv2.getRotationMatrix2D((cx, cy), -heading_deg, 1.0)
+        rotated_512 = cv2.warpAffine(base_asset, M, (canvas_dim, canvas_dim), flags=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+        
+        # INTER_AREA를 이용한 완벽한 안티에일리어싱 다운샘플링
+        return cv2.resize(rotated_512, (size, size), interpolation=cv2.INTER_AREA)
+
+    @classmethod
+    def generate_minimap(cls, lat, lon, heading=0.0, zoom=16, map_w=360, map_h=180):
         if lat == 0.0 and lon == 0.0:
-            return cls._draw_offline_radar(map_w, map_h, "NO GPS")
+            return cls._draw_offline_radar(map_w, map_h, "NO GPS", heading=heading)
 
         px, py = cls.latlon_to_pixel(lat, lon, zoom)
         tile_x = int(px // 256)
@@ -190,7 +866,7 @@ class OpenStreetMapTileLoader:
                     cv2.rectangle(stitched, (pos_x, pos_y), (pos_x+256, pos_y+256), (45, 45, 45), 1)
 
         if not has_any_tile:
-            return cls._draw_offline_radar(map_w, map_h, f"{lat:.3f},{lon:.3f}")
+            return cls._draw_offline_radar(map_w, map_h, f"{lat:.3f},{lon:.3f}", heading=heading)
 
         offset_x = 256 + int(px % 256)
         offset_y = 256 + int(py % 256)
@@ -206,18 +882,26 @@ class OpenStreetMapTileLoader:
         if crop.shape[0] != map_h or crop.shape[1] != map_w:
             crop = cv2.resize(crop, (map_w, map_h), interpolation=cv2.INTER_NEAREST)
 
-        cv2.circle(crop, (half_w, half_h), 7, (0, 0, 255), -1, cv2.LINE_AA)
-        cv2.circle(crop, (half_w, half_h), 10, (255, 255, 255), 2, cv2.LINE_AA)
-
-        arrow_x = map_w - 24
-        cv2.arrowedLine(crop, (arrow_x, 34), (arrow_x, 10), (0, 0, 255), 2, cv2.LINE_AA, tipLength=0.4)
-        cv2.putText(crop, "N", (arrow_x - 18, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
+        # 차량 진행 방향에 맞추어 회전하는 탑뷰 자동차 아이콘 오버레이
+        car_size = max(22, int(36 * (map_h / 180.0)))
+        car_icon = cls.draw_topview_car(heading, size=car_size)
+        
+        ch, cw = car_icon.shape[:2]
+        x1 = half_w - cw // 2
+        y1 = half_h - ch // 2
+        x2 = x1 + cw
+        y2 = y1 + ch
+        
+        if x1 >= 0 and y1 >= 0 and x2 <= map_w and y2 <= map_h:
+            alpha = car_icon[:, :, 3:4] / 255.0
+            rgb = car_icon[:, :, :3]
+            crop[y1:y2, x1:x2] = (alpha * rgb + (1.0 - alpha) * crop[y1:y2, x1:x2]).astype(np.uint8)
 
         cv2.rectangle(crop, (0, 0), (map_w - 1, map_h - 1), (60, 60, 60), 2)
         return crop
 
-    @staticmethod
-    def _draw_offline_radar(map_w, map_h, text):
+    @classmethod
+    def _draw_offline_radar(cls, map_w, map_h, text, heading=0.0):
         img = np.full((map_h, map_w, 3), (20, 24, 28), dtype=np.uint8)
         cx, cy = map_w // 2, map_h // 2
         r = min(map_w, map_h)
@@ -226,12 +910,15 @@ class OpenStreetMapTileLoader:
         cv2.line(img, (cx, 10), (cx, map_h - 10), (40, 50, 60), 1)
         cv2.line(img, (10, cy), (map_w - 10, cy), (40, 50, 60), 1)
         
-        cv2.circle(img, (cx, cy), 6, (0, 0, 255), -1, cv2.LINE_AA)
-        cv2.circle(img, (cx, cy), 9, (255, 255, 255), 2, cv2.LINE_AA)
-
-        arrow_x = map_w - 24
-        cv2.arrowedLine(img, (arrow_x, 34), (arrow_x, 10), (0, 0, 255), 2, cv2.LINE_AA, tipLength=0.4)
-        cv2.putText(img, "N", (arrow_x - 18, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
+        car_size = max(22, int(36 * (map_h / 180.0)))
+        car_icon = cls.draw_topview_car(heading, size=car_size)
+        ch, cw = car_icon.shape[:2]
+        x1, y1 = cx - cw // 2, cy - ch // 2
+        x2, y2 = x1 + cw, y1 + ch
+        if x1 >= 0 and y1 >= 0 and x2 <= map_w and y2 <= map_h:
+            alpha = car_icon[:, :, 3:4] / 255.0
+            rgb = car_icon[:, :, :3]
+            img[y1:y2, x1:x2] = (alpha * rgb + (1.0 - alpha) * img[y1:y2, x1:x2]).astype(np.uint8)
 
         cv2.putText(img, text, (12, map_h - 14), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (180, 180, 185), 1, cv2.LINE_AA)
         cv2.rectangle(img, (0, 0), (map_w - 1, map_h - 1), (60, 60, 60), 1)
@@ -389,10 +1076,12 @@ class RealTeslaSEIDecoder:
         steering_deg = 0.0
         brake_applied = False
         autopilot_state = 0
+        fsd_profile_raw = 0
         left_blinker = False
         right_blinker = False
         lat_deg = 0.0
         lon_deg = 0.0
+        heading_deg = 0.0
         
         while pos < length:
             try:
@@ -429,6 +1118,8 @@ class RealTeslaSEIDecoder:
                         brake_applied = bool(val)
                     elif field_number == 10: 
                         autopilot_state = val
+                    elif field_number in (17, 18, 19, 20):
+                        fsd_profile_raw = val
 
                 elif wire_type == 5:
                     if pos + 4 > length: break
@@ -449,6 +1140,8 @@ class RealTeslaSEIDecoder:
                         lat_deg = val_double
                     elif field_number == 12 and -180.0 <= val_double <= 180.0:
                         lon_deg = val_double
+                    elif field_number == 13 and 0.0 <= val_double <= 360.0:
+                        heading_deg = val_double
 
                 elif wire_type == 2:
                     shift = 0
@@ -481,16 +1174,26 @@ class RealTeslaSEIDecoder:
         }
         ap_mode_str = ap_modes.get(autopilot_state, "MANUAL")
 
+        fsd_profiles = {
+            1: "Chill",
+            2: "Standard",
+            3: "Assertive",
+            4: "Hurry"
+        }
+        fsd_profile_str = fsd_profiles.get(fsd_profile_raw, None)
+
         return {
             "speed_kmh": max(0, speed_kmh),
             "steering_deg": int(round(steering_deg)),
             "accel_pct": min(100, max(0, int(round(accel_pct)))),
             "brake_pct": 100 if brake_applied else 0,
             "ap_mode": ap_mode_str,
+            "fsd_profile": fsd_profile_str,
             "left_blinker": left_blinker,
             "right_blinker": right_blinker,
             "lat": lat_deg,
-            "lon": lon_deg
+            "lon": lon_deg,
+            "heading": heading_deg
         }
 
     def parse_mp4_sei(self):
@@ -540,10 +1243,12 @@ class RealTeslaSEIDecoder:
             "accel_pct": 0,
             "brake_pct": 0,
             "ap_mode": "MANUAL",
+            "fsd_profile": None,
             "left_blinker": False,
             "right_blinker": False,
             "lat": 0.0,
-            "lon": 0.0
+            "lon": 0.0,
+            "heading": 0.0
         }
 
 
@@ -862,6 +1567,13 @@ class OverlayRenderer:
         out_w, out_h = target_size
         scale = out_w / 1920.0
 
+        brightness = options.get("brightness", 0)
+        contrast = options.get("contrast", 1.0)
+        if brightness != 0 or contrast != 1.0:
+            for k, img in frames.items():
+                if img is not None and img.size > 0:
+                    frames[k] = cv2.convertScaleAbs(img, alpha=contrast, beta=brightness)
+
         bottom_h = int(180 * scale)
         front_h = out_h - bottom_h
         sub_w = int(480 * scale)
@@ -938,7 +1650,7 @@ class OverlayRenderer:
 
         data = decoder.get_frame_telemetry(frame_idx, fps) if decoder else {
             "speed_kmh": 0, "steering_deg": 0, "accel_pct": 0, "brake_pct": 0,
-            "ap_mode": "MANUAL", "left_blinker": False, "right_blinker": False, "lat": 0.0, "lon": 0.0
+            "ap_mode": "MANUAL", "left_blinker": False, "right_blinker": False, "lat": 0.0, "lon": 0.0, "heading": 0.0
         }
 
         map_w = int(360 * scale) if options.get("map") else 0
@@ -946,7 +1658,7 @@ class OverlayRenderer:
 
         if options.get("map"):
             minimap = OpenStreetMapTileLoader.generate_minimap(
-                data.get("lat", 0.0), data.get("lon", 0.0), zoom=16, map_w=map_w, map_h=map_h
+                data.get("lat", 0.0), data.get("lon", 0.0), heading=data.get("heading", 0.0), zoom=16, map_w=map_w, map_h=map_h
             )
             canvas[front_h:out_h, 0:map_w] = minimap
             cv2.line(canvas, (map_w, front_h), (map_w, out_h), (60, 60, 60), max(1, int(2*scale)))
@@ -991,6 +1703,14 @@ class OverlayRenderer:
 
             cv2.putText(canvas, "AUTOPILOT", (offset_x + int(520 * scale), lbl_y), cv2.FONT_HERSHEY_SIMPLEX, lbl_scale, lbl_color, thick_lbl)
             cv2.putText(canvas, ap_text, (offset_x + int(520 * scale), val_y), cv2.FONT_HERSHEY_SIMPLEX, 0.90 * scale, color, thick_val)
+
+            # 영상 메타데이터에서 FSD 프로필이 감지된 경우에만 하단에 자동 표기
+            detected_prof = data.get("fsd_profile")
+            if ap_text == "FSD ACTIVE" and detected_prof:
+                prof_tag = f"[ {detected_prof} ]"
+                prof_y = front_h + int(152 * scale)
+                cv2.putText(canvas, prof_tag, (offset_x + int(520 * scale), prof_y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.44 * scale, (200, 225, 255), 1, cv2.LINE_AA)
 
         if options.get("turn_signal"):
             cv2.putText(canvas, "BLINKER", (offset_x + int(760 * scale), lbl_y), cv2.FONT_HERSHEY_SIMPLEX, lbl_scale, lbl_color, thick_lbl)
@@ -1038,8 +1758,33 @@ class ExportWorker(QThread):
     def run(self):
         out = None
         try:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out = cv2.VideoWriter(self.out_path, fourcc, self.target_fps, self.target_size)
+            ffmpeg_proc = None
+
+            try:
+                ffmpeg_exe_path = imageio_ffmpeg.get_ffmpeg_exe()
+            except Exception as e:
+                self.error.emit(f"내장 FFmpeg 모듈 연결 실패: {str(e)}")
+                return
+
+            if not ffmpeg_exe_path or not os.path.exists(ffmpeg_exe_path):
+                self.error.emit("내장 FFmpeg 바이너리를 찾을 수 없습니다. 렌더링을 취소합니다.")
+                return
+
+            cmd = [
+                ffmpeg_exe_path, "-y",
+                "-f", "rawvideo",
+                "-vcodec", "rawvideo",
+                "-s", f"{self.target_size[0]}x{self.target_size[1]}",
+                "-pix_fmt", "bgr24",
+                "-r", str(self.target_fps),
+                "-i", "-",
+                "-c:v", "libx264",
+                "-preset", "fast",
+                "-crf", "26",
+                "-pix_fmt", "yuv420p",
+                self.out_path
+            ]
+            ffmpeg_proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
 
             frame_step = (self.source_fps * self.export_speed) / self.target_fps
 
@@ -1105,7 +1850,8 @@ class ExportWorker(QThread):
                     grid = OverlayRenderer.render(
                         frames, target_f, clip_info["base_time"], self.options, decoder, self.source_fps, self.target_size
                     )
-                    out.write(grid)
+                    
+                    ffmpeg_proc.stdin.write(grid.tobytes())
 
                     curr_f += frame_step
                     processed_frames += 1
@@ -1116,8 +1862,9 @@ class ExportWorker(QThread):
 
                 for cap in cams.values(): cap.release()
 
-            if out is not None:
-                out.release()
+            if ffmpeg_proc is not None:
+                ffmpeg_proc.stdin.close()
+                ffmpeg_proc.wait()
 
             if self.is_stopped:
                 if os.path.exists(self.out_path):
@@ -1139,7 +1886,7 @@ class ExportWorker(QThread):
 class TeslaStudioPro(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CT Dashcam Studio")
+        self.setWindowTitle(f"CT Dashcam Studio {APP_VERSION}")
         self.setWindowIcon(self.create_camera_icon())
         self.setGeometry(50, 50, 1600, 920)
         self.apply_dark_theme()
@@ -1166,10 +1913,18 @@ class TeslaStudioPro(QMainWindow):
         self.scanner = None
 
         self.motion_cache = {}
+        self.last_exported_path = None
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.play_next_frame)
+        self.play_start_wall_time = None
+        self.play_start_frame = 0
         self.init_ui()
+        
+        # 업데이트 체크 시작
+        self.update_worker = UpdateCheckWorker()
+        self.update_worker.update_available.connect(self.show_update_button)
+        self.update_worker.start()
 
     def create_camera_icon(self):
         pixmap = QPixmap(64, 64)
@@ -1218,6 +1973,12 @@ class TeslaStudioPro(QMainWindow):
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
         left_layout.setContentsMargins(6, 6, 6, 6)
+        
+        self.btn_update = QPushButton("🚀 신규버전 다운로드")
+        self.btn_update.setFixedHeight(38)
+        self.btn_update.setStyleSheet("background-color: #D32F2F; color: white; font-weight: bold;")
+        self.btn_update.setVisible(False)
+        left_layout.addWidget(self.btn_update)
 
         self.btn_load = QPushButton("📁 테슬라 폴더 지정 (TeslaCam)")
         self.btn_load.setFixedHeight(38)
@@ -1282,6 +2043,8 @@ class TeslaStudioPro(QMainWindow):
         self.combo_fps.currentIndexChanged.connect(self.update_estimated_size)
         exp_layout.addWidget(self.combo_fps)
 
+
+
         self.lbl_est_size = QLabel("예상 크기: 약 0 MB")
         self.lbl_est_size.setStyleSheet("color: #00E6FF; font-weight: bold; font-size: 11px; margin-top: 4px; margin-bottom: 4px;")
         exp_layout.addWidget(self.lbl_est_size)
@@ -1295,6 +2058,13 @@ class TeslaStudioPro(QMainWindow):
         self.pbar.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.pbar.setFixedHeight(18)
         exp_layout.addWidget(self.pbar)
+
+        self.btn_qr_share = QPushButton("📱 스마트폰 무선 전송 (내보내기 후 활성화)")
+        self.btn_qr_share.setToolTip("비디오 내보내기를 완료한 후 클릭하면, QR 코드를 통해 스마트폰으로 해당 영상을 전송할 수 있습니다.")
+        self.btn_qr_share.setStyleSheet("background-color: #22262E; color: #00E6FF; border: 1px solid #333842; font-weight: bold; padding: 7px;")
+        self.btn_qr_share.clicked.connect(self.on_click_qr_share)
+        self.btn_qr_share.setEnabled(False)
+        exp_layout.addWidget(self.btn_qr_share)
 
         exp_box.setLayout(exp_layout)
         left_layout.addWidget(exp_box)
@@ -1376,6 +2146,51 @@ class TeslaStudioPro(QMainWindow):
         status_box.addWidget(self.btn_prev_event)
         status_box.addWidget(self.btn_next_event)
 
+        status_box.addSpacing(10)
+        
+        lbl_bright = QLabel("☀️ 밝기:")
+        lbl_bright.setStyleSheet("font-size: 11px; color: #d4d4d4;")
+        status_box.addWidget(lbl_bright)
+        
+        slider_style = """
+            QSlider::groove:horizontal {
+                border: 1px solid #555;
+                height: 6px;
+                background: #888;
+                margin: 2px 0;
+                border-radius: 3px;
+            }
+            QSlider::handle:horizontal {
+                background: #00E6FF;
+                border: 1px solid #00E6FF;
+                width: 14px;
+                margin: -4px 0;
+                border-radius: 7px;
+            }
+        """
+        
+        self.slider_brightness = QSlider(Qt.Orientation.Horizontal)
+        self.slider_brightness.setRange(-100, 100)
+        self.slider_brightness.setValue(0)
+        self.slider_brightness.setFixedWidth(60)
+        self.slider_brightness.setStyleSheet(slider_style)
+        self.slider_brightness.valueChanged.connect(self.sync_preview)
+        status_box.addWidget(self.slider_brightness)
+        
+        status_box.addSpacing(5)
+
+        lbl_contrast = QLabel("◑ 대비:")
+        lbl_contrast.setStyleSheet("font-size: 11px; color: #d4d4d4;")
+        status_box.addWidget(lbl_contrast)
+
+        self.slider_contrast = QSlider(Qt.Orientation.Horizontal)
+        self.slider_contrast.setRange(0, 200)
+        self.slider_contrast.setValue(100)
+        self.slider_contrast.setFixedWidth(60)
+        self.slider_contrast.setStyleSheet(slider_style)
+        self.slider_contrast.valueChanged.connect(self.sync_preview)
+        status_box.addWidget(self.slider_contrast)
+
         t_layout.addLayout(status_box)
 
         ctrl_layout = QHBoxLayout()
@@ -1408,6 +2223,12 @@ class TeslaStudioPro(QMainWindow):
         ctrl_layout.addWidget(self.btn_next)
         ctrl_layout.addSpacing(6)
         ctrl_layout.addWidget(self.chk_auto_next)
+        ctrl_layout.addSpacing(6)
+
+        self.lbl_current_time = QLabel("00:00 / 00:00")
+        self.lbl_current_time.setStyleSheet("font-size: 13px; font-weight: bold; color: #FFFFFF; background-color: #22262E; border: 1px solid #333842; border-radius: 4px; padding: 4px 8px;")
+        ctrl_layout.addWidget(self.lbl_current_time)
+
         ctrl_layout.addSpacing(6)
         ctrl_layout.addWidget(self.btn_in)
         ctrl_layout.addWidget(self.btn_out)
@@ -1469,13 +2290,31 @@ class TeslaStudioPro(QMainWindow):
     def update_time_ticks(self):
         if self.total_frames <= 0 or self.fps <= 0:
             for lbl in self.lbl_ticks: lbl.setText("00:00")
+            if hasattr(self, 'lbl_current_time'):
+                self.lbl_current_time.setText("00:00 / 00:00")
             return
 
         total_sec = self.total_frames / float(self.fps)
         for i, lbl in enumerate(self.lbl_ticks):
             sec = (i / 4.0) * total_sec
-            m, s = divmod(int(sec), 60)
+            m, s = divmod(int(round(sec)), 60)
             lbl.setText(f"{m:02d}:{s:02d}")
+
+        if hasattr(self, 'lbl_current_time'):
+            cur_f = self.slider.value() if hasattr(self, 'slider') else 0
+            self.update_current_time_display(cur_f)
+
+    def update_current_time_display(self, frame_idx):
+        if self.total_frames <= 0 or self.fps <= 0:
+            if hasattr(self, 'lbl_current_time'):
+                self.lbl_current_time.setText("00:00 / 00:00")
+            return
+        cur_sec = min(self.total_frames, frame_idx) / float(self.fps)
+        tot_sec = self.total_frames / float(self.fps)
+        cur_m, cur_s = divmod(int(cur_sec), 60)
+        tot_m, tot_s = divmod(int(round(tot_sec)), 60)
+        if hasattr(self, 'lbl_current_time'):
+            self.lbl_current_time.setText(f"{cur_m:02d}:{cur_s:02d} / {tot_m:02d}:{tot_s:02d}")
 
     def update_range_highlight(self):
         if not self.active_clip_list or (not self.start_point and not self.end_point):
@@ -1521,8 +2360,8 @@ class TeslaStudioPro(QMainWindow):
         speed_val = val * 0.5
         self.lbl_preview_speed_val.setText(f"{speed_val:.1f}x")
         if self.timer.isActive():
-            interval = max(10, int(1000 / (self.fps * speed_val)))
-            self.timer.setInterval(interval)
+            self.play_start_wall_time = time.perf_counter()
+            self.play_start_frame = self.slider.value()
 
     def load_directory_dialog(self):
         default_dir = os.path.dirname(sys.executable)
@@ -1662,13 +2501,18 @@ class TeslaStudioPro(QMainWindow):
         self.clip_frame_offsets = [0]
         total_f = 0
 
+        detected_fps = None
         for c_info in self.active_clip_list:
             dec = RealTeslaSEIDecoder(c_info["cams"]["front"])
             self.active_decoders.append(dec)
 
             cap = cv2.VideoCapture(c_info["cams"]["front"])
             fc = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 2160
+            v_fps = cap.get(cv2.CAP_PROP_FPS)
             cap.release()
+
+            if detected_fps is None and v_fps and 10.0 <= v_fps <= 120.0:
+                detected_fps = round(v_fps, 2)
 
             total_f += fc
             self.clip_frame_offsets.append(total_f)
@@ -1693,7 +2537,13 @@ class TeslaStudioPro(QMainWindow):
         self.last_valid_preview_frames.clear()
         self.current_active_clip_idx = -1
 
-        self.fps = 24.0 if has_pillars else 36.0
+        if detected_fps is not None:
+            self.fps = detected_fps
+        else:
+            self.fps = 24.0 if has_pillars else 36.0
+
+        self.play_start_wall_time = None
+        self.play_start_frame = 0
 
         self.slider.blockSignals(True)
         self.slider.setRange(0, self.total_frames - 1)
@@ -1703,6 +2553,7 @@ class TeslaStudioPro(QMainWindow):
         
         self.update_fps_options()
         self.update_time_ticks()
+        self.update_current_time_display(0)
         self.update_range_highlight()
         
         frames = self.read_frames_with_cache(0, is_seeking=True)
@@ -1860,13 +2711,17 @@ class TeslaStudioPro(QMainWindow):
     def on_slider_manual_seek(self):
         if not self.active_clip_list or self.is_exporting: return
         idx = self.slider.value()
+        if self.timer.isActive():
+            self.play_start_wall_time = time.perf_counter()
+            self.play_start_frame = idx
+        self.update_current_time_display(idx)
         frames = self.read_frames_with_cache(idx, is_seeking=True)
         self.render_and_display(frames, idx)
 
     def sync_preview(self):
         if not self.active_clip_list or self.is_exporting: return
         idx = self.slider.value()
-        frames = self.read_frames_with_cache(idx, is_seeking=False)
+        frames = self.read_frames_with_cache(idx, is_seeking=True)
         self.render_and_display(frames, idx)
 
     def read_frames_with_cache(self, global_idx, is_seeking=False, skip_count=0):
@@ -1935,35 +2790,56 @@ class TeslaStudioPro(QMainWindow):
             
         if self.timer.isActive():
             self.timer.stop()
+            self.play_start_wall_time = None
             self.btn_play.setText("▶ 재생")
         else:
             if self.slider.value() >= self.total_frames - 1:
                 self.slider.setValue(0)
                 
-            speed_val = self.slider_preview_speed.value() * 0.5
-            interval = max(10, int(1000 / (self.fps * speed_val)))
-            self.timer.start(interval)
+            self.play_start_wall_time = time.perf_counter()
+            self.play_start_frame = self.slider.value()
+            self.timer.start(20)
             self.btn_play.setText("⏸ 일시정지")
 
     def play_next_frame(self):
-        if self.slider.value() >= self.total_frames - 1:
+        if self.play_start_wall_time is None:
+            self.play_start_wall_time = time.perf_counter()
+            self.play_start_frame = self.slider.value()
+
+        speed_val = self.slider_preview_speed.value() * 0.5
+        elapsed_sec = time.perf_counter() - self.play_start_wall_time
+        target_frame = self.play_start_frame + int(round(elapsed_sec * self.fps * speed_val))
+
+        if target_frame >= self.total_frames - 1:
+            self.slider.blockSignals(True)
+            self.slider.setValue(self.total_frames - 1)
+            self.slider.blockSignals(False)
+            self.update_current_time_display(self.total_frames - 1)
+            
             if self.chk_auto_next.isChecked():
                 self.play_next_clip()
             else:
                 self.toggle_play()
             return
 
-        speed_val = self.slider_preview_speed.value() * 0.5
-        step = max(1, int(round(speed_val))) if speed_val >= 1.5 else 1
-        next_idx = min(self.total_frames - 1, self.slider.value() + step)
+        curr_val = self.slider.value()
+        if target_frame <= curr_val:
+            return
+
+        skip_count = target_frame - curr_val - 1
+        is_seek = (skip_count > 6)
 
         self.slider.blockSignals(True)
-        self.slider.setValue(next_idx)
+        self.slider.setValue(target_frame)
         self.slider.blockSignals(False)
+        self.update_current_time_display(target_frame)
 
-        skip = step - 1 if step > 1 else 0
-        frames = self.read_frames_with_cache(next_idx, is_seeking=False, skip_count=skip)
-        self.render_and_display(frames, next_idx)
+        frames = self.read_frames_with_cache(
+            target_frame, 
+            is_seeking=is_seek, 
+            skip_count=max(0, skip_count) if not is_seek else 0
+        )
+        self.render_and_display(frames, target_frame)
 
     def set_in_point(self):
         if self.is_exporting or not self.current_item: return
@@ -2106,7 +2982,9 @@ class TeslaStudioPro(QMainWindow):
         # 36fps 기준 프레임당 바이트 × 출력 총 프레임 수(출력시간 * 선택FPS)
         bytes_per_frame = (mbps_at_36fps * 1_000_000 / 8.0) / 36.0
         total_output_frames = out_duration_sec * target_fps
-        est_mb = (total_output_frames * bytes_per_frame) / (1024.0 * 1024.0)
+        
+        # 고압축 (libx264) 실제 용량 반영
+        est_mb = ((total_output_frames * bytes_per_frame) / (1024.0 * 1024.0)) * 0.16
 
         self.lbl_est_size.setText(f"예상 크기: 약 {est_mb:.1f} MB")
 
@@ -2115,6 +2993,9 @@ class TeslaStudioPro(QMainWindow):
         exp_speed_str = self.combo_export_speed.currentText()
         m = re.search(r'([\d\.]+)x', exp_speed_str)
         opts["export_speed"] = float(m.group(1)) if m else 1.0
+        
+        opts["brightness"] = self.slider_brightness.value()
+        opts["contrast"] = self.slider_contrast.value() / 100.0
         return opts
 
     def build_target_clip_chain(self):
@@ -2279,6 +3160,9 @@ class TeslaStudioPro(QMainWindow):
         self.btn_export.setStyleSheet("")
         self.pbar.setValue(0)
         self.sync_preview()
+        if hasattr(self, 'btn_qr_share'):
+            self.btn_qr_share.setEnabled(False)
+            self.btn_qr_share.setText("📱 스마트폰 무선 전송 (내보내기 후 활성화)")
         QMessageBox.information(self, "취소됨", "영상 렌더링 작업이 취소되었습니다.")
 
     def on_export_progress(self, val):
@@ -2293,7 +3177,62 @@ class TeslaStudioPro(QMainWindow):
         self.btn_export.setText("선택 구간 내보내기 (MP4)")
         self.btn_export.setStyleSheet("")
         self.sync_preview()
-        QMessageBox.information(self, "완료", f"메타데이터 및 대시보드 오버레이 렌더링 완료:\n{path}")
+        
+        # 작업표시줄 아이콘 번쩍임 (알림)
+        QApplication.alert(self, 0)
+        
+        # 윈도우 우측 하단 시스템 트레이 알림(토스트) 띄우기
+        if not hasattr(self, 'tray_icon'):
+            self.tray_icon = QSystemTrayIcon(self)
+            self.tray_icon.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation))
+            self.tray_icon.show()
+        
+        self.tray_icon.showMessage(
+            "렌더링 완료",
+            "테슬라 대시캠 영상 내보내기가 완료되었습니다!",
+            QSystemTrayIcon.MessageIcon.Information,
+            5000
+        )
+        
+        self.last_exported_path = path
+        if hasattr(self, 'btn_qr_share'):
+            self.btn_qr_share.setEnabled(True)
+            self.btn_qr_share.setText("📱 스마트폰 무선 전송 (클릭하여 QR 공유)")
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("내보내기 완료")
+        msg_box.setText(f"비디오 렌더링이 성공적으로 완료되었습니다!\n\n저장 경로:\n{path}")
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        
+        btn_qr = msg_box.addButton("📱 스마트폰 QR 전송", QMessageBox.ButtonRole.ActionRole)
+        btn_qr.setStyleSheet("background-color: #0078D7; color: white; font-weight: bold; padding: 6px 12px;")
+        
+        btn_open = msg_box.addButton("📁 저장 폴더 열기", QMessageBox.ButtonRole.ActionRole)
+        btn_ok = msg_box.addButton("확인", QMessageBox.ButtonRole.AcceptRole)
+        
+        msg_box.exec()
+        
+        clicked = msg_box.clickedButton()
+        if clicked == btn_qr:
+            self.open_qr_share_dialog(path)
+        elif clicked == btn_open:
+            if os.path.exists(path):
+                os.system(f'explorer /select,"{os.path.abspath(path)}"')
+
+    def on_click_qr_share(self):
+        if self.last_exported_path and os.path.exists(self.last_exported_path):
+            self.open_qr_share_dialog(self.last_exported_path)
+        elif self.active_clip_list:
+            front_video = self.active_clip_list[0]["cams"]["front"]
+            self.open_qr_share_dialog(front_video)
+        else:
+            QMessageBox.warning(self, "안내", "공유할 비디오 파일이 없습니다.\n먼저 클립을 선택하거나 내보내기를 완료하세요.")
+
+    def open_qr_share_dialog(self, video_path):
+        if not os.path.exists(video_path):
+            QMessageBox.warning(self, "오류", f"비디오 파일을 찾을 수 없습니다:\n{video_path}")
+            return
+        dlg = QRShareDialog(video_path, self)
+        dlg.exec()
 
     def export_err(self, err):
         self.is_exporting = False
@@ -2301,7 +3240,21 @@ class TeslaStudioPro(QMainWindow):
         self.btn_export.setText("선택 구간 내보내기 (MP4)")
         self.btn_export.setStyleSheet("")
         self.sync_preview()
+        if hasattr(self, 'btn_qr_share'):
+            self.btn_qr_share.setEnabled(False)
+            self.btn_qr_share.setText("📱 스마트폰 무선 전송 (내보내기 후 활성화)")
         QMessageBox.critical(self, "오류", f"렌더링 실패:\n{err}")
+
+    def show_update_button(self, new_version, html_url):
+        if hasattr(self, 'btn_update'):
+            self.btn_update.setText(f"🚀 신규버전 다운로드 ({new_version})")
+            self.btn_update.setVisible(True)
+            try:
+                self.btn_update.clicked.disconnect()
+            except TypeError:
+                pass
+            self.btn_update.clicked.connect(lambda: webbrowser.open(html_url))
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
