@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Video output & tile caches
+*.mp4
+osm_tiles/
+
