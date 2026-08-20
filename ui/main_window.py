@@ -388,6 +388,21 @@ class CTDashcamStudio(QMainWindow):
         self.chk_auto_next.setToolTip("재생이 끝나면 자동으로 다음 클립으로 이동합니다")
         playback_bar.addWidget(self.chk_auto_next)
 
+        playback_bar.addSpacing(8)
+        lbl_spd = QLabel("▶ 배속:")
+        lbl_spd.setStyleSheet("font-size: 12px; color: #E0E0E0;")
+        playback_bar.addWidget(lbl_spd)
+        self.slider_preview_speed = QSlider(Qt.Orientation.Horizontal)
+        self.slider_preview_speed.setRange(1, 10)  # 0.5x ~ 5.0x
+        self.slider_preview_speed.setValue(2)      # 기본 1.0x
+        self.slider_preview_speed.setFixedWidth(70)
+        self.slider_preview_speed.setToolTip("미리보기 재생 배속 (0.5x ~ 5.0x)")
+        self.slider_preview_speed.valueChanged.connect(self.on_preview_speed_slider_changed)
+        playback_bar.addWidget(self.slider_preview_speed)
+        self.lbl_preview_speed_val = QLabel("1.0x")
+        self.lbl_preview_speed_val.setStyleSheet("font-size: 12px; color: #FFD700; font-weight: bold; min-width: 32px;")
+        playback_bar.addWidget(self.lbl_preview_speed_val)
+
         playback_bar.addStretch()
         bottom_ctrl_layout.addLayout(playback_bar)
 
@@ -812,6 +827,11 @@ class CTDashcamStudio(QMainWindow):
         self.decoder = self.active_decoders[clip_idx] if clip_idx < len(self.active_decoders) else None
         self.current_active_clip_idx = clip_idx
 
+        # 현재 클립의 base_time으로 업데이트 (HUD 시간 동기화)
+        match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', clip_info.get("prefix", ""))
+        if match:
+            self.base_time = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S")
+
     def on_motion_chk_changed(self, state):
         if self.is_current_sentry:
             if state == Qt.CheckState.Checked.value or state == 2:
@@ -996,11 +1016,22 @@ class CTDashcamStudio(QMainWindow):
         clip_idx = self.current_active_clip_idx if self.current_active_clip_idx >= 0 else 0
         local_idx = global_idx - self.clip_frame_offsets[clip_idx]
 
+        # 현재 활성 클립의 base_time을 직접 계산 (self.base_time 타이밍 의존 제거)
+        clip_base_time = self.base_time  # 기본값
+        if self.active_clip_list and clip_idx < len(self.active_clip_list):
+            prefix = self.active_clip_list[clip_idx].get("prefix", "")
+            m = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', prefix)
+            if m:
+                clip_base_time = datetime.strptime(m.group(1), "%Y-%m-%d_%H-%M-%S")
+
+        decoder = self.active_decoders[clip_idx] if clip_idx < len(self.active_decoders) else self.decoder
+
         grid = OverlayRenderer.render(
-            frames, local_idx, self.base_time, opts, self.decoder, self.fps, target_size=(1920, 1080)
+            frames, local_idx, clip_base_time, opts, decoder, self.fps, target_size=(1920, 1080)
         )
         self.last_grid_image = grid.copy()
         self._display_grid_image(grid)
+
 
     def _display_grid_image(self, grid_mat):
         grid_rgb = cv2.cvtColor(grid_mat, cv2.COLOR_BGR2RGB)
@@ -1031,12 +1062,23 @@ class CTDashcamStudio(QMainWindow):
             self.timer.start(16)
             self.btn_play.setText("⏸ 일시정지 (Space)")
 
+    def on_preview_speed_slider_changed(self, val):
+        speed = val * 0.5  # 1→0.5x, 2→1.0x, ... 10→5.0x
+        self.lbl_preview_speed_val.setText(f"{speed:.1f}x")
+        # 재생 중이면 기준 시간 리셋 (배속 변경 시 튀는 현상 방지)
+        if self.timer.isActive():
+            self.play_start_frame = self.slider.value()
+            self.play_start_wall_time = time.perf_counter()
+
     def play_next_frame_smooth(self):
         if not self.active_clip_list or self.play_start_wall_time is None:
             return
 
+        speed_val = getattr(self, 'slider_preview_speed', None)
+        speed = (speed_val.value() * 0.5) if speed_val else 1.0
+
         elapsed_sec = time.perf_counter() - self.play_start_wall_time
-        target_frame = self.play_start_frame + int(elapsed_sec * self.fps)
+        target_frame = self.play_start_frame + int(elapsed_sec * self.fps * speed)
 
         if target_frame >= self.total_frames:
             self.slider.setValue(self.total_frames - 1)
@@ -1052,7 +1094,9 @@ class CTDashcamStudio(QMainWindow):
             return
 
         skip = max(0, target_frame - curr_slider_val - 1)
-        frames = self.read_frames_with_cache(target_frame, is_seeking=(skip > 5), skip_count=skip)
+        # 배속이 빠를 때 키프레임 점프 오차 방지: 150프레임 이상 건너뛸 때만 seek
+        is_seek = skip > 150
+        frames = self.read_frames_with_cache(target_frame, is_seeking=is_seek, skip_count=skip if not is_seek else 0)
 
         self.slider.blockSignals(True)
         self.slider.setValue(target_frame)
@@ -1060,6 +1104,7 @@ class CTDashcamStudio(QMainWindow):
 
         self.update_current_time_display(target_frame)
         self.render_and_display(frames, target_frame)
+
 
     def set_layout_mode(self, mode):
         """ 화면 레이아웃 모드 전환 및 미리보기 즉시 갱신 """
@@ -1207,7 +1252,7 @@ class CTDashcamStudio(QMainWindow):
         # ── 배속 보정: 배속 높을수록 프레임 수 감소 대비 오버헤드 비율 상대적 증가 ──
         # 실측: 1x=50.2, 2x=32.7(+30%), 4x=21.1(+67%) → 보정 계수
         speed_overhead = {1.0: 1.00, 0.5: 1.12, 1.5: 1.08, 2.0: 1.30, 4.0: 1.67}.get(export_speed, 1.0)
-        est_mb = base_mbpm * fps_ratio * overlay_factor * (out_duration_sec / 60.0) * speed_overhead * 0.70
+        est_mb = base_mbpm * fps_ratio * overlay_factor * (out_duration_sec / 60.0) * speed_overhead * 0.49
 
         self.lbl_est_size.setText(f"예상 크기: 약 {est_mb:.1f} MB")
 
@@ -1378,8 +1423,22 @@ class CTDashcamStudio(QMainWindow):
             self.update_estimated_size()
             return
 
+        # 첫 클립의 시작 시간과 전체 클립 기준 끝 시간으로 계산
         item_start_dt = self.base_time
-        item_end_dt = self.base_time + timedelta(seconds=(self.total_frames / self.fps))
+        if self.active_clip_list:
+            last_clip = self.active_clip_list[-1]
+            match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', last_clip.get("prefix", ""))
+            if match:
+                last_clip_start = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S")
+                cap_tmp = cv2.VideoCapture(last_clip["cams"]["front"])
+                last_fcount = int(cap_tmp.get(cv2.CAP_PROP_FRAME_COUNT)) or int(60 * self.fps)
+                last_fps = cap_tmp.get(cv2.CAP_PROP_FPS) or self.fps
+                cap_tmp.release()
+                item_end_dt = last_clip_start + timedelta(seconds=last_fcount / last_fps)
+            else:
+                item_end_dt = self.base_time + timedelta(seconds=(self.total_frames / self.fps))
+        else:
+            item_end_dt = self.base_time + timedelta(seconds=(self.total_frames / self.fps))
 
         in_f = None
         out_f = None
@@ -1517,11 +1576,25 @@ class CTDashcamStudio(QMainWindow):
                     fcount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or int(60 * self.fps)
                     cap.release()
 
-                    s_frame = self.start_point["frame"] if i == start_idx else 0
-                    e_frame = self.end_point["frame"] if i == end_idx else (fcount - 1)
-
+                    # 전역 슬라이더 프레임 → 각 클립의 로컬 프레임으로 변환
+                    # clip_frame_offsets 인덱스 불일치 위험이 있으므로 dt 기반으로 안전하게 계산
                     match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', c_info["prefix"])
                     b_time = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S") if match else self.base_time
+
+                    if i == start_idx:
+                        s_sec = (self.start_point["dt"] - b_time).total_seconds()
+                        s_frame = max(0, int(s_sec * self.fps))
+                    else:
+                        s_frame = 0
+
+                    if i == end_idx:
+                        e_sec = (self.end_point["dt"] - b_time).total_seconds()
+                        e_frame = min(fcount - 1, int(e_sec * self.fps))
+                    else:
+                        e_frame = fcount - 1
+
+                    s_frame = max(0, min(s_frame, fcount - 1))
+                    e_frame = max(0, min(e_frame, fcount - 1))
 
                     target_clips.append({
                         "cams": c_info["cams"],
@@ -1548,6 +1621,8 @@ class CTDashcamStudio(QMainWindow):
         self.btn_in.setEnabled(enabled)
         self.btn_out.setEnabled(enabled)
         self.btn_reset_range.setEnabled(enabled)
+        if hasattr(self, 'slider_preview_speed'):
+            self.slider_preview_speed.setEnabled(enabled)
 
     def on_click_export_button(self):
         if not self.active_clip_list:
@@ -1591,8 +1666,21 @@ class CTDashcamStudio(QMainWindow):
 
         opts = self.get_current_options()
 
+        # target_clips의 각 클립 front 경로와 active_clip_list를 매칭해서
+        # 정확한 decoder를 1:1로 추출 (인덱스 불일치 방지)
+        clip_front_to_decoder = {}
+        for idx, c in enumerate(self.active_clip_list):
+            front_path = c.get("cams", {}).get("front", "")
+            if idx < len(self.active_decoders):
+                clip_front_to_decoder[front_path] = self.active_decoders[idx]
+
+        matched_decoders = []
+        for tc in target_clips:
+            front_path = tc.get("cams", {}).get("front", "")
+            matched_decoders.append(clip_front_to_decoder.get(front_path, None))
+
         self.worker = ExportWorker(
-            target_clips, opts, source_fps, target_fps, export_speed, target_size, out_path, active_decoders=self.active_decoders
+            target_clips, opts, source_fps, target_fps, export_speed, target_size, out_path, active_decoders=matched_decoders
         )
         self.worker.progress.connect(self.on_export_progress)
         self.worker.finished.connect(self.on_export_finished)
