@@ -1219,6 +1219,7 @@ class CTDashcamStudio(QMainWindow):
         out_duration_sec = dur_sec / export_speed
 
         res_key = self.combo_res.currentText()
+        target_fps = self.combo_fps.currentData() or 30
         # ── FPS 보정: H.264 CRF 인코딩은 프레임 간 압축으로 인해 FPS 증가 시 비트레이트가 비선형(약 0.45승)으로 증가 ──
         fps_ratio = (target_fps / 30.0) ** 0.45
 
