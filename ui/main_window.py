@@ -1219,8 +1219,8 @@ class CTDashcamStudio(QMainWindow):
         out_duration_sec = dur_sec / export_speed
 
         res_key = self.combo_res.currentText()
-        target_fps = self.combo_fps.currentData() or 30
-        fps_ratio = target_fps / 30.0  # 30fps 실측 기준 선형 보정
+        # ── FPS 보정: H.264 CRF 인코딩은 프레임 간 압축으로 인해 FPS 증가 시 비트레이트가 비선형(약 0.45승)으로 증가 ──
+        fps_ratio = (target_fps / 30.0) ** 0.45
 
         layout_mode = getattr(self, 'current_layout_mode', "기본 (1:3 세로배치)")
 
@@ -1247,12 +1247,9 @@ class CTDashcamStudio(QMainWindow):
         has_pip = self.chks.get("pillar_pip") and self.chks["pillar_pip"].isChecked()
         overlay_factor = 1.0 if (has_map or has_pip) else 0.87
 
-        # ── 최종 예상 용량 계산 ──
+        # ── 최종 예상 용량 계산 (실측 정밀 피팅 계수: 0.65) ──
         # out_duration_sec = 배속 적용 후 실제 출력 길이(초)
-        # ── 배속 보정: 배속 높을수록 프레임 수 감소 대비 오버헤드 비율 상대적 증가 ──
-        # 실측: 1x=50.2, 2x=32.7(+30%), 4x=21.1(+67%) → 보정 계수
-        speed_overhead = {1.0: 1.00, 0.5: 1.12, 1.5: 1.08, 2.0: 1.30, 4.0: 1.67}.get(export_speed, 1.0)
-        est_mb = base_mbpm * fps_ratio * overlay_factor * (out_duration_sec / 60.0) * speed_overhead * 0.49
+        est_mb = base_mbpm * fps_ratio * overlay_factor * (out_duration_sec / 60.0) * 0.65
 
         self.lbl_est_size.setText(f"예상 크기: 약 {est_mb:.1f} MB")
 
