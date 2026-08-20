@@ -297,7 +297,24 @@ class CTDashcamStudio(QMainWindow):
         self.btn_next.clicked.connect(self.play_next_clip)
         playback_bar.addWidget(self.btn_next)
 
-        playback_bar.addSpacing(4)
+        playback_bar.addSpacing(6)
+
+        # 재생 배속 슬라이더 (재생 버튼 바로 옆 여유 공간에 배치)
+        lbl_spd = QLabel("배속:")
+        lbl_spd.setStyleSheet("font-size: 12px; color: #E0E0E0;")
+        playback_bar.addWidget(lbl_spd)
+        self.slider_preview_speed = QSlider(Qt.Orientation.Horizontal)
+        self.slider_preview_speed.setRange(1, 10)  # 0.5x ~ 5.0x
+        self.slider_preview_speed.setValue(2)      # 기본 1.0x
+        self.slider_preview_speed.setFixedWidth(65)
+        self.slider_preview_speed.setToolTip("미리보기 재생 배속 (0.5x ~ 5.0x)")
+        self.slider_preview_speed.valueChanged.connect(self.on_preview_speed_slider_changed)
+        playback_bar.addWidget(self.slider_preview_speed)
+        self.lbl_preview_speed_val = QLabel("1.0x")
+        self.lbl_preview_speed_val.setStyleSheet("font-size: 12px; color: #FFD700; font-weight: bold; min-width: 30px;")
+        playback_bar.addWidget(self.lbl_preview_speed_val)
+
+        playback_bar.addSpacing(6)
 
         self.btn_in = QPushButton("[ 시작점")
         self.btn_in.setToolTip("구간 시작점 설정 (단축키: I)")
@@ -387,21 +404,6 @@ class CTDashcamStudio(QMainWindow):
         self.chk_auto_next.setChecked(False)  # 기본값: OFF
         self.chk_auto_next.setToolTip("재생이 끝나면 자동으로 다음 클립으로 이동합니다")
         playback_bar.addWidget(self.chk_auto_next)
-
-        playback_bar.addSpacing(8)
-        lbl_spd = QLabel("▶ 배속:")
-        lbl_spd.setStyleSheet("font-size: 12px; color: #E0E0E0;")
-        playback_bar.addWidget(lbl_spd)
-        self.slider_preview_speed = QSlider(Qt.Orientation.Horizontal)
-        self.slider_preview_speed.setRange(1, 10)  # 0.5x ~ 5.0x
-        self.slider_preview_speed.setValue(2)      # 기본 1.0x
-        self.slider_preview_speed.setFixedWidth(70)
-        self.slider_preview_speed.setToolTip("미리보기 재생 배속 (0.5x ~ 5.0x)")
-        self.slider_preview_speed.valueChanged.connect(self.on_preview_speed_slider_changed)
-        playback_bar.addWidget(self.slider_preview_speed)
-        self.lbl_preview_speed_val = QLabel("1.0x")
-        self.lbl_preview_speed_val.setStyleSheet("font-size: 12px; color: #FFD700; font-weight: bold; min-width: 32px;")
-        playback_bar.addWidget(self.lbl_preview_speed_val)
 
         playback_bar.addStretch()
         bottom_ctrl_layout.addLayout(playback_bar)
