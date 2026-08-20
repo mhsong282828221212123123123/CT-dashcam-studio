@@ -1,5 +1,5 @@
 # === App Version & Update Settings ===
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.1.1"
 GITHUB_REPO = "mhsong282828221212123123123/CT-dashcam-studio"
 
 # 해상도별 36fps 기준 인코딩 비트레이트 (Mbps)
