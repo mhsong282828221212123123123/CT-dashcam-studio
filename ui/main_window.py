@@ -1248,9 +1248,12 @@ class CTDashcamStudio(QMainWindow):
         has_pip = self.chks.get("pillar_pip") and self.chks["pillar_pip"].isChecked()
         overlay_factor = 1.0 if (has_map or has_pip) else 0.87
 
-        # ── 최종 예상 용량 계산 (실측 정밀 피팅 계수: 0.65) ──
+        # ── 배속 보정: 배속이 높아질수록 화면 변화량이 커져 H.264 압축 효율이 감소(초당 비트레이트 증가) ──
+        speed_overhead = {1.0: 1.00, 0.5: 0.90, 1.5: 1.10, 2.0: 1.20, 3.0: 1.32, 4.0: 1.45, 5.0: 1.55}.get(export_speed, 1.0 + (export_speed - 1.0) * 0.15)
+
+        # ── 최종 예상 용량 계산 (실측 정밀 피팅) ──
         # out_duration_sec = 배속 적용 후 실제 출력 길이(초)
-        est_mb = base_mbpm * fps_ratio * overlay_factor * (out_duration_sec / 60.0) * 0.65
+        est_mb = base_mbpm * fps_ratio * overlay_factor * (out_duration_sec / 60.0) * speed_overhead * 0.65
 
         self.lbl_est_size.setText(f"예상 크기: 약 {est_mb:.1f} MB")
 
