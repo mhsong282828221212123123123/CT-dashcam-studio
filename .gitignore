@@ -220,4 +220,5 @@ __marimo__/
 # Video output & tile caches
 *.mp4
 osm_tiles/
+scratch/
 

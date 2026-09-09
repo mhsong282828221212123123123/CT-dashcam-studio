@@ -17,6 +17,7 @@ from core.map_loader import OpenStreetMapTileLoader
 from core.renderer import OverlayRenderer
 from core.scanner import LightMotionScanner
 from core.exporter import ExportWorker
+from core.privacy_filter import PrivacyFilter
 from network.server import LocalVideoShareServer, ThreadingHTTPServer, VideoShareHTTPHandler
 from network.updater import UpdateCheckWorker
 from ui.widgets import ClickableLabel, HighlightSlider

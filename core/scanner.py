@@ -40,6 +40,8 @@ class LightMotionScanner(QThread):
                 continue
 
             caps = {k: cv2.VideoCapture(v) for k, v in valid_cams.items()}
+            cam_fps = {k: cap.get(cv2.CAP_PROP_FPS) or self.fps for k, cap in caps.items()}
+            front_fc = int(caps['front'].get(cv2.CAP_PROP_FRAME_COUNT)) if 'front' in caps else 2160
             ring_buffers = {k: [] for k in valid_cams.keys()}
 
             frame_idx = 0
@@ -72,7 +74,9 @@ class LightMotionScanner(QThread):
                         
                         changed_pixels = cv2.countNonZero(thresh)
                         if changed_pixels > (min_area // 4):
-                            raw_events.add(global_frame_offset + frame_idx)
+                            t_sec = frame_idx / cam_fps.get(k, self.fps)
+                            master_f = int(round(t_sec * self.fps))
+                            raw_events.add(global_frame_offset + master_f)
 
                 if not active_any:
                     break
@@ -80,7 +84,7 @@ class LightMotionScanner(QThread):
 
             for cap in caps.values():
                 cap.release()
-            global_frame_offset += frame_idx
+            global_frame_offset += (front_fc if front_fc > 0 else frame_idx)
 
         if not self.is_stopped:
             sorted_raw = sorted(list(raw_events))

@@ -6,6 +6,7 @@ import time
 import subprocess
 import webbrowser
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor
 
 import cv2
 from PyQt6.QtWidgets import (
@@ -24,6 +25,7 @@ from core.decoder import RealTeslaSEIDecoder
 from core.renderer import OverlayRenderer
 from core.scanner import LightMotionScanner
 from core.exporter import ExportWorker
+from core.privacy_filter import PrivacyFilter
 from network.updater import UpdateCheckWorker
 from ui.widgets import ClickableLabel, HighlightSlider
 from ui.dialogs import QRShareDialog, HotkeyGuideDialog
@@ -68,6 +70,7 @@ class CTDashcamStudio(QMainWindow):
 
         self.play_start_wall_time = None
         self.play_start_frame = 0
+        self._preview_pool = ThreadPoolExecutor(max_workers=4)
 
         self.init_ui()
         self.setup_shortcuts()
@@ -129,6 +132,8 @@ class CTDashcamStudio(QMainWindow):
             "pedal": QCheckBox("가속 / 브레이크 페달"),
             "pillar_pip": QCheckBox("필러 카메라 (PIP)"),
             "map": QCheckBox("GPS 미니맵 (OSM)"),
+            "blur_face": QCheckBox("얼굴 블러"),
+            "blur_plate": QCheckBox("번호판 블러"),
         }
 
         chk_positions = [
@@ -145,6 +150,21 @@ class CTDashcamStudio(QMainWindow):
             opt_layout.addWidget(chk, r, c)
 
         left_layout.addWidget(opt_group)
+
+        # 1-2) 개인정보 보호 전용 그룹박스
+        privacy_group = QGroupBox("개인정보 보호 (내보내기 속도 저하)")
+        privacy_layout = QGridLayout(privacy_group)
+        privacy_layout.setContentsMargins(8, 6, 8, 6)
+        privacy_layout.setHorizontalSpacing(8)
+        privacy_layout.setVerticalSpacing(3)
+
+        for idx, k in enumerate(["blur_face", "blur_plate"]):
+            chk = self.chks[k]
+            chk.setChecked(False)  # 기본 OFF
+            chk.stateChanged.connect(self.sync_preview)
+            privacy_layout.addWidget(chk, 0, idx)
+
+        left_layout.addWidget(privacy_group)
 
         # 2) 내보내기 설정 (사이드바 하단 정렬)
         exp_group = QGroupBox("내보내기 설정")
@@ -826,13 +846,27 @@ class CTDashcamStudio(QMainWindow):
         clip_info = self.active_clip_list[clip_idx]
         self.cams = clip_info["cams"]
         self.caps = {k: cv2.VideoCapture(v) for k, v in self.cams.items() if os.path.exists(v)}
+        self.cam_fps = {}
+        self.cam_fc = {}
+        self.current_cap_pos = {}
+        for k, cap in self.caps.items():
+            v_fps = cap.get(cv2.CAP_PROP_FPS)
+            self.cam_fps[k] = v_fps if v_fps and 10.0 <= v_fps <= 120.0 else self.fps
+            self.cam_fc[k] = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 2160
+            self.current_cap_pos[k] = 0
+
+        # 이전 클립에는 있었으나 현재 클립에 없는 카메라는 프리뷰 캐시에서 제거 (잔상/동결 방지)
+        stale_keys = [k for k in list(self.last_valid_preview_frames.keys()) if k not in self.caps]
+        for k in stale_keys:
+            del self.last_valid_preview_frames[k]
+
         self.decoder = self.active_decoders[clip_idx] if clip_idx < len(self.active_decoders) else None
         self.current_active_clip_idx = clip_idx
 
-        # 현재 클립의 base_time으로 업데이트 (HUD 시간 동기화)
+        # 현재 활성 클립의 base_time 보관 (HUD 시간 렌더링용, self.base_time은 세션 시작 시간으로 유지)
         match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', clip_info.get("prefix", ""))
         if match:
-            self.base_time = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S")
+            self.current_clip_base_time = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S")
 
     def on_motion_chk_changed(self, state):
         if self.is_current_sentry:
@@ -962,6 +996,7 @@ class CTDashcamStudio(QMainWindow):
     def on_slider_manual_seek(self):
         if not self.active_clip_list or self.is_exporting:
             return
+        self.reset_preview_privacy()
         idx = self.slider.value()
         if self.timer.isActive():
             self.play_start_wall_time = time.perf_counter()
@@ -973,6 +1008,7 @@ class CTDashcamStudio(QMainWindow):
     def sync_preview(self):
         if not self.active_clip_list or self.is_exporting:
             return
+        self.reset_preview_privacy()
         idx = self.slider.value()
         frames = self.read_frames_with_cache(idx, is_seeking=True)
         self.render_and_display(frames, idx)
@@ -992,31 +1028,93 @@ class CTDashcamStudio(QMainWindow):
             self.switch_to_clip_index(clip_idx)
             is_seeking = True
 
+        if is_seeking:
+            self.reset_preview_privacy()
+
+        front_fps = getattr(self, 'cam_fps', {}).get('front', self.fps if self.fps > 0 else 36.0)
+        t_sec = local_idx / front_fps if front_fps > 0 else 0.0
+
         frames = {}
         for k in ['front', 'back', 'left_repeater', 'right_repeater', 'left_pillar', 'right_pillar']:
             if k in self.caps:
                 cap = self.caps[k]
-                if is_seeking:
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, local_idx)
-                elif skip_count > 0:
-                    for _ in range(skip_count):
+                k_fps = getattr(self, 'cam_fps', {}).get(k, front_fps)
+                k_fc = getattr(self, 'cam_fc', {}).get(k, 2160)
+                target_k_f = max(0, min(k_fc - 1, int(round(t_sec * k_fps))))
+
+                pos = getattr(self, 'current_cap_pos', {}).get(k, -1)
+                img = None
+                ret = False
+
+                if is_seeking or pos < 0 or target_k_f < pos or (target_k_f - pos) > 15:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, target_k_f)
+                    ret, img = cap.read()
+                    self.current_cap_pos[k] = target_k_f + 1
+                elif target_k_f == pos:
+                    ret, img = cap.read()
+                    self.current_cap_pos[k] = pos + 1
+                elif target_k_f > pos:
+                    while pos < target_k_f:
                         cap.grab()
-                ret, img = cap.read()
+                        pos += 1
+                    ret, img = cap.read()
+                    self.current_cap_pos[k] = target_k_f + 1
+                else:
+                    # target_k_f == pos - 1: 이전 프레임과 동일한 프레임 유지
+                    img = self.last_valid_preview_frames.get(k)
+                    ret = img is not None
+
                 if ret and img is not None and img.size > 0:
-                    if k != 'front' and not self.is_exporting:
-                        img = cv2.resize(img, (480, 270), interpolation=cv2.INTER_NEAREST)
                     self.last_valid_preview_frames[k] = img
                     frames[k] = img
                 elif k in self.last_valid_preview_frames:
                     frames[k] = self.last_valid_preview_frames[k]
                 else:
                     frames[k] = None
+            else:
+                frames[k] = None
         return frames
+
+    def reset_preview_privacy(self):
+        """프리뷰 탐색/클립 전환 시 블러 트래커를 리셋하여 잔상 튐을 방지합니다."""
+        if hasattr(self, '_preview_privacy_filters'):
+            for pf in self._preview_privacy_filters.values():
+                pf.reset()
 
     def render_and_display(self, frames, global_idx):
         opts = self.get_current_options()
         clip_idx = self.current_active_clip_idx if self.current_active_clip_idx >= 0 else 0
         local_idx = global_idx - self.clip_frame_offsets[clip_idx]
+
+        # 프리뷰 블러 적용 (얼굴/번호판 - 카메라 채널별 독립 관리 및 4스레드 병렬 가속)
+        blur_face = opts.get("blur_face", False)
+        blur_plate = opts.get("blur_plate", False)
+        if blur_face or blur_plate:
+            if not hasattr(self, '_preview_privacy_filters') or \
+               getattr(self, '_preview_blur_face', None) != blur_face or \
+               getattr(self, '_preview_blur_plate', None) != blur_plate:
+                self._preview_privacy_filters = {}
+                self._preview_blur_face = blur_face
+                self._preview_blur_plate = blur_plate
+
+            for k in frames:
+                if frames[k] is not None and k not in self._preview_privacy_filters:
+                    self._preview_privacy_filters[k] = PrivacyFilter(
+                        blur_face=blur_face,
+                        blur_plate=blur_plate,
+                        detect_interval=4
+                    )
+
+            valid_cams = [k for k in frames if frames[k] is not None]
+            if len(valid_cams) > 1 and hasattr(self, '_preview_pool'):
+                def _proc_cam(k):
+                    return k, self._preview_privacy_filters[k].apply(frames[k])
+                results = list(self._preview_pool.map(_proc_cam, valid_cams))
+                for k, processed_frame in results:
+                    frames[k] = processed_frame
+            else:
+                for k in valid_cams:
+                    frames[k] = self._preview_privacy_filters[k].apply(frames[k])
 
         # 현재 활성 클립의 base_time을 직접 계산 (self.base_time 타이밍 의존 제거)
         clip_base_time = self.base_time  # 기본값
@@ -1274,16 +1372,51 @@ class CTDashcamStudio(QMainWindow):
         opts["contrast"] = self.slider_contrast.value() / 100.0
         return opts
 
+    def get_datetime_for_frame(self, global_f):
+        """전역 슬라이더 프레임 번호에 대응하는 실제 타임스탬프 계산 (클립별 정확한 b_time 기반)."""
+        if not self.active_clip_list:
+            return self.base_time
+
+        clip_idx = 0
+        if hasattr(self, 'clip_frame_offsets') and len(self.clip_frame_offsets) > 1:
+            for i in range(len(self.clip_frame_offsets) - 1):
+                if self.clip_frame_offsets[i] <= global_f < self.clip_frame_offsets[i+1]:
+                    clip_idx = i
+                    break
+            else:
+                clip_idx = len(self.active_clip_list) - 1
+            local_f = global_f - self.clip_frame_offsets[clip_idx]
+        else:
+            local_f = global_f
+
+        c_info = self.active_clip_list[clip_idx]
+        match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', c_info.get("prefix", ""))
+        clip_base = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S") if match else self.base_time
+
+        fps = self.fps if self.fps > 0 else 36.0
+        return clip_base + timedelta(seconds=local_f / fps)
+
     def set_in_point(self):
         if self.is_exporting or not self.active_clip_list:
             return
         curr_f = self.slider.value()
-        curr_dt = self.base_time + timedelta(seconds=curr_f / self.fps)
+        curr_dt = self.get_datetime_for_frame(curr_f)
+
+        is_group = False
+        if self.current_item:
+            cdata = self.current_item.data(0, Qt.ItemDataRole.UserRole) or {}
+            is_group = cdata.get("is_group", False)
 
         if self.end_point:
-            if curr_dt >= self.end_point["dt"]:
-                QMessageBox.warning(self, "경고", "시작점이 끝점보다 뒤이거나 같습니다.\n시간 순서가 역순이므로 지정할 수 없습니다.")
-                return
+            if is_group:
+                if curr_f >= self.end_point["frame"]:
+                    QMessageBox.warning(self, "경고", "시작점이 끝점보다 뒤이거나 같습니다.\n시간 순서가 역순이므로 지정할 수 없습니다.")
+                    return
+            else:
+                if curr_dt >= self.end_point["dt"]:
+                    QMessageBox.warning(self, "경고", "시작점이 끝점보다 뒤이거나 같습니다.\n시간 순서가 역순이므로 지정할 수 없습니다.")
+                    return
+
             dur_sec = (self.end_point["dt"] - curr_dt).total_seconds()
             if dur_sec > 1800.0:
                 QMessageBox.warning(self, "경고", f"선택 구간이 {dur_sec / 60.0:.1f}분입니다.\n최대 내보내기 가능 길이는 30분(1,800초)입니다.")
@@ -1301,12 +1434,23 @@ class CTDashcamStudio(QMainWindow):
         if self.is_exporting or not self.active_clip_list:
             return
         curr_f = self.slider.value()
-        curr_dt = self.base_time + timedelta(seconds=curr_f / self.fps)
+        curr_dt = self.get_datetime_for_frame(curr_f)
+
+        is_group = False
+        if self.current_item:
+            cdata = self.current_item.data(0, Qt.ItemDataRole.UserRole) or {}
+            is_group = cdata.get("is_group", False)
 
         if self.start_point:
-            if curr_dt <= self.start_point["dt"]:
-                QMessageBox.warning(self, "경고", "끝점이 시작점보다 앞서거나 같습니다.\n시간 순서가 역순이므로 지정할 수 없습니다.")
-                return
+            if is_group:
+                if curr_f <= self.start_point["frame"]:
+                    QMessageBox.warning(self, "경고", "끝점이 시작점보다 앞서거나 같습니다.\n시간 순서가 역순이므로 지정할 수 없습니다.")
+                    return
+            else:
+                if curr_dt <= self.start_point["dt"]:
+                    QMessageBox.warning(self, "경고", "끝점이 시작점보다 앞서거나 같습니다.\n시간 순서가 역순이므로 지정할 수 없습니다.")
+                    return
+
             dur_sec = (curr_dt - self.start_point["dt"]).total_seconds()
             if dur_sec > 1800.0:
                 QMessageBox.warning(self, "경고", f"선택 구간이 {dur_sec / 60.0:.1f}분입니다.\n최대 내보내기 가능 길이는 30분(1,800초)입니다.")
@@ -1426,47 +1570,50 @@ class CTDashcamStudio(QMainWindow):
             self.update_estimated_size()
             return
 
-        # 첫 클립의 시작 시간과 전체 클립 기준 끝 시간으로 계산
-        item_start_dt = self.base_time
-        if self.active_clip_list:
-            last_clip = self.active_clip_list[-1]
-            match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', last_clip.get("prefix", ""))
-            if match:
-                last_clip_start = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S")
-                cap_tmp = cv2.VideoCapture(last_clip["cams"]["front"])
-                last_fcount = int(cap_tmp.get(cv2.CAP_PROP_FRAME_COUNT)) or int(60 * self.fps)
-                last_fps = cap_tmp.get(cv2.CAP_PROP_FPS) or self.fps
-                cap_tmp.release()
-                item_end_dt = last_clip_start + timedelta(seconds=last_fcount / last_fps)
-            else:
-                item_end_dt = self.base_time + timedelta(seconds=(self.total_frames / self.fps))
-        else:
-            item_end_dt = self.base_time + timedelta(seconds=(self.total_frames / self.fps))
-
         in_f = None
         out_f = None
 
-        if self.start_point:
-            s_dt = self.start_point["dt"]
-            if s_dt >= item_end_dt:
-                in_f = None
-            elif s_dt <= item_start_dt:
-                in_f = 0
-            else:
-                in_f = int((s_dt - item_start_dt).total_seconds() * self.fps)
-        elif self.end_point:
-            in_f = 0
+        is_group = False
+        if self.current_item:
+            cdata = self.current_item.data(0, Qt.ItemDataRole.UserRole) or {}
+            is_group = cdata.get("is_group", False)
 
-        if self.end_point:
-            e_dt = self.end_point["dt"]
-            if e_dt <= item_start_dt:
-                out_f = None
-            elif e_dt >= item_end_dt:
+        if is_group:
+            # 센트리 그룹: 전역 슬라이더에 모든 클립이 하나의 타임라인으로 통합되어 있음
+            in_f = self.start_point["frame"] if self.start_point else 0
+            out_f = self.end_point["frame"] if self.end_point else (self.total_frames - 1)
+        else:
+            # 개별 클립 모드: 현재 활성 아이템과 start_point / end_point 아이템의 트리 계층 비교
+            curr_item = self.current_item
+            start_item = self.start_point.get("item") if self.start_point else None
+            end_item = self.end_point.get("item") if self.end_point else None
+            parent = curr_item.parent() if curr_item else None
+
+            # in_f 결정
+            if self.start_point:
+                if start_item == curr_item:
+                    in_f = self.start_point["frame"]
+                elif parent and start_item and start_item.parent() == parent:
+                    start_idx = parent.indexOfChild(start_item)
+                    curr_idx = parent.indexOfChild(curr_item)
+                    in_f = 0 if start_idx < curr_idx else None
+                else:
+                    in_f = None
+            elif self.end_point:
+                in_f = 0
+
+            # out_f 결정
+            if self.end_point:
+                if end_item == curr_item:
+                    out_f = self.end_point["frame"]
+                elif parent and end_item and end_item.parent() == parent:
+                    end_idx = parent.indexOfChild(end_item)
+                    curr_idx = parent.indexOfChild(curr_item)
+                    out_f = (self.total_frames - 1) if end_idx > curr_idx else None
+                else:
+                    out_f = None
+            elif self.start_point:
                 out_f = self.total_frames - 1
-            else:
-                out_f = int((e_dt - item_start_dt).total_seconds() * self.fps)
-        elif self.start_point:
-            out_f = self.total_frames - 1
 
         if in_f is not None and out_f is not None and in_f <= out_f:
             self.slider.set_range_points(in_f, out_f)
@@ -1490,7 +1637,7 @@ class CTDashcamStudio(QMainWindow):
         s_dt_hl = self.start_point["dt"] if self.start_point else (
             self.base_time)
         e_dt_hl = self.end_point["dt"] if self.end_point else (
-            self.base_time + timedelta(seconds=self.total_frames / self.fps))
+            self.get_datetime_for_frame(self.total_frames - 1) if self.total_frames > 0 else self.base_time)
         self._apply_tree_range_highlights(s_dt_hl, e_dt_hl)
 
         self.update_estimated_size()
@@ -1503,9 +1650,12 @@ class CTDashcamStudio(QMainWindow):
             for i, clip in enumerate(self.active_clip_list):
                 match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', clip["prefix"])
                 clip_base_time = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S") if match else self.base_time
-                cap = cv2.VideoCapture(clip["cams"]["front"])
-                fcount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or int(60 * self.fps)
-                cap.release()
+                if hasattr(self, 'clip_frame_offsets') and i + 1 < len(self.clip_frame_offsets):
+                    fcount = self.clip_frame_offsets[i+1] - self.clip_frame_offsets[i]
+                else:
+                    cap = cv2.VideoCapture(clip["cams"]["front"])
+                    fcount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or int(60 * self.fps)
+                    cap.release()
                 target_clips.append({
                     "cams": clip["cams"],
                     "start_f": 0,
@@ -1517,43 +1667,58 @@ class CTDashcamStudio(QMainWindow):
         start_item = self.start_point.get("item")
         end_item = self.end_point.get("item")
 
-        # 1) 동일한 아이템 내에서 선택된 경우
-        if start_item == end_item and start_item is not None:
-            cdata = start_item.data(0, Qt.ItemDataRole.UserRole)
-            if cdata.get("is_group", False):
-                s_dt = self.start_point["dt"]
-                e_dt = self.end_point["dt"]
+        # 1) 동일한 아이템 내에서 선택되었거나, 활성 세션이 그룹(센트리 등)인 경우
+        is_group = False
+        if start_item:
+            cdata = start_item.data(0, Qt.ItemDataRole.UserRole) or {}
+            is_group = cdata.get("is_group", False)
+        elif self.current_item:
+            cdata = self.current_item.data(0, Qt.ItemDataRole.UserRole) or {}
+            is_group = cdata.get("is_group", False)
+
+        if (start_item == end_item or is_group) and self.active_clip_list:
+            if is_group:
+                # 센트리 그룹: clip_frame_offsets 기반으로 프레임 단위 정확 매칭
+                global_s = min(self.start_point["frame"], self.end_point["frame"])
+                global_e = max(self.start_point["frame"], self.end_point["frame"])
                 target_clips = []
                 for i, c_info in enumerate(self.active_clip_list):
-                    match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', c_info["prefix"])
-                    b_time = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S") if match else self.base_time
-                    cap = cv2.VideoCapture(c_info["cams"]["front"])
-                    fcount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or int(60 * self.fps)
-                    cap.release()
-                    c_end_time = b_time + timedelta(seconds=fcount / self.fps)
+                    if hasattr(self, 'clip_frame_offsets') and i + 1 < len(self.clip_frame_offsets):
+                        c_start_f = self.clip_frame_offsets[i]
+                        c_end_f = self.clip_frame_offsets[i+1] - 1
+                    else:
+                        c_start_f = 0
+                        c_end_f = self.total_frames - 1
+                    fcount = max(1, c_end_f - c_start_f + 1)
 
-                    if c_end_time <= s_dt or b_time >= e_dt:
+                    if c_end_f < global_s or c_start_f > global_e:
                         continue
 
-                    local_s = max(0, int((s_dt - b_time).total_seconds() * self.fps)) if s_dt > b_time else 0
-                    local_e = min(fcount - 1, int((e_dt - b_time).total_seconds() * self.fps)) if e_dt < c_end_time else (fcount - 1)
+                    local_s = max(0, global_s - c_start_f)
+                    local_e = min(fcount - 1, global_e - c_start_f)
 
-                    target_clips.append({
-                        "cams": c_info["cams"],
-                        "base_time": b_time,
-                        "start_f": local_s,
-                        "end_f": local_e
-                    })
+                    if local_s <= local_e:
+                        match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', c_info.get("prefix", ""))
+                        b_time = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S") if match else self.base_time
+                        target_clips.append({
+                            "cams": c_info["cams"],
+                            "base_time": b_time,
+                            "start_f": local_s,
+                            "end_f": local_e
+                        })
                 return target_clips
             else:
-                c_info = cdata["clip_list"][0]
-                match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', c_info["prefix"])
+                cdata = start_item.data(0, Qt.ItemDataRole.UserRole) if start_item else {}
+                c_info = cdata.get("clip_list", [self.active_clip_list[0]])[0]
+                match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', c_info.get("prefix", ""))
                 b_time = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S") if match else self.base_time
+                s_f = min(self.start_point["frame"], self.end_point["frame"])
+                e_f = max(self.start_point["frame"], self.end_point["frame"])
                 return [{
                     "cams": c_info["cams"],
                     "base_time": b_time,
-                    "start_f": self.start_point["frame"],
-                    "end_f": self.end_point["frame"]
+                    "start_f": s_f,
+                    "end_f": e_f
                 }]
 
         # 2) 서로 다른 개별 클립 간에 걸쳐 선택된 경우
@@ -1579,32 +1744,29 @@ class CTDashcamStudio(QMainWindow):
                     fcount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or int(60 * self.fps)
                     cap.release()
 
-                    # 전역 슬라이더 프레임 → 각 클립의 로컬 프레임으로 변환
-                    # clip_frame_offsets 인덱스 불일치 위험이 있으므로 dt 기반으로 안전하게 계산
                     match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', c_info["prefix"])
                     b_time = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S") if match else self.base_time
 
                     if i == start_idx:
-                        s_sec = (self.start_point["dt"] - b_time).total_seconds()
-                        s_frame = max(0, int(s_sec * self.fps))
+                        s_frame = self.start_point["frame"]
                     else:
                         s_frame = 0
 
                     if i == end_idx:
-                        e_sec = (self.end_point["dt"] - b_time).total_seconds()
-                        e_frame = min(fcount - 1, int(e_sec * self.fps))
+                        e_frame = self.end_point["frame"]
                     else:
                         e_frame = fcount - 1
 
                     s_frame = max(0, min(s_frame, fcount - 1))
                     e_frame = max(0, min(e_frame, fcount - 1))
 
-                    target_clips.append({
-                        "cams": c_info["cams"],
-                        "base_time": b_time,
-                        "start_f": s_frame,
-                        "end_f": e_frame
-                    })
+                    if s_frame <= e_frame:
+                        target_clips.append({
+                            "cams": c_info["cams"],
+                            "base_time": b_time,
+                            "start_f": s_frame,
+                            "end_f": e_frame
+                        })
                 return target_clips
 
         return []
@@ -1784,6 +1946,8 @@ class CTDashcamStudio(QMainWindow):
         if hasattr(self, 'worker') and self.worker and self.worker.isRunning():
             self.worker.stop()
             self.worker.wait()
+        if hasattr(self, '_preview_pool') and self._preview_pool:
+            self._preview_pool.shutdown(wait=False)
         for cap in self.caps.values():
             cap.release()
         super().closeEvent(event)
