@@ -3,12 +3,12 @@
 <div align="center">
 
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D7?style=for-the-badge&logo=windows&logoColor=white)
-![Release](https://img.shields.io/badge/Release-v1.2.0-00E6FF?style=for-the-badge)
+![Release](https://img.shields.io/badge/Release-v1.2.1-00E6FF?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-39FF14?style=for-the-badge)
 
 **테슬라(Tesla) 순정 블랙박스 및 센트리 모드 영상을 위한 멀티캠 뷰어 & 텔레메트리 스튜디오**
 
-[📥 다운로드 (v1.2.0)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [주요 기능](#-주요-기능) • [스크린샷](#-스크린샷) • [사용 방법](#-사용-방법) • [단축키](#-단축키)
+[📥 다운로드 (v1.2.1)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [주요 기능](#-주요-기능) • [스크린샷](#-스크린샷) • [사용 방법](#-사용-방법) • [단축키](#-단축키)
 
 </div>
 
@@ -50,7 +50,7 @@
 ## 🚀 사용 방법
 
 ### 포터블 무설치 실행 (추천)
-1. [Releases](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases)에서 `CT_Dashcam_Studio_v1.2.0_Portable.zip` 다운로드 후 압축 해제
+1. [Releases](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases)에서 `CT_Dashcam_Studio_v1.2.1_Portable.zip` 다운로드 후 압축 해제
 2. `CT_Dashcam_Studio.exe` 실행
 3. 좌측 상단 **[📁 TeslaCam 폴더 지정]** 버튼으로 USB의 `TeslaCam` 폴더 선택
 
