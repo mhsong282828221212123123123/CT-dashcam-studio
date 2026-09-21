@@ -234,13 +234,13 @@ class CTDashcamStudio(QMainWindow):
         self.pbar = QProgressBar()
         self.pbar.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.pbar.setFixedHeight(12)
-        exp_layout.addWidget(self.pbar, 4, 0, 1, 4)
+        exp_layout.addWidget(self.pbar, 5, 0, 1, 4)
 
         self.btn_qr_share = QPushButton("📱 스마트폰 무선 전송 (QR)")
         self.btn_qr_share.setFixedHeight(28)
         self.btn_qr_share.setEnabled(False)
         self.btn_qr_share.clicked.connect(self.on_click_qr_share)
-        exp_layout.addWidget(self.btn_qr_share, 5, 0, 1, 4)
+        exp_layout.addWidget(self.btn_qr_share, 6, 0, 1, 4)
 
         left_layout.addWidget(exp_group)
         splitter.addWidget(left_panel)
