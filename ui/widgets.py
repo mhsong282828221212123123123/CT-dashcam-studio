@@ -1,5 +1,8 @@
-from PyQt6.QtWidgets import QLabel, QSlider, QStyleOptionSlider, QStyle
-from PyQt6.QtCore import Qt, pyqtSignal, QRect
+from PyQt6.QtWidgets import (
+    QLabel, QSlider, QStyleOptionSlider, QStyle, QWidget,
+    QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QFrame
+)
+from PyQt6.QtCore import Qt, pyqtSignal, QRect, QPoint
 from PyQt6.QtGui import QPainter, QColor
 
 
@@ -106,5 +109,161 @@ class HighlightSlider(QSlider):
         opt2.subControls = QStyle.SubControl.SC_SliderHandle
         self.style().drawComplexControl(QStyle.ComplexControl.CC_Slider, opt2, painter2, self)
         painter2.end()
+
+
+class SingleCameraPopup(QWidget):
+    """
+    단일 카메라 모드에서 6개 카메라 중 전체화면으로 볼 카메라를 선택하는 플로팅 팝업.
+    - 바깥 클릭 시 자동으로 닫힘 (Qt.WindowType.Popup)
+    - 6개 카메라 모두 표시 (전방, 후방, 좌측 리피터, 우측 리피터, 좌측 필러, 우측 필러)
+    - 클립에 없는 영상(특히 필러 카메라)은 회색으로 비활성화 (disabled)
+    - 현재 선택된 카메라는 시안(Cyan) 하이라이트 스타일 적용
+    """
+    cam_selected = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent, Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+        self.setObjectName("SingleCameraPopup")
+
+        # 6개 카메라 설정: (표시명, 카메라 키, 그리드 행, 그리드 열)
+        self.cam_configs = [
+            ("📷 전방 (FRONT)", "front", 0, 0),
+            ("🚗 후방 (REAR)", "back", 0, 1),
+            ("◀ 좌측 리피터 (LEFT)", "left_repeater", 1, 0),
+            ("우측 리피터 (RIGHT) ▶", "right_repeater", 1, 1),
+            ("◀ 좌측 필러 (L-PILLAR)", "left_pillar", 2, 0),
+            ("우측 필러 (R-PILLAR) ▶", "right_pillar", 2, 1),
+        ]
+        self.cam_buttons = {}
+        self.current_cam = "front"
+
+        self._init_ui()
+
+    def _init_ui(self):
+        self.setStyleSheet("""
+            QWidget#SingleCameraPopup {
+                background-color: #14171E;
+                border: 1.5px solid #00E6FF;
+                border-radius: 8px;
+            }
+        """)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(14, 12, 14, 14)
+        main_layout.setSpacing(10)
+
+        # 상단 헤더
+        header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(0, 0, 0, 0)
+
+        lbl_title = QLabel("📷 단일 카메라 뷰 선택")
+        lbl_title.setStyleSheet("color: #00E6FF; font-size: 12px; font-weight: bold;")
+        header_layout.addWidget(lbl_title)
+
+        header_layout.addStretch()
+        main_layout.addLayout(header_layout)
+
+        # 구분선
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        line.setStyleSheet("background-color: #262E3B; border: none; max-height: 1px;")
+        main_layout.addWidget(line)
+
+        # 2열 3행 카메라 버튼 그리드
+        grid = QGridLayout()
+        grid.setSpacing(6)
+
+        for label, key, row, col in self.cam_configs:
+            btn = QPushButton(label)
+            btn.setFixedHeight(34)
+            btn.setMinimumWidth(138)
+            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            btn.clicked.connect(lambda checked, k=key: self._on_btn_clicked(k))
+            self.cam_buttons[key] = btn
+            grid.addWidget(btn, row, col)
+
+        main_layout.addLayout(grid)
+
+    def _on_btn_clicked(self, cam_key):
+        self.current_cam = cam_key
+        self.cam_selected.emit(cam_key)
+        self.close()
+
+    def update_states(self, available_cams, active_cam):
+        """
+        available_cams: 현재 클립에 존재하는 카메라 키 집합 (set)
+        active_cam: 현재 선택된 카메라 키 (str)
+        """
+        self.current_cam = active_cam
+
+        active_style = """
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0066AA, stop:1 #008CE3);
+                color: #FFFFFF;
+                border: 1.5px solid #00E6FF;
+                border-radius: 5px;
+                font-size: 11px;
+                font-weight: bold;
+                padding: 4px 6px;
+            }
+        """
+        enabled_style = """
+            QPushButton {
+                background-color: #1A1F29;
+                color: #D2D9E5;
+                border: 1px solid #333D4F;
+                border-radius: 5px;
+                font-size: 11px;
+                font-weight: bold;
+                padding: 4px 6px;
+            }
+            QPushButton:hover {
+                background-color: #262E3E;
+                border: 1px solid #00B4D8;
+                color: #FFFFFF;
+            }
+            QPushButton:pressed {
+                background-color: #005F9E;
+            }
+        """
+        disabled_style = """
+            QPushButton {
+                background-color: #121419;
+                color: #4E5666;
+                border: 1px solid #1D212A;
+                border-radius: 5px;
+                font-size: 11px;
+                padding: 4px 6px;
+            }
+        """
+
+        for _, key, _, _ in self.cam_configs:
+            btn = self.cam_buttons.get(key)
+            if not btn:
+                continue
+
+            # 필러쪽 카메라 및 일반 카메라 가용성 체크
+            is_available = key in available_cams
+            btn.setEnabled(is_available)
+
+            if not is_available:
+                btn.setStyleSheet(disabled_style)
+                btn.setToolTip("현재 클립에 이 카메라 영상이 없습니다.")
+            elif key == active_cam:
+                btn.setStyleSheet(active_style)
+                btn.setToolTip("현재 전체화면으로 표시 중인 카메라입니다.")
+            else:
+                btn.setStyleSheet(enabled_style)
+                btn.setToolTip("클릭하여 이 카메라 화면을 전체 화면으로 표시")
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.close()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
 
 

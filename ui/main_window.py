@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
     QSplitter, QStyleFactory, QDialog, QProgressDialog, QApplication,
     QSizePolicy, QSlider
 )
-from PyQt6.QtCore import Qt, QTimer, QRect
+from PyQt6.QtCore import Qt, QTimer, QRect, QPoint
 from PyQt6.QtGui import QImage, QPixmap, QColor, QBrush, QIcon, QKeySequence, QShortcut
 
 from core.constants import APP_VERSION, RESOLUTIONS, SENSITIVITY_LEVELS
@@ -27,7 +27,7 @@ from core.scanner import LightMotionScanner
 from core.exporter import ExportWorker
 from core.privacy_filter import PrivacyFilter
 from network.updater import UpdateCheckWorker
-from ui.widgets import ClickableLabel, HighlightSlider
+from ui.widgets import ClickableLabel, HighlightSlider, SingleCameraPopup
 from ui.dialogs import QRShareDialog, HotkeyGuideDialog
 from ui.loader_worker import ClipLoaderWorker
 
@@ -71,6 +71,9 @@ class CTDashcamStudio(QMainWindow):
         self.play_start_wall_time = None
         self.play_start_frame = 0
         self._preview_pool = ThreadPoolExecutor(max_workers=4)
+
+        self.current_single_cam = "front"
+        self.single_cam_popup = None
 
         self.init_ui()
         self.setup_shortcuts()
@@ -195,9 +198,9 @@ class CTDashcamStudio(QMainWindow):
         self.btn_layout_2x2.clicked.connect(lambda: self.set_layout_mode("2x2 분할 (전후/좌우)"))
 
         self.btn_layout_single = QPushButton("⏹ 단일")
-        self.btn_layout_single.setToolTip("단일 카메라 (선택한 카메라 풀스크린)")
+        self.btn_layout_single.setToolTip("단일 카메라 (클릭 시 6채널 선택 팝업)")
         self.btn_layout_single.setFixedHeight(26)
-        self.btn_layout_single.clicked.connect(lambda: self.set_layout_mode("단일"))
+        self.btn_layout_single.clicked.connect(self.on_click_layout_single)
         self.btn_layout_front = self.btn_layout_single  # 하위 호환성 유지
 
         for b in [self.btn_layout_1to3, self.btn_layout_2x2, self.btn_layout_single]:
@@ -206,82 +209,38 @@ class CTDashcamStudio(QMainWindow):
 
         exp_layout.addLayout(layout_btn_box, 1, 1, 1, 3)
 
-        # 1-3) 단일 카메라 전용 선택 메뉴 (단일 레이아웃 활성화 시에만 노출)
-        self.single_cam_container = QWidget()
-        single_cam_layout = QHBoxLayout(self.single_cam_container)
-        single_cam_layout.setContentsMargins(0, 2, 0, 2)
-        single_cam_layout.setSpacing(6)
-
-        self.lbl_single_cam = QLabel("카메라:")
-        self.lbl_single_cam.setStyleSheet("color: #00E6FF; font-weight: bold; font-size: 11px;")
-        single_cam_layout.addWidget(self.lbl_single_cam)
-
-        self.combo_single_cam = QComboBox()
-        self.combo_single_cam.setStyleSheet("""
-            QComboBox {
-                background-color: #1A1D24;
-                color: #FFFFFF;
-                border: 1px solid #00B4D8;
-                border-radius: 4px;
-                padding: 2px 6px;
-                font-size: 11px;
-                font-weight: bold;
-            }
-            QComboBox::drop-down {
-                border: none;
-                width: 18px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #1A1D24;
-                color: #FFFFFF;
-                selection-background-color: #0078D7;
-                selection-color: #FFFFFF;
-                border: 1px solid #00E6FF;
-            }
-        """)
-        self.combo_single_cam.addItem("전방 카메라 (FRONT)", "front")
-        self.combo_single_cam.addItem("후방 카메라 (REAR)", "back")
-        self.combo_single_cam.addItem("좌측 리피터 (LEFT)", "left_repeater")
-        self.combo_single_cam.addItem("우측 리피터 (RIGHT)", "right_repeater")
-        self.combo_single_cam.currentIndexChanged.connect(self.on_single_cam_changed)
-        single_cam_layout.addWidget(self.combo_single_cam, stretch=1)
-
-        self.single_cam_container.setVisible(False)
-        exp_layout.addWidget(self.single_cam_container, 2, 0, 1, 4)
-
-        exp_layout.addWidget(QLabel("저장 배속:"), 3, 0)
+        exp_layout.addWidget(QLabel("저장 배속:"), 2, 0)
         self.combo_export_speed = QComboBox()
         self.combo_export_speed.addItems(["0.5x (슬로우)", "1.0x (표준)", "1.5x (빠르게)", "2.0x (2배속)", "4.0x (4배속)", "5.0x (5배속)"])
         self.combo_export_speed.setCurrentIndex(1)  # 기본값: 1.0x (표준)
         self.combo_export_speed.currentIndexChanged.connect(self.on_export_speed_changed)
-        exp_layout.addWidget(self.combo_export_speed, 3, 1)
+        exp_layout.addWidget(self.combo_export_speed, 2, 1)
 
-
-        exp_layout.addWidget(QLabel("출력 FPS:"), 3, 2)
+        exp_layout.addWidget(QLabel("출력 FPS:"), 2, 2)
         self.combo_fps = QComboBox()
         self.combo_fps.currentIndexChanged.connect(self.update_estimated_size)
-        exp_layout.addWidget(self.combo_fps, 3, 3)
+        exp_layout.addWidget(self.combo_fps, 2, 3)
 
         self.lbl_est_size = QLabel("예상 크기: 약 0 MB")
         self.lbl_est_size.setStyleSheet("color: #00E6FF; font-weight: bold; font-size: 13px;")
-        exp_layout.addWidget(self.lbl_est_size, 4, 0, 1, 4)
+        exp_layout.addWidget(self.lbl_est_size, 3, 0, 1, 4)
 
         self.btn_export = QPushButton("선택 구간 내보내기 (MP4)")
         self.btn_export.setFixedHeight(34)
         self.btn_export.setStyleSheet("background-color: #0078D7; color: #FFFFFF; font-weight: bold; font-size: 13px;")
         self.btn_export.clicked.connect(self.on_click_export_button)
-        exp_layout.addWidget(self.btn_export, 5, 0, 1, 4)
+        exp_layout.addWidget(self.btn_export, 4, 0, 1, 4)
 
         self.pbar = QProgressBar()
         self.pbar.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.pbar.setFixedHeight(12)
-        exp_layout.addWidget(self.pbar, 5, 0, 1, 4)
+        exp_layout.addWidget(self.pbar, 4, 0, 1, 4)
 
         self.btn_qr_share = QPushButton("📱 스마트폰 무선 전송 (QR)")
         self.btn_qr_share.setFixedHeight(28)
         self.btn_qr_share.setEnabled(False)
         self.btn_qr_share.clicked.connect(self.on_click_qr_share)
-        exp_layout.addWidget(self.btn_qr_share, 6, 0, 1, 4)
+        exp_layout.addWidget(self.btn_qr_share, 5, 0, 1, 4)
 
         left_layout.addWidget(exp_group)
         splitter.addWidget(left_panel)
@@ -788,8 +747,16 @@ class CTDashcamStudio(QMainWindow):
 
             # 주차/센트리 및 주행 영상 모두에서 단일 카메라 모드 완벽 지원
             self.btn_layout_single.setEnabled(True)
-            self.btn_layout_single.setToolTip("단일 카메라 (선택한 카메라 풀스크린)")
-            self.update_single_cam_options()
+            self.btn_layout_single.setToolTip("단일 카메라 (클릭 시 6채널 선택 팝업)")
+            
+            # 현재 선택된 카메라가 새 클립에 없을 경우 기본값(front)으로 안전 복귀
+            if self.active_clip_list and len(self.active_clip_list) > 0:
+                cams = self.active_clip_list[0].get("cams", {})
+                if getattr(self, "current_single_cam", "front") not in cams:
+                    self.current_single_cam = "front"
+            if hasattr(self, 'single_cam_popup') and self.single_cam_popup and self.single_cam_popup.isVisible():
+                avail = set(self.active_clip_list[0].get("cams", {}).keys()) if self.active_clip_list else set()
+                self.single_cam_popup.update_states(avail, getattr(self, "current_single_cam", "front"))
 
             match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', self.active_clip_list[0]["prefix"])
             if match:
@@ -1249,10 +1216,6 @@ class CTDashcamStudio(QMainWindow):
         self.current_layout_mode = mode
         
         is_single = mode in ["단일", "단일 카메라", "단일 카메라 (풀스크린)", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]
-
-        # 단일 카메라 선택 위젯 표시/숨김
-        if hasattr(self, 'single_cam_container'):
-            self.single_cam_container.setVisible(is_single)
         
         # 단일 카메라 모드 시 PIP OFF 및 체크박스 비활성화
         if is_single:
@@ -1293,51 +1256,76 @@ class CTDashcamStudio(QMainWindow):
         self.btn_layout_single.setStyleSheet(active_style if is_single else inactive_style)
 
     def get_current_single_cam(self):
-        if hasattr(self, 'combo_single_cam') and self.combo_single_cam.count() > 0:
-            return self.combo_single_cam.currentData() or "front"
-        return "front"
+        return getattr(self, "current_single_cam", "front")
 
-    def on_single_cam_changed(self, idx):
-        is_single = self.current_layout_mode in ["단일", "단일 카메라", "단일 카메라 (풀스크린)", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]
-        if is_single:
-            self.sync_preview()
-
-    def update_single_cam_options(self):
-        """ 현재 로드된 클립의 카메라 목록에 맞춰 단일 카메라 선택 콤보박스 항목 동적 구성 """
-        if not hasattr(self, 'combo_single_cam'):
-            return
-
-        current_data = self.combo_single_cam.currentData() or "front"
-        self.combo_single_cam.blockSignals(True)
-        self.combo_single_cam.clear()
-
-        cam_defs = [
-            ("전방 카메라 (FRONT)", "front"),
-            ("후방 카메라 (REAR)", "back"),
-            ("좌측 리피터 (LEFT)", "left_repeater"),
-            ("우측 리피터 (RIGHT)", "right_repeater"),
+    def on_click_layout_single(self):
+        """ '단일' 레이아웃 버튼 클릭 핸들러:
+        1) 단일 모드로 전환 (기존에 단일 모드가 아니었을 경우 기본 전면으로 세팅)
+        2) 6채널 카메라 선택 팝업 표시 (바깥 클릭 시 자동 닫힘)
+        """
+        is_already_single = self.current_layout_mode in [
+            "단일", "단일 카메라", "단일 카메라 (풀스크린)", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1"
         ]
 
-        has_lp = False
-        has_rp = False
+        if not is_already_single:
+            # 단일을 눌렀을 때 기본은 전면인 상태
+            self.current_single_cam = "front"
+            self.set_layout_mode("단일")
+
+        self.show_single_cam_popup()
+
+    def show_single_cam_popup(self):
+        """ 6개 카메라 선택 플로팅 팝업 표시 """
+        if not hasattr(self, 'single_cam_popup') or self.single_cam_popup is None:
+            self.single_cam_popup = SingleCameraPopup(self)
+            self.single_cam_popup.cam_selected.connect(self.on_single_cam_selected)
+
+        # 현재 클립의 가용 카메라 목록 전달 (필러 카메라 포함)
+        available_cams = set()
         if self.active_clip_list and len(self.active_clip_list) > 0:
-            cams = self.active_clip_list[0].get("cams", {})
-            has_lp = 'left_pillar' in cams
-            has_rp = 'right_pillar' in cams
+            available_cams = set(self.active_clip_list[0].get("cams", {}).keys())
+        else:
+            # 클립 로드 전일 경우 기본 4채널
+            available_cams = {"front", "back", "left_repeater", "right_repeater"}
 
-        if has_lp:
-            cam_defs.append(("좌측 필러 (L-PILLAR)", "left_pillar"))
-        if has_rp:
-            cam_defs.append(("우측 필러 (R-PILLAR)", "right_pillar"))
+        curr_cam = getattr(self, "current_single_cam", "front")
+        self.single_cam_popup.update_states(available_cams, curr_cam)
 
-        idx_to_select = 0
-        for i, (label, key) in enumerate(cam_defs):
-            self.combo_single_cam.addItem(label, key)
-            if key == current_data:
-                idx_to_select = i
+        # 팝업 위치 계산 (btn_layout_single 바로 아래 정렬 및 스크린 벗어남 방지)
+        self.single_cam_popup.adjustSize()
+        popup_w = self.single_cam_popup.sizeHint().width()
+        popup_h = self.single_cam_popup.sizeHint().height()
 
-        self.combo_single_cam.setCurrentIndex(idx_to_select)
-        self.combo_single_cam.blockSignals(False)
+        btn_rect = self.btn_layout_single.rect()
+        btn_top_left = self.btn_layout_single.mapToGlobal(btn_rect.topLeft())
+        btn_bottom_left = self.btn_layout_single.mapToGlobal(btn_rect.bottomLeft())
+
+        # 버튼 중앙에 팝업 중앙 맞춤
+        x = btn_bottom_left.x() + (self.btn_layout_single.width() - popup_w) // 2
+        y = btn_bottom_left.y() + 4
+
+        # 스크린 경계 보호
+        screen = self.screen()
+        if screen:
+            screen_geo = screen.availableGeometry()
+            if x + popup_w > screen_geo.right():
+                x = screen_geo.right() - popup_w - 10
+            if x < screen_geo.left():
+                x = screen_geo.left() + 10
+            if y + popup_h > screen_geo.bottom():
+                y = btn_top_left.y() - popup_h - 4
+
+        self.single_cam_popup.move(x, y)
+        self.single_cam_popup.show()
+        self.single_cam_popup.raise_()
+
+    def on_single_cam_selected(self, cam_key):
+        """ 팝업에서 특정 카메라 버튼 클릭 시 해당 카메라로 뷰 전환 """
+        self.current_single_cam = cam_key
+        if self.current_layout_mode not in ["단일", "단일 카메라", "단일 카메라 (풀스크린)", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]:
+            self.set_layout_mode("단일")
+        else:
+            self.sync_preview()
 
     def update_current_time_display(self, frame_idx):
         if self.total_frames <= 0:
@@ -1870,8 +1858,8 @@ class CTDashcamStudio(QMainWindow):
         self.btn_layout_1to3.setEnabled(enabled)
         self.btn_layout_2x2.setEnabled(enabled)
         self.btn_layout_single.setEnabled(enabled)
-        if hasattr(self, 'combo_single_cam'):
-            self.combo_single_cam.setEnabled(enabled)
+        if not enabled and hasattr(self, 'single_cam_popup') and self.single_cam_popup and self.single_cam_popup.isVisible():
+            self.single_cam_popup.close()
         self.combo_export_speed.setEnabled(enabled)
         self.combo_fps.setEnabled(enabled)
 
@@ -2030,11 +2018,20 @@ class CTDashcamStudio(QMainWindow):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        if hasattr(self, 'single_cam_popup') and self.single_cam_popup and self.single_cam_popup.isVisible():
+            self.single_cam_popup.close()
         if self.last_grid_image is not None and not self.is_exporting:
             self._display_grid_image(self.last_grid_image)
 
+    def moveEvent(self, event):
+        super().moveEvent(event)
+        if hasattr(self, 'single_cam_popup') and self.single_cam_popup and self.single_cam_popup.isVisible():
+            self.single_cam_popup.close()
+
     def closeEvent(self, event):
         self.stop_motion_scanner()
+        if hasattr(self, 'update_checker') and self.update_checker and self.update_checker.isRunning():
+            self.update_checker.wait(500)
         if hasattr(self, 'loader_worker') and self.loader_worker and self.loader_worker.isRunning():
             self.loader_worker.stop()
             self.loader_worker.wait()
