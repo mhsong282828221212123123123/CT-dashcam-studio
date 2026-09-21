@@ -140,8 +140,9 @@ class ExportWorker(QThread):
 
                     # 레이아웃에 필요한 카메라만 선별하여 불필요한 디코딩 및 블러 연산 완전 차단
                     layout_mode = self.options.get("layout", "기본 (1:3 세로배치)")
-                    if layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]:
-                        active_cam_keys = {'front'}
+                    if layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1", "단일", "단일 카메라", "단일 카메라 (풀스크린)"]:
+                        single_cam = self.options.get("single_cam", "front")
+                        active_cam_keys = {single_cam}
                     else:
                         active_cam_keys = {'front', 'back', 'left_repeater', 'right_repeater'}
 

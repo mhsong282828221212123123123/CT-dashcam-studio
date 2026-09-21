@@ -150,7 +150,8 @@ class OverlayRenderer:
                 start_y = (fh - crop_h) // 2
                 cropped = frame[start_y:start_y+crop_h, :]
 
-            resized = cv2.resize(cropped, (w, h), interpolation=cv2.INTER_NEAREST)
+            interp = cv2.INTER_LINEAR if w > 900 else cv2.INTER_NEAREST
+            resized = cv2.resize(cropped, (w, h), interpolation=interp)
             canvas[y:y+h, x:x+w] = resized
         else:
             cv2.rectangle(canvas, (x, y), (x+w, y+h), (20, 22, 26), -1)
@@ -253,9 +254,19 @@ class OverlayRenderer:
             
             sp_x = out_w - int(130 * scale) - int(8 * scale)
 
-        elif layout_mode == "전면 단독 (전방 풀스크린)" or layout_mode == "전면 단독" or layout_mode == "1:1":
-            # 전면 카메라 단독 풀스크린 렌더링
-            cls.draw_sub_slot_cover(canvas, 0, 0, out_w, front_h, frames.get('front'), "FRONT", scale)
+        elif layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1", "단일", "단일 카메라", "단일 카메라 (풀스크린)"]:
+            # 단일 카메라 풀스크린 렌더링
+            single_cam = options.get("single_cam", "front")
+            cam_label_map = {
+                'front': 'FRONT',
+                'back': 'REAR',
+                'left_repeater': 'LEFT REPEATER',
+                'right_repeater': 'RIGHT REPEATER',
+                'left_pillar': 'LEFT PILLAR',
+                'right_pillar': 'RIGHT PILLAR'
+            }
+            label = cam_label_map.get(single_cam, single_cam.upper())
+            cls.draw_sub_slot_cover(canvas, 0, 0, out_w, front_h, frames.get(single_cam), label, scale)
             sp_x = out_w - int(130 * scale) - int(8 * scale)
 
         else:
@@ -322,7 +333,7 @@ class OverlayRenderer:
                 cls.draw_sub_slot_cover(canvas, lp_x, lp_y, pillar_w, pillar_h, frames.get('left_pillar'), "LEFT PILLAR", scale)
 
             if 'right_pillar' in frames:
-                if layout_mode in ["2x2 분할 (전후/좌우)", "2x2", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]:
+                if layout_mode in ["2x2 분할 (전후/좌우)", "2x2", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1", "단일", "단일 카메라", "단일 카메라 (풀스크린)"]:
                     rp_x = out_w - pillar_w - int(8 * scale)
                 else:
                     rp_x = front_w_orig - pillar_w - int(8 * scale)

@@ -194,39 +194,83 @@ class CTDashcamStudio(QMainWindow):
         self.btn_layout_2x2.setFixedHeight(26)
         self.btn_layout_2x2.clicked.connect(lambda: self.set_layout_mode("2x2 분할 (전후/좌우)"))
 
-        self.btn_layout_front = QPushButton("⏹ 전면")
-        self.btn_layout_front.setToolTip("전면 단독 (전방 풀스크린)")
-        self.btn_layout_front.setFixedHeight(26)
-        self.btn_layout_front.clicked.connect(lambda: self.set_layout_mode("전면 단독 (전방 풀스크린)"))
+        self.btn_layout_single = QPushButton("⏹ 단일")
+        self.btn_layout_single.setToolTip("단일 카메라 (선택한 카메라 풀스크린)")
+        self.btn_layout_single.setFixedHeight(26)
+        self.btn_layout_single.clicked.connect(lambda: self.set_layout_mode("단일"))
+        self.btn_layout_front = self.btn_layout_single  # 하위 호환성 유지
 
-        for b in [self.btn_layout_1to3, self.btn_layout_2x2, self.btn_layout_front]:
+        for b in [self.btn_layout_1to3, self.btn_layout_2x2, self.btn_layout_single]:
             b.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             layout_btn_box.addWidget(b)
 
         exp_layout.addLayout(layout_btn_box, 1, 1, 1, 3)
 
-        exp_layout.addWidget(QLabel("저장 배속:"), 2, 0)
+        # 1-3) 단일 카메라 전용 선택 메뉴 (단일 레이아웃 활성화 시에만 노출)
+        self.single_cam_container = QWidget()
+        single_cam_layout = QHBoxLayout(self.single_cam_container)
+        single_cam_layout.setContentsMargins(0, 2, 0, 2)
+        single_cam_layout.setSpacing(6)
+
+        self.lbl_single_cam = QLabel("카메라:")
+        self.lbl_single_cam.setStyleSheet("color: #00E6FF; font-weight: bold; font-size: 11px;")
+        single_cam_layout.addWidget(self.lbl_single_cam)
+
+        self.combo_single_cam = QComboBox()
+        self.combo_single_cam.setStyleSheet("""
+            QComboBox {
+                background-color: #1A1D24;
+                color: #FFFFFF;
+                border: 1px solid #00B4D8;
+                border-radius: 4px;
+                padding: 2px 6px;
+                font-size: 11px;
+                font-weight: bold;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 18px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #1A1D24;
+                color: #FFFFFF;
+                selection-background-color: #0078D7;
+                selection-color: #FFFFFF;
+                border: 1px solid #00E6FF;
+            }
+        """)
+        self.combo_single_cam.addItem("전방 카메라 (FRONT)", "front")
+        self.combo_single_cam.addItem("후방 카메라 (REAR)", "back")
+        self.combo_single_cam.addItem("좌측 리피터 (LEFT)", "left_repeater")
+        self.combo_single_cam.addItem("우측 리피터 (RIGHT)", "right_repeater")
+        self.combo_single_cam.currentIndexChanged.connect(self.on_single_cam_changed)
+        single_cam_layout.addWidget(self.combo_single_cam, stretch=1)
+
+        self.single_cam_container.setVisible(False)
+        exp_layout.addWidget(self.single_cam_container, 2, 0, 1, 4)
+
+        exp_layout.addWidget(QLabel("저장 배속:"), 3, 0)
         self.combo_export_speed = QComboBox()
         self.combo_export_speed.addItems(["0.5x (슬로우)", "1.0x (표준)", "1.5x (빠르게)", "2.0x (2배속)", "4.0x (4배속)", "5.0x (5배속)"])
         self.combo_export_speed.setCurrentIndex(1)  # 기본값: 1.0x (표준)
         self.combo_export_speed.currentIndexChanged.connect(self.on_export_speed_changed)
-        exp_layout.addWidget(self.combo_export_speed, 2, 1)
+        exp_layout.addWidget(self.combo_export_speed, 3, 1)
 
 
-        exp_layout.addWidget(QLabel("출력 FPS:"), 2, 2)
+        exp_layout.addWidget(QLabel("출력 FPS:"), 3, 2)
         self.combo_fps = QComboBox()
         self.combo_fps.currentIndexChanged.connect(self.update_estimated_size)
-        exp_layout.addWidget(self.combo_fps, 2, 3)
+        exp_layout.addWidget(self.combo_fps, 3, 3)
 
         self.lbl_est_size = QLabel("예상 크기: 약 0 MB")
         self.lbl_est_size.setStyleSheet("color: #00E6FF; font-weight: bold; font-size: 13px;")
-        exp_layout.addWidget(self.lbl_est_size, 3, 0, 1, 4)
+        exp_layout.addWidget(self.lbl_est_size, 4, 0, 1, 4)
 
         self.btn_export = QPushButton("선택 구간 내보내기 (MP4)")
         self.btn_export.setFixedHeight(34)
         self.btn_export.setStyleSheet("background-color: #0078D7; color: #FFFFFF; font-weight: bold; font-size: 13px;")
         self.btn_export.clicked.connect(self.on_click_export_button)
-        exp_layout.addWidget(self.btn_export, 4, 0, 1, 4)
+        exp_layout.addWidget(self.btn_export, 5, 0, 1, 4)
 
         self.pbar = QProgressBar()
         self.pbar.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -742,16 +786,10 @@ class CTDashcamStudio(QMainWindow):
             self.total_frames = total_f
             self.is_current_sentry = item_data.get("is_sentry", False)
 
-            # 주차 영상에 대해서는 전면 프레임 모드 비활성화 및 이전 영상이 전면모드였을 경우 1:3으로 전환
-            if self.is_current_sentry:
-                self.btn_layout_front.setEnabled(False)
-                self.btn_layout_front.setToolTip("주차/센트리 영상은 다채널 확인을 위해 전면 단독 모드를 지원하지 않습니다.")
-                if self.current_layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]:
-                    self.current_layout_mode = "기본 (1:3 세로배치)"
-                    self.update_layout_buttons_style()
-            else:
-                self.btn_layout_front.setEnabled(True)
-                self.btn_layout_front.setToolTip("전면 단독 (전방 풀스크린)")
+            # 주차/센트리 및 주행 영상 모두에서 단일 카메라 모드 완벽 지원
+            self.btn_layout_single.setEnabled(True)
+            self.btn_layout_single.setToolTip("단일 카메라 (선택한 카메라 풀스크린)")
+            self.update_single_cam_options()
 
             match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', self.active_clip_list[0]["prefix"])
             if match:
@@ -759,7 +797,7 @@ class CTDashcamStudio(QMainWindow):
 
             has_pillars = ('left_pillar' in self.active_clip_list[0]["cams"]) or ('right_pillar' in self.active_clip_list[0]["cams"])
             self.chks["pillar_pip"].blockSignals(True)
-            if self.current_layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]:
+            if self.current_layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1", "단일", "단일 카메라", "단일 카메라 (풀스크린)"]:
                 self.chks["pillar_pip"].setChecked(False)
                 self.chks["pillar_pip"].setEnabled(False)
             elif has_pillars:
@@ -1210,8 +1248,14 @@ class CTDashcamStudio(QMainWindow):
         """ 화면 레이아웃 모드 전환 및 미리보기 즉시 갱신 """
         self.current_layout_mode = mode
         
-        # 전면만 표시하는 프레임 선택 시 PIP OFF 및 체크박스 비활성화
-        if mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]:
+        is_single = mode in ["단일", "단일 카메라", "단일 카메라 (풀스크린)", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]
+
+        # 단일 카메라 선택 위젯 표시/숨김
+        if hasattr(self, 'single_cam_container'):
+            self.single_cam_container.setVisible(is_single)
+        
+        # 단일 카메라 모드 시 PIP OFF 및 체크박스 비활성화
+        if is_single:
             self.chks["pillar_pip"].blockSignals(True)
             self.chks["pillar_pip"].setChecked(False)
             self.chks["pillar_pip"].setEnabled(False)
@@ -1243,10 +1287,57 @@ class CTDashcamStudio(QMainWindow):
             border-radius: 4px;
             font-size: 11px;
         """
-        
+        is_single = self.current_layout_mode in ["단일", "단일 카메라", "단일 카메라 (풀스크린)", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]
         self.btn_layout_1to3.setStyleSheet(active_style if self.current_layout_mode == "기본 (1:3 세로배치)" else inactive_style)
         self.btn_layout_2x2.setStyleSheet(active_style if self.current_layout_mode == "2x2 분할 (전후/좌우)" else inactive_style)
-        self.btn_layout_front.setStyleSheet(active_style if self.current_layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1"] else inactive_style)
+        self.btn_layout_single.setStyleSheet(active_style if is_single else inactive_style)
+
+    def get_current_single_cam(self):
+        if hasattr(self, 'combo_single_cam') and self.combo_single_cam.count() > 0:
+            return self.combo_single_cam.currentData() or "front"
+        return "front"
+
+    def on_single_cam_changed(self, idx):
+        is_single = self.current_layout_mode in ["단일", "단일 카메라", "단일 카메라 (풀스크린)", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1"]
+        if is_single:
+            self.sync_preview()
+
+    def update_single_cam_options(self):
+        """ 현재 로드된 클립의 카메라 목록에 맞춰 단일 카메라 선택 콤보박스 항목 동적 구성 """
+        if not hasattr(self, 'combo_single_cam'):
+            return
+
+        current_data = self.combo_single_cam.currentData() or "front"
+        self.combo_single_cam.blockSignals(True)
+        self.combo_single_cam.clear()
+
+        cam_defs = [
+            ("전방 카메라 (FRONT)", "front"),
+            ("후방 카메라 (REAR)", "back"),
+            ("좌측 리피터 (LEFT)", "left_repeater"),
+            ("우측 리피터 (RIGHT)", "right_repeater"),
+        ]
+
+        has_lp = False
+        has_rp = False
+        if self.active_clip_list and len(self.active_clip_list) > 0:
+            cams = self.active_clip_list[0].get("cams", {})
+            has_lp = 'left_pillar' in cams
+            has_rp = 'right_pillar' in cams
+
+        if has_lp:
+            cam_defs.append(("좌측 필러 (L-PILLAR)", "left_pillar"))
+        if has_rp:
+            cam_defs.append(("우측 필러 (R-PILLAR)", "right_pillar"))
+
+        idx_to_select = 0
+        for i, (label, key) in enumerate(cam_defs):
+            self.combo_single_cam.addItem(label, key)
+            if key == current_data:
+                idx_to_select = i
+
+        self.combo_single_cam.setCurrentIndex(idx_to_select)
+        self.combo_single_cam.blockSignals(False)
 
     def update_current_time_display(self, frame_idx):
         if self.total_frames <= 0:
@@ -1341,7 +1432,8 @@ class CTDashcamStudio(QMainWindow):
             ("전면 단독 (전방 풀스크린)",  "HD (1280x720) - 용량 절감"):   19.2,
             ("전면 단독 (전방 풀스크린)",  "Compact (960x540) - 모바일용"): 13.7,
         }
-        base_mbpm = MEASURED_MBPM.get((layout_mode, res_key), 50.2)
+        lookup_layout = "전면 단독 (전방 풀스크린)" if layout_mode in ["단일", "단일 카메라", "단일 카메라 (풀스크린)", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1"] else layout_mode
+        base_mbpm = MEASURED_MBPM.get((lookup_layout, res_key), 50.2)
 
         # ── 오버레이 보정: 맵/PIP 없을 때 -13% (실측: 43.7/50.2 = 0.870) ──
         has_map = self.chks.get("map") and self.chks["map"].isChecked()
@@ -1364,6 +1456,7 @@ class CTDashcamStudio(QMainWindow):
     def get_current_options(self):
         opts = {k: v.isChecked() for k, v in self.chks.items()}
         opts["layout"] = getattr(self, 'current_layout_mode', "기본 (1:3 세로배치)")
+        opts["single_cam"] = self.get_current_single_cam()
         exp_speed_str = self.combo_export_speed.currentText()
         m = re.search(r'([\d\.]+)x', exp_speed_str)
         opts["export_speed"] = float(m.group(1)) if m else 1.0
@@ -1776,7 +1869,9 @@ class CTDashcamStudio(QMainWindow):
         self.combo_res.setEnabled(enabled)
         self.btn_layout_1to3.setEnabled(enabled)
         self.btn_layout_2x2.setEnabled(enabled)
-        self.btn_layout_front.setEnabled(enabled)
+        self.btn_layout_single.setEnabled(enabled)
+        if hasattr(self, 'combo_single_cam'):
+            self.combo_single_cam.setEnabled(enabled)
         self.combo_export_speed.setEnabled(enabled)
         self.combo_fps.setEnabled(enabled)
 
