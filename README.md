@@ -53,6 +53,7 @@
 1. [Releases](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases)에서 `CT_Dashcam_Studio_v1.2.1_Portable.zip` 다운로드 후 압축 해제
 2. `CT_Dashcam_Studio.exe` 실행
 3. 좌측 상단 **[📁 TeslaCam 폴더 지정]** 버튼으로 USB의 `TeslaCam` 폴더 선택
+4. 인증서가 없어 경고가 뜰 수 있으나, 본 프로그램은 소스코드가 공개된 프로젝트입니다. 신뢰하기 어려울 경우 아래 파이썬 환경에서 실행하시면 됩니다.
 
 ### 파이썬 환경에서 실행
 ```bash
