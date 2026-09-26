@@ -6,7 +6,7 @@
 ![Release](https://img.shields.io/badge/Release-v1.2.1-00E6FF?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-39FF14?style=for-the-badge)
 
-**테슬라(Tesla) 순정 블랙박스 및 센트리 모드 영상을 위한 멀티캠 뷰어 & 텔레메트리 스튜디오**
+**테슬라(Tesla) 순정 블랙박스 및 센트리 모드 영상을 위한 완전 무료 멀티캠 뷰어 & 텔레메트리 스튜디오**
 
 [📥 다운로드 (v1.2.1)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [주요 기능](#-주요-기능) • [스크린샷](#-스크린샷) • [사용 방법](#-사용-방법) • [단축키](#-단축키)
 
