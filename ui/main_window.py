@@ -136,7 +136,7 @@ class CTDashcamStudio(QMainWindow):
             "pillar_pip": QCheckBox("필러 카메라 (PIP)"),
             "map": QCheckBox("GPS 미니맵 (OSM)"),
             "blur_face": QCheckBox("얼굴 블러"),
-            "blur_plate": QCheckBox("번호판 블러"),
+            "blur_plate": QCheckBox("번호판 모자이크"),
             "enhance_plate": QCheckBox("번호판 선명화"),
         }
 
@@ -162,18 +162,22 @@ class CTDashcamStudio(QMainWindow):
         privacy_layout.setHorizontalSpacing(8)
         privacy_layout.setVerticalSpacing(3)
 
-        for idx, k in enumerate(["blur_face", "blur_plate"]):
+        for idx, k in enumerate(["blur_face"]):
             chk = self.chks[k]
             chk.setChecked(False)  # 기본 OFF
             chk.stateChanged.connect(self.sync_preview)
             privacy_layout.addWidget(chk, 0, idx)
 
-        # 번호판 선명화 (번호판 블러와 상호 배타)
+        chk_blur = self.chks["blur_plate"]
+        chk_blur.setChecked(False)
+        chk_blur.stateChanged.connect(self.on_blur_plate_toggled)
+        privacy_layout.addWidget(chk_blur, 0, 1)
+
+        # 번호판 선명화 (번호판 모자이크와 상호 배타)
         chk_enh = self.chks["enhance_plate"]
         chk_enh.setChecked(False)
-        chk_enh.setToolTip("번호판의 밝기/대비/선명도를 국소 보정하여 식별을 돕습니다. (번호판 블러와 동시 사용 불가)")
+        chk_enh.setToolTip("번호판의 밝기/대비/선명도를 국소 보정하여 식별을 돕습니다. (번호판 모자이크와 동시 사용 불가)")
         chk_enh.stateChanged.connect(self.on_enhance_plate_toggled)
-        self.chks["blur_plate"].stateChanged.connect(self.on_blur_plate_toggled)
         privacy_layout.addWidget(chk_enh, 1, 0, 1, 2)
 
         left_layout.addWidget(privacy_group)
@@ -1090,22 +1094,24 @@ class CTDashcamStudio(QMainWindow):
         return frames
 
     def on_enhance_plate_toggled(self, state):
-        """번호판 선명화 ON 시 번호판 블러 자동 해제 (상호 배타)."""
-        chk_blur = self.chks["blur_plate"]
-        if self.chks["enhance_plate"].isChecked() and chk_blur.isChecked():
-            chk_blur.blockSignals(True)
-            chk_blur.setChecked(False)
-            chk_blur.blockSignals(False)
+        """번호판 선명화 ON 시 번호판 모자이크 자동 해제 (상호 배타)."""
+        if self.chks["enhance_plate"].isChecked():
+            chk_blur = self.chks["blur_plate"]
+            if chk_blur.isChecked():
+                chk_blur.blockSignals(True)
+                chk_blur.setChecked(False)
+                chk_blur.blockSignals(False)
         self.sync_preview()
 
     def on_blur_plate_toggled(self, state):
-        """번호판 블러 ON 시 번호판 선명화 자동 해제 (상호 배타)."""
-        chk_enh = self.chks["enhance_plate"]
-        if self.chks["blur_plate"].isChecked() and chk_enh.isChecked():
-            chk_enh.blockSignals(True)
-            chk_enh.setChecked(False)
-            chk_enh.blockSignals(False)
-            self.sync_preview()
+        """번호판 모자이크 ON 시 번호판 선명화 자동 해제 (상호 배타)."""
+        if self.chks["blur_plate"].isChecked():
+            chk_enh = self.chks["enhance_plate"]
+            if chk_enh.isChecked():
+                chk_enh.blockSignals(True)
+                chk_enh.setChecked(False)
+                chk_enh.blockSignals(False)
+        self.sync_preview()
 
     def reset_preview_privacy(self):
         """프리뷰 탐색/클립 전환 시 블러 트래커를 리셋하여 잔상 튐을 방지합니다."""
