@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 from core.utils import resource_path
+from core.plate_enhancer import PlateEnhancer
 
 # OpenCV C++ 백엔드 불필요한 콘솔 WARN 로그 억제
 try:
@@ -309,9 +310,12 @@ class PrivacyFilter:
     FACE_MODEL_FILENAME = "face_detection_yunet.onnx"
     VEHICLE_MODEL_FILENAME = "yolov8n.onnx"
 
-    def __init__(self, blur_face=False, blur_plate=False, blur_ksize=75, detect_interval=4):
+    def __init__(self, blur_face=False, blur_plate=False, blur_ksize=75, detect_interval=4,
+                 enhance_plate=False):
         self.blur_face = blur_face
         self.blur_plate = blur_plate
+        # 번호판 가독성 개선 (번호판 블러와 동시 사용 시 블러 우선)
+        self.enhance_plate = bool(enhance_plate) and not blur_plate
         self.blur_ksize = blur_ksize if blur_ksize % 2 == 1 else blur_ksize + 1
         self.detect_interval = max(1, int(detect_interval))
 
@@ -322,7 +326,8 @@ class PrivacyFilter:
 
         self._vehicle_net = None
         self._mser = None
-        if self.blur_plate:
+        self._plate_enhancer = PlateEnhancer() if self.enhance_plate else None
+        if self.blur_plate or self.enhance_plate:
             self._vehicle_net = self._init_vehicle_detector()
             # min_area=25: 미세 점 노이즈 차단
             self._mser = cv2.MSER_create(4, 25, 4000, 0.35)
@@ -333,7 +338,7 @@ class PrivacyFilter:
 
     @property
     def enabled(self):
-        return self.blur_face or self.blur_plate
+        return self.blur_face or self.blur_plate or self.enhance_plate
 
     def _get_model_path(self, filename):
         bundled = resource_path(os.path.join("models", filename))
@@ -896,9 +901,10 @@ class PrivacyFilter:
         # 키프레임(detect_interval 주기) 여부 결정
         should_detect = (self.detect_interval <= 1) or (self._frame_count % self.detect_interval == 1)
         active_boxes = []
+        enhance_boxes = []
         frame_gray = None
 
-        if self.blur_face or self.blur_plate:
+        if self.blur_face or self.blur_plate or self.enhance_plate:
             frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         if self.blur_face:
@@ -909,16 +915,21 @@ class PrivacyFilter:
                 tracked_faces = self._face_tracker.track_interframe(frame_gray)
             active_boxes.extend(tracked_faces)
 
-        if self.blur_plate:
+        if self.blur_plate or self.enhance_plate:
             if should_detect:
                 new_plates = self._detect_plates(frame)
                 tracked_plates = self._plate_tracker.update(new_plates, frame_gray)
             else:
                 tracked_plates = self._plate_tracker.track_interframe(frame_gray)
-            active_boxes.extend(tracked_plates)
+            if self.blur_plate:
+                active_boxes.extend(tracked_plates)
+            else:
+                enhance_boxes.extend(tracked_plates)
 
         if active_boxes:
             frame = self._apply_blur(frame, active_boxes)
+        if enhance_boxes and self._plate_enhancer is not None:
+            frame = self._plate_enhancer.apply(frame, enhance_boxes)
 
         return frame
 
@@ -930,9 +941,10 @@ class PrivacyFilter:
         self._frame_count += 1
         should_detect = (self.detect_interval <= 1) or (self._frame_count % self.detect_interval == 1)
         active_boxes = []
+        enhance_boxes = []
         frame_gray = None
 
-        if self.blur_face or self.blur_plate:
+        if self.blur_face or self.blur_plate or self.enhance_plate:
             frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         if self.blur_face:
@@ -942,6 +954,15 @@ class PrivacyFilter:
             else:
                 tracked_faces = self._face_tracker.track_interframe(frame_gray)
             active_boxes.extend(tracked_faces)
+
+        if self.enhance_plate:
+            # 선명화 모드: 소급 처리 불필요 (개인정보 보호 목적이 아님)
+            if should_detect:
+                new_plates = self._detect_plates(frame)
+                tracked_plates = self._plate_tracker.update(new_plates, frame_gray)
+            else:
+                tracked_plates = self._plate_tracker.track_interframe(frame_gray)
+            enhance_boxes.extend(tracked_plates)
 
         if self.blur_plate:
             if should_detect:
@@ -963,6 +984,8 @@ class PrivacyFilter:
 
         if active_boxes:
             frame = self._apply_blur(frame, active_boxes)
+        if enhance_boxes and self._plate_enhancer is not None:
+            frame = self._plate_enhancer.apply(frame, enhance_boxes)
 
         return frame
 
@@ -972,3 +995,5 @@ class PrivacyFilter:
             self._face_tracker.reset()
         if self._plate_tracker:
             self._plate_tracker.reset()
+        if self._plate_enhancer:
+            self._plate_enhancer.reset()

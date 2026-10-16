@@ -78,7 +78,8 @@ class ExportWorker(QThread):
             # 블러 필터 초기화 (카메라 채널별 독립 인스턴스 관리 및 멀티스레드 병렬 가속)
             blur_face = self.options.get("blur_face", False)
             blur_plate = self.options.get("blur_plate", False)
-            privacy_enabled = blur_face or blur_plate
+            enhance_plate = self.options.get("enhance_plate", False) and not blur_plate
+            privacy_enabled = blur_face or blur_plate or enhance_plate
             privacy_filters = {}
             camera_buffers = {}
             privacy_executor = None
@@ -194,6 +195,7 @@ class ExportWorker(QThread):
                                 privacy_filters[k] = PrivacyFilter(
                                     blur_face=blur_face,
                                     blur_plate=blur_plate,
+                                    enhance_plate=enhance_plate,
                                     detect_interval=4
                                 )
                             if k not in camera_buffers:

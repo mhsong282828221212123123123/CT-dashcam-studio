@@ -137,6 +137,7 @@ class CTDashcamStudio(QMainWindow):
             "map": QCheckBox("GPS 미니맵 (OSM)"),
             "blur_face": QCheckBox("얼굴 블러"),
             "blur_plate": QCheckBox("번호판 블러"),
+            "enhance_plate": QCheckBox("번호판 선명화"),
         }
 
         chk_positions = [
@@ -154,8 +155,8 @@ class CTDashcamStudio(QMainWindow):
 
         left_layout.addWidget(opt_group)
 
-        # 1-2) 개인정보 보호 전용 그룹박스
-        privacy_group = QGroupBox("개인정보 보호 (내보내기 속도 저하)")
+        # 1-2) 개인정보 보호 및 번호판 개선 그룹박스
+        privacy_group = QGroupBox("개인정보 보호 및 번호판 개선")
         privacy_layout = QGridLayout(privacy_group)
         privacy_layout.setContentsMargins(8, 6, 8, 6)
         privacy_layout.setHorizontalSpacing(8)
@@ -166,6 +167,14 @@ class CTDashcamStudio(QMainWindow):
             chk.setChecked(False)  # 기본 OFF
             chk.stateChanged.connect(self.sync_preview)
             privacy_layout.addWidget(chk, 0, idx)
+
+        # 번호판 선명화 (번호판 블러와 상호 배타)
+        chk_enh = self.chks["enhance_plate"]
+        chk_enh.setChecked(False)
+        chk_enh.setToolTip("번호판의 밝기/대비/선명도를 국소 보정하여 식별을 돕습니다. (번호판 블러와 동시 사용 불가)")
+        chk_enh.stateChanged.connect(self.on_enhance_plate_toggled)
+        self.chks["blur_plate"].stateChanged.connect(self.on_blur_plate_toggled)
+        privacy_layout.addWidget(chk_enh, 1, 0, 1, 2)
 
         left_layout.addWidget(privacy_group)
 
@@ -1080,6 +1089,24 @@ class CTDashcamStudio(QMainWindow):
                 frames[k] = None
         return frames
 
+    def on_enhance_plate_toggled(self, state):
+        """번호판 선명화 ON 시 번호판 블러 자동 해제 (상호 배타)."""
+        chk_blur = self.chks["blur_plate"]
+        if self.chks["enhance_plate"].isChecked() and chk_blur.isChecked():
+            chk_blur.blockSignals(True)
+            chk_blur.setChecked(False)
+            chk_blur.blockSignals(False)
+        self.sync_preview()
+
+    def on_blur_plate_toggled(self, state):
+        """번호판 블러 ON 시 번호판 선명화 자동 해제 (상호 배타)."""
+        chk_enh = self.chks["enhance_plate"]
+        if self.chks["blur_plate"].isChecked() and chk_enh.isChecked():
+            chk_enh.blockSignals(True)
+            chk_enh.setChecked(False)
+            chk_enh.blockSignals(False)
+            self.sync_preview()
+
     def reset_preview_privacy(self):
         """프리뷰 탐색/클립 전환 시 블러 트래커를 리셋하여 잔상 튐을 방지합니다."""
         if hasattr(self, '_preview_privacy_filters'):
@@ -1094,19 +1121,23 @@ class CTDashcamStudio(QMainWindow):
         # 프리뷰 블러 적용 (얼굴/번호판 - 카메라 채널별 독립 관리 및 4스레드 병렬 가속)
         blur_face = opts.get("blur_face", False)
         blur_plate = opts.get("blur_plate", False)
-        if blur_face or blur_plate:
+        enhance_plate = opts.get("enhance_plate", False) and not blur_plate
+        if blur_face or blur_plate or enhance_plate:
             if not hasattr(self, '_preview_privacy_filters') or \
                getattr(self, '_preview_blur_face', None) != blur_face or \
-               getattr(self, '_preview_blur_plate', None) != blur_plate:
+               getattr(self, '_preview_blur_plate', None) != blur_plate or \
+               getattr(self, '_preview_enhance_plate', None) != enhance_plate:
                 self._preview_privacy_filters = {}
                 self._preview_blur_face = blur_face
                 self._preview_blur_plate = blur_plate
+                self._preview_enhance_plate = enhance_plate
 
             for k in frames:
                 if frames[k] is not None and k not in self._preview_privacy_filters:
                     self._preview_privacy_filters[k] = PrivacyFilter(
                         blur_face=blur_face,
                         blur_plate=blur_plate,
+                        enhance_plate=enhance_plate,
                         detect_interval=4
                     )
 
