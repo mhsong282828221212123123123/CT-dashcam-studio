@@ -14,14 +14,15 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QCheckBox, QFileDialog, QGroupBox,
     QProgressBar, QMessageBox, QComboBox, QTreeWidget, QTreeWidgetItem,
     QSplitter, QStyleFactory, QDialog, QProgressDialog, QApplication,
-    QSizePolicy, QSlider
+    QSizePolicy, QSlider, QFrame
 )
-from PyQt6.QtCore import Qt, QTimer, QRect, QPoint
+from PyQt6.QtCore import Qt, QTimer, QRect, QPoint, QEvent
 from PyQt6.QtGui import QImage, QPixmap, QColor, QBrush, QIcon, QKeySequence, QShortcut
 
 from core.constants import APP_VERSION, RESOLUTIONS, SENSITIVITY_LEVELS
 from core.utils import resource_path, get_app_dir
 from core.decoder import RealTeslaSEIDecoder
+from core.map_loader import OpenStreetMapTileLoader
 from core.renderer import OverlayRenderer
 from core.scanner import LightMotionScanner
 from core.exporter import ExportWorker
@@ -135,7 +136,7 @@ class CTDashcamStudio(QMainWindow):
             "pedal": QCheckBox("가속 / 브레이크 페달"),
             "pillar_pip": QCheckBox("필러 카메라 (PIP)"),
             "map": QCheckBox("GPS 미니맵 (OSM)"),
-            "blur_face": QCheckBox("얼굴 블러"),
+            "blur_face": QCheckBox("얼굴 모자이크"),
             "blur_plate": QCheckBox("번호판 모자이크"),
             "enhance_plate": QCheckBox("번호판 선명화"),
         }
@@ -272,176 +273,221 @@ class CTDashcamStudio(QMainWindow):
         self.preview_lbl.setStyleSheet("background-color: #0b0d10; border: 1px solid #1e222a; border-radius: 4px;")
         self.preview_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.preview_lbl.setMinimumSize(640, 360)
+        self.preview_lbl.setToolTip("화면을 더블클릭하면 클릭한 카메라의 단독 풀스크린 화면으로 즉시 전환/복귀합니다.")
+        self.preview_lbl.installEventFilter(self)
         right_layout.addWidget(self.preview_lbl, stretch=10)
 
         # 하단 타임라인 컨트롤 그룹
         timeline_group = QGroupBox("타임라인 컨트롤")
         bottom_ctrl_layout = QVBoxLayout(timeline_group)
-        bottom_ctrl_layout.setContentsMargins(8, 6, 8, 6)
-        bottom_ctrl_layout.setSpacing(4)
+        bottom_ctrl_layout.setContentsMargins(10, 6, 10, 6)
+        bottom_ctrl_layout.setSpacing(5)
 
-        # 타임라인 슬라이더
+        def _make_v_divider():
+            div = QFrame()
+            div.setFrameShape(QFrame.Shape.VLine)
+            div.setFrameShadow(QFrame.Shadow.Plain)
+            div.setStyleSheet("color: #262C38; background-color: #262C38;")
+            div.setFixedSize(1, 18)
+            return div
+
+        # ── [1단] 타임라인 슬라이더 ──
         self.slider = HighlightSlider(Qt.Orientation.Horizontal)
         self.slider.setRange(0, 0)
         self.slider.sliderMoved.connect(self.on_slider_manual_seek)
         self.slider.valueChanged.connect(self.on_slider_manual_seek)
         bottom_ctrl_layout.addWidget(self.slider)
 
-        # 슬라이더 상단/하단 정보 바 (시간, 모션 감지 상태, 선택 구간)
+        # ── [2단] 타임라인 상태 · 센트리 모션 분석 · 구간 편집 바 ──
         info_bar = QHBoxLayout()
         info_bar.setContentsMargins(2, 0, 2, 0)
-        
+        info_bar.setSpacing(6)
+
+        # (좌) 현재 재생 시간
         self.lbl_curr_time = QLabel("00:00:00 / 00:00:00")
-        self.lbl_curr_time.setStyleSheet("color: #00E6FF; font-weight: bold; font-size: 13px;")
+        self.lbl_curr_time.setStyleSheet("color: #00E6FF; font-weight: bold; font-size: 13px; padding-right: 4px;")
         info_bar.addWidget(self.lbl_curr_time)
 
-        info_bar.addSpacing(16)
+        info_bar.addWidget(_make_v_divider())
 
+        # (중) 모션 감지 분석 상태 & 센트리 컨트롤 클러스터 (비어 있던 중앙 공간 활용)
         self.lbl_motion_status = QLabel("모션 분석: 대기 중")
         self.lbl_motion_status.setStyleSheet("color: #00E6FF; font-size: 12px; font-weight: bold;")
         info_bar.addWidget(self.lbl_motion_status)
 
-        info_bar.addStretch()
+        self.chk_motion = QCheckBox("모션 감지")
+        self.chk_motion.setChecked(True)
+        self.chk_motion.stateChanged.connect(self.on_motion_chk_changed)
+        info_bar.addWidget(self.chk_motion)
 
+        self.lbl_sensitivity_tag = QLabel("감도:")
+        self.lbl_sensitivity_tag.setStyleSheet("font-size: 12px; color: #A0A6B5;")
+        info_bar.addWidget(self.lbl_sensitivity_tag)
+
+        self.combo_sensitivity = QComboBox()
+        for s_name in SENSITIVITY_LEVELS.keys():
+            self.combo_sensitivity.addItem(s_name)
+        self.combo_sensitivity.setCurrentText("보통")
+        self.combo_sensitivity.currentIndexChanged.connect(self.on_sensitivity_changed)
+        info_bar.addWidget(self.combo_sensitivity)
+
+        self.btn_prev_event = QPushButton("⚡ 이전")
+        self.btn_prev_event.setToolTip("이전 모션 감지 구간으로 이동")
+        self.btn_prev_event.setFixedHeight(26)
+        self.btn_prev_event.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_prev_event.setVisible(False)
+        self.btn_prev_event.clicked.connect(self.jump_to_prev_event)
+        info_bar.addWidget(self.btn_prev_event)
+
+        self.btn_next_event = QPushButton("⚡ 다음")
+        self.btn_next_event.setToolTip("다음 모션 감지 구간으로 이동")
+        self.btn_next_event.setFixedHeight(26)
+        self.btn_next_event.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_next_event.setVisible(False)
+        self.btn_next_event.clicked.connect(self.jump_to_next_event)
+        info_bar.addWidget(self.btn_next_event)
+
+        info_bar.addStretch(1)
+
+        # (우) 선택 구간 정보 & 구간 편집 버튼 (시작점 / 끝점 / 초기화 직관적 통합)
         self.lbl_range_info = QLabel("선택 구간: 미지정 (전체)")
-        self.lbl_range_info.setStyleSheet("color: #FFA726; font-size: 13px; font-weight: bold;")
+        self.lbl_range_info.setStyleSheet("color: #FFA726; font-size: 12px; font-weight: bold;")
         info_bar.addWidget(self.lbl_range_info)
+
+        info_bar.addSpacing(4)
+
+        self.btn_in = QPushButton("[ 시작점")
+        self.btn_in.setToolTip("구간 시작점 설정 (단축키: I)")
+        self.btn_in.setFixedHeight(26)
+        self.btn_in.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_in.clicked.connect(self.set_in_point)
+        info_bar.addWidget(self.btn_in)
+
+        self.btn_out = QPushButton("] 끝점")
+        self.btn_out.setToolTip("구간 종료점 설정 (단축키: O)")
+        self.btn_out.setFixedHeight(26)
+        self.btn_out.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_out.clicked.connect(self.set_out_point)
+        info_bar.addWidget(self.btn_out)
+
+        self.btn_reset_range = QPushButton("🔄 초기화")
+        self.btn_reset_range.setToolTip("구간 선택 초기화")
+        self.btn_reset_range.setFixedHeight(26)
+        self.btn_reset_range.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_reset_range.clicked.connect(self.reset_range_points)
+        info_bar.addWidget(self.btn_reset_range)
+
         bottom_ctrl_layout.addLayout(info_bar)
 
-        # 재생 & 조작 통합 툴바 (1줄에 직관적으로 정렬)
+        # ── [3단] 메인 재생 · 배속 · 화면 보정 · 유틸리티 바 (균등 분할) ──
         playback_bar = QHBoxLayout()
-        playback_bar.setSpacing(4)
+        playback_bar.setContentsMargins(2, 0, 2, 0)
+        playback_bar.setSpacing(6)
 
+        # (좌) 재생 컨트롤 그룹
         self.btn_prev = QPushButton("◀ 이전")
         self.btn_prev.setToolTip("이전 클립 (단축키: [)")
         self.btn_prev.setFixedHeight(28)
-        self.btn_prev.setStyleSheet("padding: 2px 6px; font-weight: bold;")
+        self.btn_prev.setStyleSheet("padding: 2px 8px; font-weight: bold;")
         self.btn_prev.clicked.connect(self.play_prev_clip)
         playback_bar.addWidget(self.btn_prev)
 
         self.btn_play = QPushButton("▶ 재생 (Space)")
         self.btn_play.setToolTip("재생 / 일시정지 (단축키: Space)")
         self.btn_play.setFixedHeight(28)
-        self.btn_play.setStyleSheet("font-weight: bold; background-color: #0078D7; color: #FFFFFF; min-width: 95px; padding: 2px 8px;")
+        self.btn_play.setStyleSheet("font-weight: bold; background-color: #0078D7; color: #FFFFFF; padding: 4px 12px;")
         self.btn_play.clicked.connect(self.toggle_play)
         playback_bar.addWidget(self.btn_play)
 
         self.btn_next = QPushButton("다음 ▶")
         self.btn_next.setToolTip("다음 클립 (단축키: ])")
         self.btn_next.setFixedHeight(28)
-        self.btn_next.setStyleSheet("padding: 2px 6px; font-weight: bold;")
+        self.btn_next.setStyleSheet("padding: 2px 8px; font-weight: bold;")
         self.btn_next.clicked.connect(self.play_next_clip)
         playback_bar.addWidget(self.btn_next)
 
-        playback_bar.addSpacing(6)
+        playback_bar.addStretch(1)
+        playback_bar.addWidget(_make_v_divider())
+        playback_bar.addStretch(1)
 
-        # 재생 배속 슬라이더 (재생 버튼 바로 옆 여유 공간에 배치)
-        lbl_spd = QLabel("배속:")
-        lbl_spd.setStyleSheet("font-size: 12px; color: #E0E0E0;")
-        playback_bar.addWidget(lbl_spd)
+        # (중) 배속 & 자동재생 그룹
+        self.lbl_spd_tag = QLabel("배속:")
+        self.lbl_spd_tag.setStyleSheet("font-size: 12px; color: #E0E0E0;")
+        self.lbl_spd_tag.setToolTip("더블클릭 시 1.0x 기본 배속으로 복원")
+        self.lbl_spd_tag.installEventFilter(self)
+        playback_bar.addWidget(self.lbl_spd_tag)
+
         self.slider_preview_speed = QSlider(Qt.Orientation.Horizontal)
         self.slider_preview_speed.setRange(1, 10)  # 0.5x ~ 5.0x
         self.slider_preview_speed.setValue(2)      # 기본 1.0x
-        self.slider_preview_speed.setFixedWidth(65)
-        self.slider_preview_speed.setToolTip("미리보기 재생 배속 (0.5x ~ 5.0x)")
+        self.slider_preview_speed.setMinimumWidth(65)
+        self.slider_preview_speed.setMaximumWidth(110)
+        self.slider_preview_speed.setToolTip("미리보기 재생 배속 (0.5x ~ 5.0x, 더블클릭 시 1.0x 복원)")
         self.slider_preview_speed.valueChanged.connect(self.on_preview_speed_slider_changed)
+        self.slider_preview_speed.installEventFilter(self)
         playback_bar.addWidget(self.slider_preview_speed)
+
         self.lbl_preview_speed_val = QLabel("1.0x")
-        self.lbl_preview_speed_val.setStyleSheet("font-size: 12px; color: #FFD700; font-weight: bold; min-width: 30px;")
+        self.lbl_preview_speed_val.setStyleSheet("font-size: 12px; color: #FFD700; font-weight: bold; padding: 0 2px;")
+        self.lbl_preview_speed_val.setToolTip("더블클릭 시 1.0x 기본 배속으로 복원")
+        self.lbl_preview_speed_val.installEventFilter(self)
         playback_bar.addWidget(self.lbl_preview_speed_val)
 
-        playback_bar.addSpacing(6)
-
-        self.btn_in = QPushButton("[ 시작점")
-        self.btn_in.setToolTip("구간 시작점 설정 (단축키: I)")
-        self.btn_in.setFixedHeight(28)
-        self.btn_in.setStyleSheet("padding: 2px 6px;")
-        self.btn_in.clicked.connect(self.set_in_point)
-        playback_bar.addWidget(self.btn_in)
-
-        self.btn_out = QPushButton("] 끝점")
-        self.btn_out.setToolTip("구간 종료점 설정 (단축키: O)")
-        self.btn_out.setFixedHeight(28)
-        self.btn_out.setStyleSheet("padding: 2px 6px;")
-        self.btn_out.clicked.connect(self.set_out_point)
-        playback_bar.addWidget(self.btn_out)
-
-        self.btn_reset_range = QPushButton("🔄 초기화")
-        self.btn_reset_range.setToolTip("구간 선택 초기화")
-        self.btn_reset_range.setFixedHeight(28)
-        self.btn_reset_range.setStyleSheet("padding: 2px 6px;")
-        self.btn_reset_range.clicked.connect(self.reset_range_points)
-        playback_bar.addWidget(self.btn_reset_range)
-
-        self.btn_hotkeys = QPushButton("⌨ 단축키")
-        self.btn_hotkeys.setToolTip("키보드 단축키 안내 (F1 또는 ?)")
-        self.btn_hotkeys.setFixedHeight(28)
-        self.btn_hotkeys.setStyleSheet("padding: 2px 6px;")
-        self.btn_hotkeys.clicked.connect(self.show_hotkey_guide)
-        playback_bar.addWidget(self.btn_hotkeys)
-
-        playback_bar.addSpacing(6)
-
-        # 밝기 및 대비 슬라이더
-        lbl_b = QLabel("☀️ 밝기:")
-        lbl_b.setStyleSheet("font-size: 12px; color: #E0E0E0;")
-        playback_bar.addWidget(lbl_b)
-        self.slider_brightness = QSlider(Qt.Orientation.Horizontal)
-        self.slider_brightness.setRange(-100, 100)
-        self.slider_brightness.setValue(0)
-        self.slider_brightness.setFixedWidth(65)
-        self.slider_brightness.valueChanged.connect(self.sync_preview)
-        playback_bar.addWidget(self.slider_brightness)
-
-        lbl_c = QLabel("🌓 대비:")
-        lbl_c.setStyleSheet("font-size: 12px; color: #E0E0E0;")
-        playback_bar.addWidget(lbl_c)
-        self.slider_contrast = QSlider(Qt.Orientation.Horizontal)
-        self.slider_contrast.setRange(50, 200)
-        self.slider_contrast.setValue(100)
-        self.slider_contrast.setFixedWidth(65)
-        self.slider_contrast.valueChanged.connect(self.sync_preview)
-        playback_bar.addWidget(self.slider_contrast)
-
-        playback_bar.addSpacing(4)
-
-        # 모션 감지 및 감도 설정
-        self.chk_motion = QCheckBox("모션 감지")
-        self.chk_motion.setChecked(True)
-        self.chk_motion.stateChanged.connect(self.on_motion_chk_changed)
-        playback_bar.addWidget(self.chk_motion)
-
-        self.lbl_sensitivity_tag = QLabel("감도:")
-        self.lbl_sensitivity_tag.setStyleSheet("font-size: 12px; color: #A0A6B5;")
-        playback_bar.addWidget(self.lbl_sensitivity_tag)
-
-        self.combo_sensitivity = QComboBox()
-        for s_name in SENSITIVITY_LEVELS.keys():
-            self.combo_sensitivity.addItem(s_name)
-        self.combo_sensitivity.setCurrentText("보통")
-        self.combo_sensitivity.setFixedWidth(60)
-        self.combo_sensitivity.currentIndexChanged.connect(self.on_sensitivity_changed)
-        playback_bar.addWidget(self.combo_sensitivity)
-
-        self.btn_prev_event = QPushButton("⚡ 이전")
-        self.btn_prev_event.setFixedHeight(26)
-        self.btn_prev_event.setVisible(False)
-        self.btn_prev_event.clicked.connect(self.jump_to_prev_event)
-        playback_bar.addWidget(self.btn_prev_event)
-
-        self.btn_next_event = QPushButton("⚡ 다음")
-        self.btn_next_event.setFixedHeight(26)
-        self.btn_next_event.setVisible(False)
-        self.btn_next_event.clicked.connect(self.jump_to_next_event)
-        playback_bar.addWidget(self.btn_next_event)
-
         playback_bar.addSpacing(8)
+
         self.chk_auto_next = QCheckBox("다음 클립 자동재생")
         self.chk_auto_next.setChecked(False)  # 기본값: OFF
         self.chk_auto_next.setToolTip("재생이 끝나면 자동으로 다음 클립으로 이동합니다")
         playback_bar.addWidget(self.chk_auto_next)
 
-        playback_bar.addStretch()
+        playback_bar.addStretch(1)
+        playback_bar.addWidget(_make_v_divider())
+        playback_bar.addStretch(1)
+
+        # (우) 화면 밝기/대비 보정 & 단축키 그룹
+        self.lbl_brightness_tag = QLabel("☀️ 밝기:")
+        self.lbl_brightness_tag.setStyleSheet("font-size: 12px; color: #E0E0E0;")
+        self.lbl_brightness_tag.setToolTip("더블클릭 시 밝기 기본값(0) 복원")
+        self.lbl_brightness_tag.installEventFilter(self)
+        playback_bar.addWidget(self.lbl_brightness_tag)
+
+        self.slider_brightness = QSlider(Qt.Orientation.Horizontal)
+        self.slider_brightness.setRange(-100, 100)
+        self.slider_brightness.setValue(0)
+        self.slider_brightness.setMinimumWidth(60)
+        self.slider_brightness.setMaximumWidth(100)
+        self.slider_brightness.setToolTip("화면 밝기 조절 (-100 ~ +100, 더블클릭 시 기본값 0 복원)")
+        self.slider_brightness.valueChanged.connect(self.sync_preview)
+        self.slider_brightness.installEventFilter(self)
+        playback_bar.addWidget(self.slider_brightness)
+
+        playback_bar.addSpacing(4)
+
+        self.lbl_contrast_tag = QLabel("🌓 대비:")
+        self.lbl_contrast_tag.setStyleSheet("font-size: 12px; color: #E0E0E0;")
+        self.lbl_contrast_tag.setToolTip("더블클릭 시 대비 기본값(100%) 복원")
+        self.lbl_contrast_tag.installEventFilter(self)
+        playback_bar.addWidget(self.lbl_contrast_tag)
+
+        self.slider_contrast = QSlider(Qt.Orientation.Horizontal)
+        self.slider_contrast.setRange(50, 200)
+        self.slider_contrast.setValue(100)
+        self.slider_contrast.setMinimumWidth(60)
+        self.slider_contrast.setMaximumWidth(100)
+        self.slider_contrast.setToolTip("화면 대비 조절 (50% ~ 200%, 더블클릭 시 기본값 100% 복원)")
+        self.slider_contrast.valueChanged.connect(self.sync_preview)
+        self.slider_contrast.installEventFilter(self)
+        playback_bar.addWidget(self.slider_contrast)
+
+        playback_bar.addSpacing(6)
+
+        self.btn_hotkeys = QPushButton("⌨ 단축키")
+        self.btn_hotkeys.setToolTip("키보드 단축키 안내 (F1 또는 ?)")
+        self.btn_hotkeys.setFixedHeight(28)
+        self.btn_hotkeys.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_hotkeys.clicked.connect(self.show_hotkey_guide)
+        playback_bar.addWidget(self.btn_hotkeys)
+
         bottom_ctrl_layout.addLayout(playback_bar)
 
         right_layout.addWidget(timeline_group)
@@ -472,6 +518,103 @@ class CTDashcamStudio(QMainWindow):
             btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         self.apply_dark_theme()
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Type.MouseButtonDblClick:
+            if self.is_exporting:
+                return False
+            if obj is getattr(self, "preview_lbl", None):
+                pos = event.position().toPoint() if hasattr(event, "position") else event.pos()
+                self._handle_preview_double_click(pos)
+                return True
+            if obj in (getattr(self, "slider_brightness", None), getattr(self, "lbl_brightness_tag", None)):
+                self.slider_brightness.setValue(0)
+                return True
+            if obj in (getattr(self, "slider_contrast", None), getattr(self, "lbl_contrast_tag", None)):
+                self.slider_contrast.setValue(100)
+                return True
+            if obj in (getattr(self, "slider_preview_speed", None), getattr(self, "lbl_spd_tag", None), getattr(self, "lbl_preview_speed_val", None)):
+                self.slider_preview_speed.setValue(2)
+                return True
+        return super().eventFilter(obj, event)
+
+    def _handle_preview_double_click(self, pos):
+        """미리보기 화면 더블클릭 시 해당 슬롯 카메라 단독 뷰 전환 또는 이전 분할 뷰로 복귀."""
+        if self.is_exporting:
+            return
+
+        pm = self.preview_lbl.pixmap()
+        if pm is not None and not pm.isNull() and pm.width() > 0 and pm.height() > 0:
+            off_x = (self.preview_lbl.width() - pm.width()) / 2.0
+            off_y = (self.preview_lbl.height() - pm.height()) / 2.0
+            rx = (pos.x() - off_x) / float(pm.width())
+            ry = (pos.y() - off_y) / float(pm.height())
+        else:
+            if self.preview_lbl.width() <= 0 or self.preview_lbl.height() <= 0:
+                return
+            rx = pos.x() / float(self.preview_lbl.width())
+            ry = pos.y() / float(self.preview_lbl.height())
+
+        if rx < 0.0 or rx > 1.0 or ry < 0.0 or ry > 1.0:
+            return
+
+        cx = rx * 1920.0
+        cy = ry * 1080.0
+
+        opts = self.get_current_options()
+        has_bottom_hud = any(
+            opts.get(k) for k in ("map", "timestamp", "speed", "fsd", "turn_signal", "steering", "pedal")
+        )
+        front_h = 1080.0 - (180.0 if has_bottom_hud else 0.0)
+        if cy >= front_h:
+            return
+
+        is_single = self.current_layout_mode in [
+            "단일", "단일 카메라", "단일 카메라 (풀스크린)", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1"
+        ]
+        if is_single:
+            prev_mode = getattr(self, "_prev_multi_layout_mode", "기본 (1:3 세로배치)")
+            prev_pip = getattr(self, "_prev_pillar_pip_checked", None)
+            self.set_layout_mode(prev_mode)
+            if prev_pip is not None and self.chks["pillar_pip"].isEnabled():
+                self.chks["pillar_pip"].setChecked(prev_pip)
+            return
+
+        target_cam = None
+        is_2x2 = self.current_layout_mode in ["2x2 분할 (전후/좌우)", "2x2"]
+        if opts.get("pillar_pip", False):
+            pw = 236.0 if is_2x2 else 320.0
+            ph = 132.0 if is_2x2 else 180.0
+            lp_x, lp_y = 8.0, front_h - ph - 8.0
+            rp_x = (1920.0 if is_2x2 else 1440.0) - pw - 8.0
+            rp_y = front_h - ph - 8.0
+            if lp_x <= cx <= lp_x + pw and lp_y <= cy <= lp_y + ph:
+                target_cam = "left_pillar"
+            elif rp_x <= cx <= rp_x + pw and rp_y <= cy <= rp_y + ph:
+                target_cam = "right_pillar"
+
+        if target_cam is None:
+            if is_2x2:
+                if cx < 960.0:
+                    target_cam = "front" if cy < (front_h / 2.0) else "back"
+                else:
+                    target_cam = "left_repeater" if cy < (front_h / 2.0) else "right_repeater"
+            else:
+                if cx < 1440.0:
+                    target_cam = "front"
+                else:
+                    slot_idx = min(2, max(0, int(cy / (front_h / 3.0))))
+                    target_cam = ["back", "left_repeater", "right_repeater"][slot_idx]
+
+        if self.active_clip_list:
+            avail_cams = self.active_clip_list[0].get("cams", {})
+            if target_cam not in avail_cams:
+                return
+
+        self._prev_multi_layout_mode = self.current_layout_mode
+        self._prev_pillar_pip_checked = self.chks["pillar_pip"].isChecked()
+        self.current_single_cam = target_cam
+        self.set_layout_mode("단일")
 
     def setup_shortcuts(self):
         """ 전역 단축키 등록 (어떤 위젯에 포커스가 있든 무조건 최우선 실행) """
@@ -692,6 +835,8 @@ class CTDashcamStudio(QMainWindow):
         return f"{self.active_clip_list[0]['prefix']}_{len(self.active_clip_list)}"
 
     def on_tree_item_clicked(self, item, column):
+        if self.is_exporting:
+            return
         item_data = item.data(0, Qt.ItemDataRole.UserRole)
         if not item_data or "clip_list" not in item_data:
             return
@@ -758,6 +903,9 @@ class CTDashcamStudio(QMainWindow):
             self.total_frames = total_f
             self.is_current_sentry = item_data.get("is_sentry", False)
 
+            # 백그라운드에서 주행 경로의 OSM 미니맵 타일 선행 캐싱
+            OpenStreetMapTileLoader.prefetch_for_decoders(decoders)
+
             # 주차/센트리 및 주행 영상 모두에서 단일 카메라 모드 완벽 지원
             self.btn_layout_single.setEnabled(True)
             self.btn_layout_single.setToolTip("단일 카메라 (클릭 시 6채널 선택 팝업)")
@@ -789,6 +937,7 @@ class CTDashcamStudio(QMainWindow):
             self.chks["pillar_pip"].blockSignals(False)
 
             self.last_valid_preview_frames.clear()
+            self.last_preview_cam_frame_idx = {}
             self.current_active_clip_idx = -1
 
             if detected_fps is not None:
@@ -867,6 +1016,7 @@ class CTDashcamStudio(QMainWindow):
         self.cam_fps = {}
         self.cam_fc = {}
         self.current_cap_pos = {}
+        self.last_preview_cam_frame_idx = {}
         for k, cap in self.caps.items():
             v_fps = cap.get(cv2.CAP_PROP_FPS)
             self.cam_fps[k] = v_fps if v_fps and 10.0 <= v_fps <= 120.0 else self.fps
@@ -1028,10 +1178,16 @@ class CTDashcamStudio(QMainWindow):
             return
         self.reset_preview_privacy()
         idx = self.slider.value()
-        frames = self.read_frames_with_cache(idx, is_seeking=True)
+        # 동일 프레임에서 옵션(얼굴/번호판 모자이크, 선명화, 밝기 등)만 변경될 때는
+        # VideoCapture 재탐색(cap.set)을 하지 않고 이미 디코딩된 클린 프레임 캐시를 재사용하여
+        # 가변 프레임레이트(VFR) 리피터 영상의 프레임 튐(Jump) 현상을 원천 차단합니다.
+        frames = self.read_frames_with_cache(idx, is_seeking=False, reuse_same_frame=True)
         self.render_and_display(frames, idx)
 
-    def read_frames_with_cache(self, global_idx, is_seeking=False, skip_count=0):
+    def read_frames_with_cache(self, global_idx, is_seeking=False, skip_count=0, reuse_same_frame=False):
+        if not hasattr(self, 'last_preview_cam_frame_idx'):
+            self.last_preview_cam_frame_idx = {}
+
         clip_idx = 0
         for i in range(len(self.clip_frame_offsets) - 1):
             if self.clip_frame_offsets[i] <= global_idx < self.clip_frame_offsets[i+1]:
@@ -1052,8 +1208,23 @@ class CTDashcamStudio(QMainWindow):
         front_fps = getattr(self, 'cam_fps', {}).get('front', self.fps if self.fps > 0 else 36.0)
         t_sec = local_idx / front_fps if front_fps > 0 else 0.0
 
+        # 현재 활성 레이아웃에 실제로 표시되는 카메라만 디코딩 및 AI 처리 (불필요한 연산 차단)
+        layout_mode = getattr(self, 'current_layout_mode', "기본 (1:3 세로배치)")
+        if layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1", "단일", "단일 카메라", "단일 카메라 (풀스크린)"]:
+            active_cam_keys = {self.get_current_single_cam()}
+        else:
+            active_cam_keys = {'front', 'back', 'left_repeater', 'right_repeater'}
+            if self.chks.get("pillar_pip") and self.chks["pillar_pip"].isChecked():
+                active_cam_keys.update({'left_pillar', 'right_pillar'})
+
         frames = {}
         for k in ['front', 'back', 'left_repeater', 'right_repeater', 'left_pillar', 'right_pillar']:
+            if k not in active_cam_keys:
+                frames[k] = None
+                continue
+            if reuse_same_frame and k in self.last_valid_preview_frames and self.last_preview_cam_frame_idx.get(k) == global_idx:
+                frames[k] = self.last_valid_preview_frames[k]
+                continue
             if k in self.caps:
                 cap = self.caps[k]
                 k_fps = getattr(self, 'cam_fps', {}).get(k, front_fps)
@@ -1084,6 +1255,7 @@ class CTDashcamStudio(QMainWindow):
 
                 if ret and img is not None and img.size > 0:
                     self.last_valid_preview_frames[k] = img
+                    self.last_preview_cam_frame_idx[k] = global_idx
                     frames[k] = img
                 elif k in self.last_valid_preview_frames:
                     frames[k] = self.last_valid_preview_frames[k]
@@ -1120,11 +1292,12 @@ class CTDashcamStudio(QMainWindow):
                 pf.reset()
 
     def render_and_display(self, frames, global_idx):
+        frames = dict(frames)
         opts = self.get_current_options()
         clip_idx = self.current_active_clip_idx if self.current_active_clip_idx >= 0 else 0
         local_idx = global_idx - self.clip_frame_offsets[clip_idx]
 
-        # 프리뷰 블러 적용 (얼굴/번호판 - 카메라 채널별 독립 관리 및 4스레드 병렬 가속)
+        # 프리뷰 블러/선명화 적용 (원본 프레임 보호를 위해 복사본에 적용)
         blur_face = opts.get("blur_face", False)
         blur_plate = opts.get("blur_plate", False)
         enhance_plate = opts.get("enhance_plate", False) and not blur_plate
@@ -1147,16 +1320,17 @@ class CTDashcamStudio(QMainWindow):
                         detect_interval=4
                     )
 
+            force_detect = not (hasattr(self, 'timer') and self.timer.isActive())
             valid_cams = [k for k in frames if frames[k] is not None]
             if len(valid_cams) > 1 and hasattr(self, '_preview_pool'):
                 def _proc_cam(k):
-                    return k, self._preview_privacy_filters[k].apply(frames[k])
+                    return k, self._preview_privacy_filters[k].apply(frames[k].copy(), force_detect=force_detect)
                 results = list(self._preview_pool.map(_proc_cam, valid_cams))
                 for k, processed_frame in results:
                     frames[k] = processed_frame
             else:
                 for k in valid_cams:
-                    frames[k] = self._preview_privacy_filters[k].apply(frames[k])
+                    frames[k] = self._preview_privacy_filters[k].apply(frames[k].copy(), force_detect=force_detect)
 
         # 현재 활성 클립의 base_time을 직접 계산 (self.base_time 타이밍 의존 제거)
         clip_base_time = self.base_time  # 기본값
@@ -1181,10 +1355,16 @@ class CTDashcamStudio(QMainWindow):
         qimg = QImage(grid_rgb.data, w, h, ch * w, QImage.Format.Format_RGB888).copy()
         pixmap = QPixmap.fromImage(qimg)
 
+        is_playing = hasattr(self, 'timer') and self.timer.isActive()
+        transform_mode = (
+            Qt.TransformationMode.FastTransformation
+            if is_playing
+            else Qt.TransformationMode.SmoothTransformation
+        )
         scaled_pixmap = pixmap.scaled(
             self.preview_lbl.size(),
             Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.FastTransformation
+            transform_mode
         )
         self.preview_lbl.setPixmap(scaled_pixmap)
 
@@ -1196,6 +1376,8 @@ class CTDashcamStudio(QMainWindow):
             self.timer.stop()
             self.btn_play.setText("▶ 재생 (Space)")
             self.play_start_wall_time = None
+            if self.last_grid_image is not None:
+                self._display_grid_image(self.last_grid_image)
         else:
             if self.slider.value() >= self.total_frames - 1:
                 self.slider.setValue(0)
@@ -1211,6 +1393,8 @@ class CTDashcamStudio(QMainWindow):
         if self.timer.isActive():
             self.play_start_frame = self.slider.value()
             self.play_start_wall_time = time.perf_counter()
+        else:
+            self.sync_preview()
 
     def play_next_frame_smooth(self):
         if not self.active_clip_list or self.play_start_wall_time is None:
@@ -1414,6 +1598,8 @@ class CTDashcamStudio(QMainWindow):
 
     def on_export_speed_changed(self):
         self.update_fps_options()
+        if not (hasattr(self, 'timer') and self.timer.isActive()):
+            self.sync_preview()
 
     def update_estimated_size(self):
         if not self.active_clip_list or self.total_frames <= 0:
@@ -1474,10 +1660,6 @@ class CTDashcamStudio(QMainWindow):
 
         self.lbl_est_size.setText(f"예상 크기: 약 {est_mb:.1f} MB")
 
-
-
-
-
     def get_current_options(self):
         opts = {k: v.isChecked() for k, v in self.chks.items()}
         opts["layout"] = getattr(self, 'current_layout_mode', "기본 (1:3 세로배치)")
@@ -1485,7 +1667,9 @@ class CTDashcamStudio(QMainWindow):
         exp_speed_str = self.combo_export_speed.currentText()
         m = re.search(r'([\d\.]+)x', exp_speed_str)
         opts["export_speed"] = float(m.group(1)) if m else 1.0
-        
+        opts["preview_speed"] = (self.slider_preview_speed.value() * 0.5) if hasattr(self, 'slider_preview_speed') else 1.0
+        opts["is_preview"] = not getattr(self, 'is_exporting', False)
+
         opts["brightness"] = self.slider_brightness.value()
         opts["contrast"] = self.slider_contrast.value() / 100.0
         return opts
@@ -1891,6 +2075,7 @@ class CTDashcamStudio(QMainWindow):
 
     def set_controls_enabled(self, enabled):
         self.btn_load.setEnabled(enabled)
+        self.tree_explorer.setEnabled(enabled)
         self.combo_res.setEnabled(enabled)
         self.btn_layout_1to3.setEnabled(enabled)
         self.btn_layout_2x2.setEnabled(enabled)
@@ -1900,6 +2085,7 @@ class CTDashcamStudio(QMainWindow):
         self.combo_export_speed.setEnabled(enabled)
         self.combo_fps.setEnabled(enabled)
 
+        self.slider.setEnabled(enabled)
         self.btn_prev.setEnabled(enabled)
         self.btn_play.setEnabled(enabled)
         self.btn_next.setEnabled(enabled)
@@ -1908,6 +2094,30 @@ class CTDashcamStudio(QMainWindow):
         self.btn_reset_range.setEnabled(enabled)
         if hasattr(self, 'slider_preview_speed'):
             self.slider_preview_speed.setEnabled(enabled)
+        if hasattr(self, 'slider_brightness'):
+            self.slider_brightness.setEnabled(enabled)
+        if hasattr(self, 'slider_contrast'):
+            self.slider_contrast.setEnabled(enabled)
+        if hasattr(self, 'chk_motion'):
+            self.chk_motion.setEnabled(enabled)
+        if hasattr(self, 'combo_sensitivity'):
+            self.combo_sensitivity.setEnabled(enabled)
+        if hasattr(self, 'btn_prev_event'):
+            self.btn_prev_event.setEnabled(enabled)
+        if hasattr(self, 'btn_next_event'):
+            self.btn_next_event.setEnabled(enabled)
+        if hasattr(self, 'chk_auto_next'):
+            self.chk_auto_next.setEnabled(enabled)
+        if hasattr(self, 'chks'):
+            for k, chk in self.chks.items():
+                if k == "pillar_pip" and enabled:
+                    has_pillar = any(
+                        "left_pillar" in c.get("cams", {}) or "right_pillar" in c.get("cams", {})
+                        for c in self.active_clip_list
+                    )
+                    chk.setEnabled(has_pillar)
+                else:
+                    chk.setEnabled(enabled)
 
     def on_click_export_button(self):
         if not self.active_clip_list:
@@ -1916,6 +2126,8 @@ class CTDashcamStudio(QMainWindow):
 
         if self.is_exporting:
             if hasattr(self, 'worker') and self.worker:
+                self.btn_export.setText("⏳ 취소 중...")
+                self.btn_export.setEnabled(False)
                 self.worker.stop()
             return
 
@@ -2026,8 +2238,9 @@ class CTDashcamStudio(QMainWindow):
     def cleanup_export_ui(self):
         self.is_exporting = False
         self.set_controls_enabled(True)
+        self.btn_export.setEnabled(True)
         self.btn_export.setText("선택 구간 내보내기 (MP4)")
-        self.btn_export.setStyleSheet("")
+        self.btn_export.setStyleSheet("background-color: #0078D7; color: #FFFFFF; font-weight: bold; font-size: 13px;")
         self.pbar.setValue(0)
 
         idx = self.slider.value()
@@ -2067,6 +2280,8 @@ class CTDashcamStudio(QMainWindow):
 
     def closeEvent(self, event):
         self.stop_motion_scanner()
+        if hasattr(self, 'checker') and self.checker and self.checker.isRunning():
+            self.checker.wait(500)
         if hasattr(self, 'update_checker') and self.update_checker and self.update_checker.isRunning():
             self.update_checker.wait(500)
         if hasattr(self, 'loader_worker') and self.loader_worker and self.loader_worker.isRunning():

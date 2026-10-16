@@ -1,9 +1,13 @@
 import math
+import threading
 import urllib.request
+from collections import OrderedDict
 import numpy as np
 import cv2
 
-OSM_TILE_CACHE = {}
+OSM_TILE_CACHE = OrderedDict()
+_TILE_CACHE_LOCK = threading.Lock()
+_MAX_TILE_CACHE_SIZE = 600
 
 
 class OpenStreetMapTileLoader:
@@ -18,21 +22,68 @@ class OpenStreetMapTileLoader:
     @classmethod
     def fetch_tile(cls, x, y, zoom):
         key = (zoom, x, y)
-        if key in OSM_TILE_CACHE:
-            return OSM_TILE_CACHE[key]
+        with _TILE_CACHE_LOCK:
+            if key in OSM_TILE_CACHE:
+                OSM_TILE_CACHE.move_to_end(key)
+                return OSM_TILE_CACHE[key]
 
         url = f"https://tile.openstreetmap.org/{zoom}/{x}/{y}.png"
         req = urllib.request.Request(url, headers={'User-Agent': 'TeslaDashcamStudioPro/1.0'})
         try:
-            with urllib.request.urlopen(req, timeout=0.2) as resp:
+            with urllib.request.urlopen(req, timeout=0.25) as resp:
                 arr = np.frombuffer(resp.read(), dtype=np.uint8)
                 img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
                 if img is not None:
-                    OSM_TILE_CACHE[key] = img
+                    with _TILE_CACHE_LOCK:
+                        OSM_TILE_CACHE[key] = img
+                        OSM_TILE_CACHE.move_to_end(key)
+                        while len(OSM_TILE_CACHE) > _MAX_TILE_CACHE_SIZE:
+                            OSM_TILE_CACHE.popitem(last=False)
                     return img
         except Exception:
             pass
         return None
+
+    @classmethod
+    def prefetch_for_decoders(cls, decoders, zoom=16):
+        """클립 로드 시 백그라운드에서 GPS 경로 상의 타일을 선행 캐싱하여 재생 중 네트워크 블로킹 방지."""
+        if not decoders:
+            return
+
+        tile_coords = []
+        seen = set()
+        for dec in decoders:
+            if not dec or not getattr(dec, "has_sei_data", False):
+                continue
+            cache = getattr(dec, "telemetry_cache", {})
+            # 1초(약 36프레임) 간격으로 샘플링하여 경로 타일 추출
+            for f_idx in range(0, max(cache.keys(), default=0) + 1, 30):
+                t = cache.get(f_idx)
+                if not t:
+                    continue
+                lat, lon = t.get("lat", 0.0), t.get("lon", 0.0)
+                if lat == 0.0 and lon == 0.0:
+                    continue
+                px, py = cls.latlon_to_pixel(lat, lon, zoom)
+                tx, ty = int(px // 256), int(py // 256)
+                if (tx, ty) not in seen:
+                    seen.add((tx, ty))
+                    for dx in (-1, 0, 1):
+                        for dy in (-1, 0, 1):
+                            k = (zoom, tx + dx, ty + dy)
+                            with _TILE_CACHE_LOCK:
+                                cached = k in OSM_TILE_CACHE
+                            if not cached and (tx + dx, ty + dy) not in tile_coords:
+                                tile_coords.append((tx + dx, ty + dy))
+
+        if not tile_coords:
+            return
+
+        def _worker():
+            for tx, ty in tile_coords[:90]:
+                cls.fetch_tile(tx, ty, zoom)
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     _CAR_ASSET_CACHE = None
 

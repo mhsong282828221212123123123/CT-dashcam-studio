@@ -892,14 +892,14 @@ class PrivacyFilter:
             )
         return frame
 
-    def apply(self, frame):
+    def apply(self, frame, force_detect=False):
         """단일 프레임 블러 적용 (실시간 프리뷰 등)."""
         if not self.enabled or frame is None or frame.size == 0:
             return frame
 
         self._frame_count += 1
         # 키프레임(detect_interval 주기) 여부 결정
-        should_detect = (self.detect_interval <= 1) or (self._frame_count % self.detect_interval == 1)
+        should_detect = force_detect or (self.detect_interval <= 1) or (self._frame_count % self.detect_interval == 1)
         active_boxes = []
         enhance_boxes = []
         frame_gray = None

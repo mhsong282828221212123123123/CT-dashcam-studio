@@ -44,6 +44,19 @@ class ExportWorker(QThread):
                 self.error.emit("내장 FFmpeg 바이너리를 찾을 수 없습니다. 렌더링을 취소합니다.")
                 return
 
+            self.options = dict(self.options)
+            self.options["is_preview"] = False
+
+            out_w = self.target_size[0]
+            if out_w >= 2560:
+                crf_val = "21"   # QHD 최고화질: 번호판/야간 디테일 극대화
+            elif out_w >= 1920:
+                crf_val = "23"   # FHD 권장 표준: 선명도와 용량 균형
+            elif out_w >= 1280:
+                crf_val = "25"   # HD 용량 절감
+            else:
+                crf_val = "26"   # Compact 모바일용
+
             cmd = [
                 ffmpeg_exe_path, "-y",
                 "-f", "rawvideo",
@@ -54,7 +67,7 @@ class ExportWorker(QThread):
                 "-i", "-",
                 "-c:v", "libx264",
                 "-preset", "fast",
-                "-crf", "26",
+                "-crf", crf_val,
                 "-pix_fmt", "yuv420p",
                 self.out_path
             ]
@@ -129,6 +142,8 @@ class ExportWorker(QThread):
 
                 curr_f = float(start_f)
                 last_valid_frames = {}
+                last_proc_frames = {}
+                last_proc_k_f = {}
                 last_emitted_pct = -1
 
                 while curr_f <= end_f:
@@ -138,6 +153,7 @@ class ExportWorker(QThread):
                     target_f = int(curr_f)
                     t_sec = target_f / front_fps if front_fps > 0 else 0.0
                     frames = {}
+                    frame_is_new = {}
 
                     # 레이아웃에 필요한 카메라만 선별하여 불필요한 디코딩 및 블러 연산 완전 차단
                     layout_mode = self.options.get("layout", "기본 (1:3 세로배치)")
@@ -146,6 +162,8 @@ class ExportWorker(QThread):
                         active_cam_keys = {single_cam}
                     else:
                         active_cam_keys = {'front', 'back', 'left_repeater', 'right_repeater'}
+                        if self.options.get("pillar_pip", False):
+                            active_cam_keys.update({'left_pillar', 'right_pillar'})
 
                     for k in ['front', 'back', 'left_repeater', 'right_repeater', 'left_pillar', 'right_pillar']:
                         if k not in active_cam_keys or k not in cams:
@@ -160,34 +178,43 @@ class ExportWorker(QThread):
                         pos = current_cap_pos.get(k, -1)
                         img = None
                         ret = False
+                        is_new_read = False
 
                         if abs(target_k_f - pos) > 15 or target_k_f < pos:
                             cap.set(cv2.CAP_PROP_POS_FRAMES, target_k_f)
                             ret, img = cap.read()
                             current_cap_pos[k] = target_k_f + 1
+                            is_new_read = True
                         elif target_k_f == pos:
                             ret, img = cap.read()
                             current_cap_pos[k] = pos + 1
+                            is_new_read = True
                         elif target_k_f > pos:
                             while pos < target_k_f:
                                 cap.grab()
                                 pos += 1
                             ret, img = cap.read()
                             current_cap_pos[k] = target_k_f + 1
+                            is_new_read = True
                         else:
-                            # target_k_f == pos - 1
+                            # target_k_f == pos - 1 (슬로우 배속/고FPS로 인한 동일 프레임 참조)
                             img = last_valid_frames.get(k)
                             ret = img is not None
 
                         if ret and img is not None and img.size > 0:
-                            last_valid_frames[k] = img
+                            if is_new_read:
+                                last_valid_frames[k] = img
                             frames[k] = img
+                            frame_is_new[k] = (last_proc_k_f.get(k) != target_k_f)
+                            last_proc_k_f[k] = target_k_f
                         elif k in last_valid_frames:
                             frames[k] = last_valid_frames[k]
+                            frame_is_new[k] = False
                         else:
                             frames[k] = None
+                            frame_is_new[k] = False
 
-                    # 블러 필터 적용 (4개 카메라 병렬 스레드 가속 + 소급 블러 지원 + detect_interval=2 최적화)
+                    # 블러/선명화 필터 적용 (새 프레임만 연산하고 반복 프레임은 결과 캐시 재사용하여 중복 보정/과부하 차단)
                     if privacy_enabled:
                         valid_keys = [k for k in frames if frames[k] is not None]
                         for k in valid_keys:
@@ -202,11 +229,14 @@ class ExportWorker(QThread):
                                 camera_buffers[k] = []
 
                         def _proc_cam(k):
+                            if not frame_is_new.get(k, True) and k in last_proc_frames:
+                                return k, last_proc_frames[k]
                             buf = camera_buffers[k]
-                            processed = privacy_filters[k].apply_with_backfill(frames[k], buf)
+                            processed = privacy_filters[k].apply_with_backfill(frames[k].copy(), buf)
                             buf.append(processed)
                             if len(buf) > 4:
                                 buf.pop(0)
+                            last_proc_frames[k] = processed
                             return k, processed
 
                         if len(valid_keys) > 1 and privacy_executor is not None:

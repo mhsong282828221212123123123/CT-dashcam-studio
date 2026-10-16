@@ -1,12 +1,14 @@
 import os
 import struct
 import math
+import bisect
 
 
 class RealTeslaSEIDecoder:
     def __init__(self, mp4_path):
         self.mp4_path = mp4_path
         self.telemetry_cache = {}
+        self._sorted_keys = []
         self.has_sei_data = False
         self.max_speed_kmh = 0
         self.parse_mp4_sei()
@@ -304,6 +306,8 @@ class RealTeslaSEIDecoder:
 
                     frame_no += 1
 
+                self._sorted_keys = sorted(self.telemetry_cache.keys())
+
         except Exception as e:
             print(f"[!] SEI Parse Notice: {e}")
 
@@ -312,7 +316,16 @@ class RealTeslaSEIDecoder:
             return self.telemetry_cache[frame_idx]
 
         if self.has_sei_data and self.telemetry_cache:
-            closest_idx = min(self.telemetry_cache.keys(), key=lambda k: abs(k - frame_idx))
+            keys = self._sorted_keys if getattr(self, "_sorted_keys", None) else sorted(self.telemetry_cache.keys())
+            pos = bisect.bisect_left(keys, frame_idx)
+            if pos == 0:
+                closest_idx = keys[0]
+            elif pos >= len(keys):
+                closest_idx = keys[-1]
+            else:
+                before = keys[pos - 1]
+                after = keys[pos]
+                closest_idx = before if (frame_idx - before) <= (after - frame_idx) else after
             return self.telemetry_cache[closest_idx]
 
         return {

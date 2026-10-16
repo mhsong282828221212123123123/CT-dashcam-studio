@@ -6,49 +6,63 @@ from core.map_loader import OpenStreetMapTileLoader
 
 
 class OverlayRenderer:
+    _STEERING_ASSET_CACHE = {}
+    _FONT_CACHE = {}
+
     @classmethod
-    def draw_rotated_steering(cls, canvas, center, angle_deg, scale=1.0):
-        wheel_size = max(20, int(90 * scale))
-        
-        # 4x 슈퍼샘플링 고해상도 렌더링으로 원형 왜곡 및 계단 현상 방지
-        scale_factor = 4
-        canvas_size = wheel_size * scale_factor
+    def _get_base_steering_asset(cls, canvas_size):
+        if canvas_size in cls._STEERING_ASSET_CACHE:
+            return cls._STEERING_ASSET_CACHE[canvas_size]
+
         cx, cy = canvas_size // 2, canvas_size // 2
-        
         img = np.zeros((canvas_size, canvas_size, 4), dtype=np.uint8)
-        
+
         radius = int(canvas_size * 0.42)
         rim_thick = max(2, int(canvas_size * 0.075))
-        
+
         # 1. 외곽 원형 림 (Rim)
         cv2.circle(img, (cx, cy), radius, (210, 215, 220, 255), rim_thick, cv2.LINE_AA)
         cv2.circle(img, (cx, cy), radius + rim_thick // 2, (70, 75, 80, 255), max(1, int(canvas_size * 0.008)), cv2.LINE_AA)
         cv2.circle(img, (cx, cy), radius - rim_thick // 2, (70, 75, 80, 255), max(1, int(canvas_size * 0.008)), cv2.LINE_AA)
-        
+
         # 2. 중앙 허브 (Hub)
         hub_radius = int(canvas_size * 0.18)
         cv2.circle(img, (cx, cy), hub_radius, (35, 38, 42, 255), -1, cv2.LINE_AA)
         cv2.circle(img, (cx, cy), hub_radius, (160, 165, 170, 255), max(2, int(canvas_size * 0.015)), cv2.LINE_AA)
-        
+
         # 3. 3방향 스포크 (Spokes)
         spoke_thick = max(2, int(canvas_size * 0.06))
         inner_rim_r = radius - rim_thick // 2
-        
+
         # 좌측 수평 스포크
         cv2.line(img, (cx - inner_rim_r, cy), (cx - hub_radius, cy), (140, 145, 150, 255), spoke_thick, cv2.LINE_AA)
         # 우측 수평 스포크
         cv2.line(img, (cx + hub_radius, cy), (cx + inner_rim_r, cy), (140, 145, 150, 255), spoke_thick, cv2.LINE_AA)
         # 하단 수직 스포크
         cv2.line(img, (cx, cy + hub_radius), (cx, cy + inner_rim_r), (140, 145, 150, 255), spoke_thick, cv2.LINE_AA)
-        
+
         # 4. 허브 중앙 미니 링
         cv2.circle(img, (cx, cy), int(hub_radius * 0.6), (100, 105, 110, 255), -1, cv2.LINE_AA)
         cv2.circle(img, (cx, cy), int(hub_radius * 0.6), (200, 205, 210, 255), max(1, int(canvas_size * 0.012)), cv2.LINE_AA)
-        
+
+        cls._STEERING_ASSET_CACHE[canvas_size] = img
+        return img
+
+    @classmethod
+    def draw_rotated_steering(cls, canvas, center, angle_deg, scale=1.0):
+        wheel_size = max(20, int(90 * scale))
+
+        # 4x 슈퍼샘플링 고해상도 렌더링으로 원형 왜곡 및 계단 현상 방지
+        scale_factor = 4
+        canvas_size = wheel_size * scale_factor
+        cx, cy = canvas_size // 2, canvas_size // 2
+
+        img = cls._get_base_steering_asset(canvas_size)
+
         # 실제 조향 방향과 일치하도록 -angle_deg 적용
         M = cv2.getRotationMatrix2D((cx, cy), -angle_deg, 1.0)
         rotated = cv2.warpAffine(img, M, (canvas_size, canvas_size), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
-        
+
         # INTER_AREA로 다운샘플링하여 완벽한 안티에일리어싱 적용
         wheel_img = cv2.resize(rotated, (wheel_size, wheel_size), interpolation=cv2.INTER_AREA)
         
@@ -135,7 +149,36 @@ class OverlayRenderer:
         cv2.putText(frame, f"{val_percent}%", (x - int(4 * scale), y + h + int(18 * scale)), cv2.FONT_HERSHEY_SIMPLEX, f2, (160, 160, 160), thick)
 
     @staticmethod
-    def draw_sub_slot_cover(canvas, x, y, w, h, frame, label, scale=1.0):
+    def _draw_badge(canvas, x, y, label, scale=1.0, text_color=(0, 230, 255), border_color=(55, 60, 70),
+                    font_scale_mult=0.44, alpha=0.68, align_right_x=None):
+        font_scale = max(0.28, font_scale_mult * scale)
+        thick_txt = max(1, int(round(1.0 * scale)))
+        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thick_txt)
+
+        pad_x = max(6, int(10 * scale))
+        tag_w = max(int(88 * scale), tw + pad_x * 2)
+        tag_h = max(int(22 * scale), th + int(12 * scale))
+
+        if align_right_x is not None:
+            x = int(align_right_x - tag_w)
+
+        ch_h, ch_w = canvas.shape[:2]
+        x1, y1 = max(0, int(x)), max(0, int(y))
+        x2, y2 = min(ch_w, int(x + tag_w)), min(ch_h, int(y + tag_h))
+
+        if x1 < x2 and y1 < y2:
+            roi = canvas[y1:y2, x1:x2]
+            bg = np.full_like(roi, (12, 14, 18), dtype=np.uint8)
+            cv2.addWeighted(bg, alpha, roi, 1.0 - alpha, 0, dst=roi)
+            cv2.rectangle(canvas, (x1, y1), (x2, y2), border_color, max(1, int(1 * scale)))
+
+        text_x = int(x + pad_x)
+        text_y = int(y + (tag_h + th) // 2 - max(1, int(1 * scale)))
+        cv2.putText(canvas, label, (text_x, text_y),
+                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, text_color, thick_txt, cv2.LINE_AA)
+
+    @classmethod
+    def draw_sub_slot_cover(cls, canvas, x, y, w, h, frame, label, scale=1.0):
         if frame is not None and frame.size > 0:
             fh, fw = frame.shape[:2]
             slot_aspect = w / h
@@ -150,59 +193,55 @@ class OverlayRenderer:
                 start_y = (fh - crop_h) // 2
                 cropped = frame[start_y:start_y+crop_h, :]
 
-            interp = cv2.INTER_LINEAR if w > 900 else cv2.INTER_NEAREST
+            interp = cv2.INTER_AREA if w < cropped.shape[1] else cv2.INTER_LINEAR
             resized = cv2.resize(cropped, (w, h), interpolation=interp)
             canvas[y:y+h, x:x+w] = resized
         else:
             cv2.rectangle(canvas, (x, y), (x+w, y+h), (20, 22, 26), -1)
             cv2.putText(canvas, "NO CAMERA", (x + int(w * 0.28), y + int(h * 0.58)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.45 * scale, (60, 65, 75), 1)
-            
-        tag_w = int(140 * scale)
-        tag_h = int(24 * scale)
-        # 반투명 배경 배지 스타일
-        cv2.rectangle(canvas, (x + 6, y + 6), (x + 6 + tag_w, y + 6 + tag_h), (12, 14, 18), -1)
-        cv2.rectangle(canvas, (x + 6, y + 6), (x + 6 + tag_w, y + 6 + tag_h), (55, 60, 70), 1)
-        cv2.putText(canvas, label, (x + 12, y + int(23 * scale)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.44 * scale, (0, 230, 255), 1, cv2.LINE_AA)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45 * scale, (60, 65, 75), 1, cv2.LINE_AA)
+
+        cls._draw_badge(canvas, x + int(6 * scale), y + int(6 * scale), label, scale=scale)
         cv2.rectangle(canvas, (x, y), (x+w, y+h), (40, 45, 50), 1)
 
-    @staticmethod
-    def apply_rendering_overlay(grid_img, progress_pct):
+    @classmethod
+    def apply_rendering_overlay(cls, grid_img, progress_pct):
         h, w = grid_img.shape[:2]
-        
+
         white_layer = np.full_like(grid_img, 255)
         blended = cv2.addWeighted(white_layer, 0.55, grid_img, 0.45, 0)
-        
+
         box_w, box_h = int(680 * (w / 1920.0)), int(180 * (h / 1080.0))
         cx, cy = w // 2, h // 2
         x1, y1 = cx - box_w // 2, cy - box_h // 2
         x2, y2 = cx + box_w // 2, cy + box_h // 2
-        
+
         cv2.rectangle(blended, (x1, y1), (x2, y2), (18, 22, 28), -1)
         cv2.rectangle(blended, (x1, y1), (x2, y2), (0, 200, 255), max(2, int(3 * (w / 1920.0))))
-        
+
         text = f"영상 저장 렌더링 중... {progress_pct}%"
         font_size = int(36 * (w / 1920.0))
-        
+
         try:
             img_pil = Image.fromarray(cv2.cvtColor(blended, cv2.COLOR_BGR2RGB))
             draw = ImageDraw.Draw(img_pil)
-            
-            font_paths = [
-                "c:/windows/fonts/malgun.ttf",
-                "c:/windows/fonts/gulim.ttc",
-                "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
-                "/System/Library/Fonts/AppleSDGothicNeo.ttc"
-            ]
-            font = None
-            for fp in font_paths:
-                try:
-                    font = ImageFont.truetype(fp, font_size)
-                    break
-                except Exception:
-                    pass
-                    
+
+            font = cls._FONT_CACHE.get(font_size)
+            if font is None:
+                font_paths = [
+                    "c:/windows/fonts/malgun.ttf",
+                    "c:/windows/fonts/gulim.ttc",
+                    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+                    "/System/Library/Fonts/AppleSDGothicNeo.ttc"
+                ]
+                for fp in font_paths:
+                    try:
+                        font = ImageFont.truetype(fp, font_size)
+                        cls._FONT_CACHE[font_size] = font
+                        break
+                    except Exception:
+                        pass
+
             if font is not None:
                 bbox = draw.textbbox((0, 0), text, font=font)
                 tw = bbox[2] - bbox[0]
@@ -223,36 +262,40 @@ class OverlayRenderer:
         brightness = options.get("brightness", 0)
         contrast = options.get("contrast", 1.0)
         if brightness != 0 or contrast != 1.0:
-            for k, img in frames.items():
-                if img is not None and img.size > 0:
-                    frames[k] = cv2.convertScaleAbs(img, alpha=contrast, beta=brightness)
+            frames = {
+                k: (cv2.convertScaleAbs(img, alpha=contrast, beta=brightness) if (img is not None and img.size > 0) else img)
+                for k, img in frames.items()
+            }
 
-        bottom_h = int(180 * scale)
+        has_bottom_hud = any(
+            options.get(k) for k in ("map", "timestamp", "speed", "fsd", "turn_signal", "steering", "pedal")
+        )
+        bottom_h = int(180 * scale) if has_bottom_hud else 0
         front_h = out_h - bottom_h
         sub_w = int(480 * scale)
         front_w_orig = out_w - sub_w
 
         canvas = np.zeros((out_h, out_w, 3), dtype=np.uint8)
-        
+
         layout_mode = options.get("layout", "기본 (1:3 세로배치)")
-        
+
         if layout_mode == "2x2 분할 (전후/좌우)" or layout_mode == "2x2":
             half_w = out_w // 2
             half_h = front_h // 2
-            
+
             # 4분할 슬롯 렌더링
             cls.draw_sub_slot_cover(canvas, 0, 0, half_w, half_h, frames.get('front'), "FRONT", scale)
             cls.draw_sub_slot_cover(canvas, 0, half_h, half_w, front_h - half_h, frames.get('back'), "REAR", scale)
             cls.draw_sub_slot_cover(canvas, half_w, 0, out_w - half_w, half_h, frames.get('left_repeater'), "LEFT REPEATER", scale)
             cls.draw_sub_slot_cover(canvas, half_w, half_h, out_w - half_w, front_h - half_h, frames.get('right_repeater'), "RIGHT REPEATER", scale)
-            
+
             # 2x2 분할 중앙 십자(+) 구분선 (미려한 다크 슬레이트 보더)
             border_c = (55, 60, 70)
             thick_grid = max(2, int(2.5 * scale))
             cv2.line(canvas, (half_w, 0), (half_w, front_h), border_c, thick_grid)
             cv2.line(canvas, (0, half_h), (out_w, half_h), border_c, thick_grid)
-            
-            sp_x = out_w - int(130 * scale) - int(8 * scale)
+
+            sp_right_x = out_w - int(8 * scale)
 
         elif layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1", "단일", "단일 카메라", "단일 카메라 (풀스크린)"]:
             # 단일 카메라 풀스크린 렌더링
@@ -267,7 +310,7 @@ class OverlayRenderer:
             }
             label = cam_label_map.get(single_cam, single_cam.upper())
             cls.draw_sub_slot_cover(canvas, 0, 0, out_w, front_h, frames.get(single_cam), label, scale)
-            sp_x = out_w - int(130 * scale) - int(8 * scale)
+            sp_right_x = out_w - int(8 * scale)
 
         else:
             # 기본 (1:3 세로배치)
@@ -286,13 +329,10 @@ class OverlayRenderer:
                     sy = (fh - crop_h) // 2
                     cropped = f_front[sy:sy+crop_h, :]
 
-                canvas[0:front_h, 0:front_w] = cv2.resize(cropped, (front_w, front_h), interpolation=cv2.INTER_LINEAR)
-            
-            tag_w = int(140 * scale)
-            tag_h = int(24 * scale)
-            cv2.rectangle(canvas, (8, 8), (8 + tag_w, 8 + tag_h), (12, 14, 18), -1)
-            cv2.rectangle(canvas, (8, 8), (8 + tag_w, 8 + tag_h), (55, 60, 70), 1)
-            cv2.putText(canvas, "FRONT MAIN", (14, int(24 * scale)), cv2.FONT_HERSHEY_SIMPLEX, 0.44 * scale, (0, 230, 255), 1, cv2.LINE_AA)
+                interp_front = cv2.INTER_AREA if front_w < cropped.shape[1] else cv2.INTER_LINEAR
+                canvas[0:front_h, 0:front_w] = cv2.resize(cropped, (front_w, front_h), interpolation=interp_front)
+
+            cls._draw_badge(canvas, int(8 * scale), int(8 * scale), "FRONT MAIN", scale=scale)
 
             sub_configs = [
                 ("REAR", frames.get('back')),
@@ -307,25 +347,36 @@ class OverlayRenderer:
                 sy = i * sub_h_single
                 sh = sub_h_single if i < num_slots - 1 else (front_h - sy)
                 cls.draw_sub_slot_cover(canvas, front_w, sy, sub_w, sh, f_img, label, scale)
-            
-            sp_x = front_w - int(130 * scale) - int(8 * scale)
+
+            sp_right_x = front_w - int(8 * scale)
 
         export_speed = float(options.get("export_speed", 1.0))
-        if abs(export_speed - 1.0) > 0.01:
-            speed_text = f"{export_speed:.1f}x SPEED"
-            sp_tag_w = int(130 * scale)
-            sp_tag_h = int(28 * scale)
-            sp_y = int(8 * scale)
+        preview_speed = float(options.get("preview_speed", 1.0))
+        is_preview = bool(options.get("is_preview", False))
+        speed_text = None
+        if is_preview:
+            if abs(export_speed - 1.0) > 0.01 and abs(preview_speed - 1.0) > 0.01:
+                speed_text = f"VIEW {preview_speed:.1f}x | SAVE {export_speed:.1f}x"
+            elif abs(export_speed - 1.0) > 0.01:
+                speed_text = f"SAVE {export_speed:.1f}x SPEED"
+            elif abs(preview_speed - 1.0) > 0.01:
+                speed_text = f"VIEW {preview_speed:.1f}x"
+        else:
+            if abs(export_speed - 1.0) > 0.01:
+                speed_text = f"{export_speed:.1f}x SPEED"
 
-            cv2.rectangle(canvas, (sp_x, sp_y), (sp_x + sp_tag_w, sp_y + sp_tag_h), (10, 12, 16), -1)
-            cv2.rectangle(canvas, (sp_x, sp_y), (sp_x + sp_tag_w, sp_y + sp_tag_h), (0, 230, 255), max(1, int(1.5 * scale)))
-            cv2.putText(canvas, speed_text, (sp_x + int(10 * scale), sp_y + int(20 * scale)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.52 * scale, (0, 230, 255), max(1, int(2 * scale)))
+        if speed_text:
+            cls._draw_badge(
+                canvas, 0, int(8 * scale), speed_text, scale=scale,
+                text_color=(0, 230, 255), border_color=(0, 230, 255),
+                font_scale_mult=0.50, alpha=0.76, align_right_x=sp_right_x
+            )
 
         show_pillar_pip = options.get("pillar_pip", False)
         if show_pillar_pip:
-            pillar_w = int(320 * scale)
-            pillar_h = int(180 * scale)
+            is_2x2 = layout_mode in ["2x2 분할 (전후/좌우)", "2x2"]
+            pillar_w = int((236 if is_2x2 else 320) * scale)
+            pillar_h = int((132 if is_2x2 else 180) * scale)
 
             if 'left_pillar' in frames:
                 lp_x = int(8 * scale)
@@ -333,12 +384,19 @@ class OverlayRenderer:
                 cls.draw_sub_slot_cover(canvas, lp_x, lp_y, pillar_w, pillar_h, frames.get('left_pillar'), "LEFT PILLAR", scale)
 
             if 'right_pillar' in frames:
-                if layout_mode in ["2x2 분할 (전후/좌우)", "2x2", "전면 단독 (전방 풀스크린)", "전면 단독", "1:1", "단일", "단일 카메라", "단일 카메라 (풀스크린)"]:
+                if is_2x2 or layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1", "단일", "단일 카메라", "단일 카메라 (풀스크린)"]:
                     rp_x = out_w - pillar_w - int(8 * scale)
                 else:
                     rp_x = front_w_orig - pillar_w - int(8 * scale)
                 rp_y = front_h - pillar_h - int(8 * scale)
                 cls.draw_sub_slot_cover(canvas, rp_x, rp_y, pillar_w, pillar_h, frames.get('right_pillar'), "RIGHT PILLAR", scale)
+
+        if not has_bottom_hud:
+            wm_x = out_w - int(145 * scale)
+            wm_y = out_h - int(10 * scale)
+            cv2.putText(canvas, "Companion Turret", (wm_x, wm_y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.40 * scale, (140, 145, 155), 1, cv2.LINE_AA)
+            return canvas
 
         canvas[front_h:out_h, 0:out_w] = (16, 18, 22)
         cv2.line(canvas, (0, front_h), (out_w, front_h), (60, 60, 60), max(1, int(2*scale)))
@@ -364,56 +422,66 @@ class OverlayRenderer:
         thick_num = max(2, int(3 * scale))
         time_sec = frame_idx / fps
 
-        lbl_y = front_h + int(42 * scale)
-        val_y = front_h + int(118 * scale)
-        mid_y = front_h + int(100 * scale)
+        # 수직 정렬: 페달 퍼센트 텍스트와 하단 워터마크가 절대 간섭하지 않도록 정밀 배치
+        lbl_y = front_h + int(36 * scale)
+        val_y = front_h + int(106 * scale)
+        mid_y = front_h + int(90 * scale)
+        sub_y = front_h + int(146 * scale)
 
-        lbl_scale = 0.70 * scale
+        lbl_scale = 0.68 * scale
         lbl_color = (185, 185, 190)
 
-        # 미니맵 유무에 따른 6개 컬럼 최적 가로 균등 분배 (Space-Between)
-        if options.get("map"):
-            # 남은 1490px에 균등 분배 (430px ~ 1920px)
-            x_time = offset_x + int(24 * scale)
-            x_speed = offset_x + int(330 * scale)
-            x_ap = offset_x + int(560 * scale)
-            x_blinker_lbl = offset_x + int(810 * scale)
-            x_blinker_center = offset_x + int(880 * scale)
-            x_steer_lbl = offset_x + int(1020 * scale)
-            x_steer_wheel = offset_x + int(1075 * scale)
-            x_steer_val = offset_x + int(1135 * scale)
-            x_pedal_lbl = offset_x + int(1290 * scale)
-            x_pedal_acc = offset_x + int(1300 * scale)
-            x_pedal_brk = offset_x + int(1380 * scale)
-        else:
-            # 전체 1920px에 균등 분배 (0px ~ 1920px)
-            x_time = int(50 * scale)
-            x_speed = int(440 * scale)
-            x_ap = int(740 * scale)
-            x_blinker_lbl = int(1050 * scale)
-            x_blinker_center = int(1120 * scale)
-            x_steer_lbl = int(1310 * scale)
-            x_steer_wheel = int(1370 * scale)
-            x_steer_val = int(1430 * scale)
-            x_pedal_lbl = int(1650 * scale)
-            x_pedal_acc = int(1660 * scale)
-            x_pedal_brk = int(1740 * scale)
+        # 활성화된 오버레이 컬럼만 수집하여 가용 가로 폭(offset_x ~ out_w) 내에 동적 균등 분배
+        col_specs = [
+            ("timestamp",   int(285 * scale)),
+            ("speed",       int(205 * scale)),
+            ("fsd",         int(195 * scale)),
+            ("turn_signal", int(110 * scale)),
+            ("steering",    int(215 * scale)),
+            ("pedal",       int(115 * scale)),
+        ]
+        active_cols = [(k, w_col) for k, w_col in col_specs if options.get(k)]
 
-        if options.get("timestamp"):
+        avail_w = out_w - offset_x
+        total_col_w = sum(w_col for _, w_col in active_cols)
+        num_active = len(active_cols)
+
+        col_x_map = {}
+        if num_active > 0:
+            # 좌우 여백 및 컬럼 간 간격을 균등 배분 (Space-Evenly)
+            free_w = max(int(24 * scale), avail_w - total_col_w)
+            gap = free_w / float(num_active + 1)
+            # 미니맵 ON + 6개 전체 활성 시 좌측 첫 여백을 살짝 좁혀 컬럼 간 여유 극대화
+            if options.get("map") and num_active == 6:
+                side_pad = int(26 * scale)
+                inner_gap = max(int(12 * scale), (avail_w - side_pad * 2 - total_col_w) / 5.0)
+                curr_x = float(offset_x + side_pad)
+                for k, w_col in active_cols:
+                    col_x_map[k] = int(round(curr_x))
+                    curr_x += w_col + inner_gap
+            else:
+                curr_x = float(offset_x) + gap
+                for k, w_col in active_cols:
+                    col_x_map[k] = int(round(curr_x))
+                    curr_x += w_col + gap
+
+        if "timestamp" in col_x_map:
+            x_time = col_x_map["timestamp"]
             t_str = (base_time + timedelta(seconds=time_sec)).strftime("%Y-%m-%d %H:%M:%S")
             cv2.putText(canvas, "TIME", (x_time, lbl_y), cv2.FONT_HERSHEY_SIMPLEX, lbl_scale, lbl_color, thick_lbl)
-            cv2.putText(canvas, t_str, (x_time, val_y), cv2.FONT_HERSHEY_SIMPLEX, 0.85 * scale, (255, 255, 255), thick_val)
+            cv2.putText(canvas, t_str, (x_time, val_y), cv2.FONT_HERSHEY_SIMPLEX, 0.84 * scale, (255, 255, 255), thick_val)
 
             if options.get("map"):
-                map_src_y = front_h + int(152 * scale)
-                cv2.putText(canvas, "Map: OpenStreetMap", (x_time, map_src_y),
+                cv2.putText(canvas, "Map: OpenStreetMap", (x_time, sub_y),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.42 * scale, (120, 125, 130), 1, cv2.LINE_AA)
 
-        if options.get("speed"):
+        if "speed" in col_x_map:
+            x_speed = col_x_map["speed"]
             cv2.putText(canvas, "SPEED", (x_speed, lbl_y), cv2.FONT_HERSHEY_SIMPLEX, lbl_scale, lbl_color, thick_lbl)
-            cv2.putText(canvas, f"{data['speed_kmh']} km/h", (x_speed, val_y + int(4 * scale)), cv2.FONT_HERSHEY_SIMPLEX, 1.25 * scale, (0, 230, 255), thick_num)
+            cv2.putText(canvas, f"{data['speed_kmh']} km/h", (x_speed, val_y + int(4 * scale)), cv2.FONT_HERSHEY_SIMPLEX, 1.22 * scale, (0, 230, 255), thick_num)
 
-        if options.get("fsd"):
+        if "fsd" in col_x_map:
+            x_ap = col_x_map["fsd"]
             ap_text = data.get("ap_mode", "MANUAL")
             if ap_text == "FSD ACTIVE":
                 color = (255, 160, 0)
@@ -425,33 +493,40 @@ class OverlayRenderer:
                 color = (140, 140, 140)
 
             cv2.putText(canvas, "AUTOPILOT", (x_ap, lbl_y), cv2.FONT_HERSHEY_SIMPLEX, lbl_scale, lbl_color, thick_lbl)
-            cv2.putText(canvas, ap_text, (x_ap, val_y), cv2.FONT_HERSHEY_SIMPLEX, 0.90 * scale, color, thick_val)
+            cv2.putText(canvas, ap_text, (x_ap, val_y), cv2.FONT_HERSHEY_SIMPLEX, 0.88 * scale, color, thick_val)
 
             detected_prof = data.get("fsd_profile")
             if ap_text == "FSD ACTIVE" and detected_prof:
                 prof_tag = f"[ {detected_prof} ]"
-                prof_y = front_h + int(152 * scale)
-                cv2.putText(canvas, prof_tag, (x_ap, prof_y),
+                cv2.putText(canvas, prof_tag, (x_ap, sub_y),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.44 * scale, (200, 225, 255), 1, cv2.LINE_AA)
 
-        if options.get("turn_signal"):
+        if "turn_signal" in col_x_map:
+            x_blinker_lbl = col_x_map["turn_signal"]
+            x_blinker_center = x_blinker_lbl + int(48 * scale)
             cv2.putText(canvas, "BLINKER", (x_blinker_lbl, lbl_y), cv2.FONT_HERSHEY_SIMPLEX, lbl_scale, lbl_color, thick_lbl)
-            cls.draw_turn_signals(canvas, x_blinker_center, mid_y + int(10 * scale), data['left_blinker'], data['right_blinker'], frame_idx, fps, scale)
+            cls.draw_turn_signals(canvas, x_blinker_center, mid_y + int(8 * scale), data['left_blinker'], data['right_blinker'], frame_idx, fps, scale)
 
-        if options.get("steering"):
+        if "steering" in col_x_map:
+            x_steer_lbl = col_x_map["steering"]
+            x_steer_wheel = x_steer_lbl + int(48 * scale)
+            x_steer_val = x_steer_lbl + int(104 * scale)
             cv2.putText(canvas, "STEERING", (x_steer_lbl, lbl_y), cv2.FONT_HERSHEY_SIMPLEX, lbl_scale, lbl_color, thick_lbl)
-            cls.draw_rotated_steering(canvas, (x_steer_wheel, mid_y + int(12 * scale)), data['steering_deg'], scale)
-            cv2.putText(canvas, f"{data['steering_deg']} deg", (x_steer_val, val_y), cv2.FONT_HERSHEY_SIMPLEX, 0.85 * scale, (220, 220, 220), thick_val)
+            cls.draw_rotated_steering(canvas, (x_steer_wheel, mid_y + int(10 * scale)), data['steering_deg'], scale)
+            cv2.putText(canvas, f"{data['steering_deg']} deg", (x_steer_val, val_y), cv2.FONT_HERSHEY_SIMPLEX, 0.82 * scale, (220, 220, 220), thick_val)
 
-        if options.get("pedal"):
+        if "pedal" in col_x_map:
+            x_pedal_lbl = col_x_map["pedal"]
+            x_pedal_acc = x_pedal_lbl + int(6 * scale)
+            x_pedal_brk = x_pedal_lbl + int(74 * scale)
             cv2.putText(canvas, "PEDALS", (x_pedal_lbl, lbl_y), cv2.FONT_HERSHEY_SIMPLEX, lbl_scale, lbl_color, thick_lbl)
-            pedal_y = front_h + int(82 * scale)
-            cls.draw_pedal(canvas, (x_pedal_acc, pedal_y), (int(28 * scale), int(50 * scale)), data['accel_pct'], "ACC", (0, 220, 0), scale)
-            cls.draw_pedal(canvas, (x_pedal_brk, pedal_y), (int(28 * scale), int(50 * scale)), data['brake_pct'], "BRK", (0, 0, 220), scale)
+            pedal_y = front_h + int(64 * scale)
+            cls.draw_pedal(canvas, (x_pedal_acc, pedal_y), (int(28 * scale), int(46 * scale)), data['accel_pct'], "ACC", (0, 220, 0), scale)
+            cls.draw_pedal(canvas, (x_pedal_brk, pedal_y), (int(28 * scale), int(46 * scale)), data['brake_pct'], "BRK", (0, 0, 220), scale)
 
-        wm_x = out_w - int(185 * scale)
-        wm_y = out_h - int(16 * scale)
+        wm_x = out_w - int(145 * scale)
+        wm_y = out_h - int(10 * scale)
         cv2.putText(canvas, "Companion Turret", (wm_x, wm_y),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.42 * scale, (100, 105, 115), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.40 * scale, (95, 100, 110), 1, cv2.LINE_AA)
 
         return canvas
