@@ -1,9 +1,10 @@
+from datetime import timedelta
 from PyQt6.QtWidgets import (
     QLabel, QSlider, QStyleOptionSlider, QStyle, QWidget,
-    QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QFrame
+    QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QFrame, QToolTip
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QRect, QPoint
-from PyQt6.QtGui import QPainter, QColor
+from PyQt6.QtCore import Qt, pyqtSignal, QRect, QRectF, QPoint, QPointF
+from PyQt6.QtGui import QPainter, QColor, QPen, QLinearGradient, QPolygonF
 
 
 class ClickableLabel(QLabel):
@@ -23,6 +24,16 @@ class HighlightSlider(QSlider):
         self.event_blocks = []
         self.in_frame = None
         self.out_frame = None
+        self.fps = 36.0
+        self._hover_x = None
+        self._is_dragging = False
+        self.setFixedHeight(32)
+        self.setMouseTracking(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def set_fps(self, fps):
+        if fps and fps > 0:
+            self.fps = float(fps)
 
     def set_event_blocks(self, blocks):
         self.event_blocks = blocks if blocks else []
@@ -33,82 +44,177 @@ class HighlightSlider(QSlider):
         self.out_frame = out_f
         self.update()
 
+    def _track_geometry(self):
+        pad_x = 12
+        gx = pad_x
+        gw = max(1, self.width() - pad_x * 2)
+        cy = 19
+        th = 8
+        return gx, gw, cy, th
+
+    def _x_to_value(self, x_pos):
+        gx, gw, _, _ = self._track_geometry()
+        val_pct = max(0.0, min(1.0, (x_pos - gx) / float(gw)))
+        return int(round(self.minimum() + val_pct * (self.maximum() - self.minimum())))
+
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            opt = QStyleOptionSlider()
-            self.initStyleOption(opt)
-            sr = self.style().subControlRect(QStyle.ComplexControl.CC_Slider, opt, QStyle.SubControl.SC_SliderGroove, self)
-            hr = self.style().subControlRect(QStyle.ComplexControl.CC_Slider, opt, QStyle.SubControl.SC_SliderHandle, self)
-            
-            click_x = event.pos().x()
-            half_h = hr.width() // 2
-            groove_x = sr.x() + half_h
-            groove_w = sr.width() - hr.width()
-            
-            if groove_w > 0:
-                val_pct = (click_x - groove_x) / float(groove_w)
-                val_pct = max(0.0, min(1.0, val_pct))
-                new_val = int(self.minimum() + val_pct * (self.maximum() - self.minimum()))
-                self.setValue(new_val)
-                event.accept()
-                return
+        if event.button() == Qt.MouseButton.LeftButton and self.maximum() > self.minimum():
+            self._is_dragging = True
+            pos_x = event.position().x() if hasattr(event, "position") else event.pos().x()
+            new_val = self._x_to_value(pos_x)
+            self.setSliderDown(True)
+            self.setValue(new_val)
+            self.sliderMoved.emit(new_val)
+            event.accept()
+            self.update()
+            return
         super().mousePressEvent(event)
 
-    def paintEvent(self, event):
-        min_val = self.minimum()
-        max_val = self.maximum()
-        val_range = max_val - min_val
-        if val_range <= 0:
-            super().paintEvent(event)
+    def mouseMoveEvent(self, event):
+        pos = event.position().toPoint() if hasattr(event, "position") else event.pos()
+        self._hover_x = pos.x()
+        val_range = self.maximum() - self.minimum()
+        if val_range > 0:
+            hover_f = self._x_to_value(pos.x())
+            if self._is_dragging and (event.buttons() & Qt.MouseButton.LeftButton):
+                self.setValue(hover_f)
+                self.sliderMoved.emit(hover_f)
+            sec = int(max(0.0, hover_f / max(1.0, self.fps)))
+            t_str = str(timedelta(seconds=sec))
+            QToolTip.showText(self.mapToGlobal(QPoint(pos.x(), -18)), f"⏱ {t_str}", self)
+        self.update()
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self._is_dragging and event.button() == Qt.MouseButton.LeftButton:
+            self._is_dragging = False
+            self.setSliderDown(False)
+            self.update()
+            event.accept()
             return
+        super().mouseReleaseEvent(event)
 
-        opt = QStyleOptionSlider()
-        self.initStyleOption(opt)
-        sr = self.style().subControlRect(QStyle.ComplexControl.CC_Slider, opt, QStyle.SubControl.SC_SliderGroove, self)
-        hr = self.style().subControlRect(QStyle.ComplexControl.CC_Slider, opt, QStyle.SubControl.SC_SliderHandle, self)
+    def leaveEvent(self, event):
+        self._hover_x = None
+        self.update()
+        super().leaveEvent(event)
 
-        half_h = hr.width() // 2
-        gx = sr.x() + half_h
-        gw = max(1, sr.width() - hr.width())
-        track_y = self.height() // 2
-
-        # ── 1단계: 슬라이더 기본 렌더링 (그루브 + 핸들) ──
-        super().paintEvent(event)
-
-        # ── 2단계: 오버레이 (그루브 위에 그려지고 핸들도 덮임) ──
+    def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # 모션 감지 이벤트 블록 (빨간색 바)
-        if self.event_blocks:
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor(255, 60, 60, 200))
-            for start_f, end_f in self.event_blocks:
-                x1 = gx + int(((start_f - min_val) / val_range) * gw)
-                x2 = gx + int(((end_f - min_val) / val_range) * gw)
-                block_w = max(4, x2 - x1)
-                painter.drawRoundedRect(QRect(x1, track_y - 3, block_w, 6), 2, 2)
+        gx, gw, cy, th = self._track_geometry()
+        t_top = cy - th // 2
+        t_bot = t_top + th
 
-        # In/Out 구간 하이라이트 (오렌지/앰버)
-        if self.in_frame is not None or self.out_frame is not None:
-            in_pos  = int(((self.in_frame  - min_val) / val_range) * gw) if self.in_frame  is not None else 0
-            out_pos = int(((self.out_frame - min_val) / val_range) * gw) if self.out_frame is not None else gw
-            rect_x = gx + min(in_pos, out_pos)
-            rect_w = abs(out_pos - in_pos)
-            if rect_w > 0:
-                painter.fillRect(QRect(rect_x, track_y - 7, max(2, rect_w), 14), QColor(255, 152, 0, 130))
-                painter.setPen(QColor(255, 183, 77, 220))
-                painter.drawRect(QRect(rect_x, track_y - 7, max(2, rect_w), 14))
+        min_val = self.minimum()
+        max_val = self.maximum()
+        val_range = max_val - min_val
+
+        # 1. 상단 타임라인 눈금(Ruler Ticks)
+        for i in range(0, 41):
+            tx = gx + (gw * i) / 40.0
+            is_major = (i % 5 == 0)
+            painter.setPen(QPen(QColor(160, 175, 200, 55 if is_major else 24), 1.0))
+            tick_top = 5.0 if is_major else 7.5
+            painter.drawLine(QPointF(tx, tick_top), QPointF(tx, 10.5))
+
+        # 2. 베이스 트랙 그루브 (다크 슬레이트 캡슐)
+        track_rect = QRectF(gx, t_top, gw, th)
+        painter.setPen(QPen(QColor("#283040"), 1.0))
+        painter.setBrush(QColor("#0F131B"))
+        painter.drawRoundedRect(track_rect, 4.0, 4.0)
+
+        if val_range <= 0:
+            painter.end()
+            return
+
+        # 3. In / Out 선택 구간 배경 틴트 (진행 바/모션 블록의 채도를 해치지 않도록 하단 레이어에 먼저 렌더)
+        has_range = (self.in_frame is not None or self.out_frame is not None)
+        rx1 = rx2 = r_top = r_bot = 0.0
+        if has_range:
+            in_pos = ((self.in_frame - min_val) / float(val_range)) * gw if self.in_frame is not None else 0.0
+            out_pos = ((self.out_frame - min_val) / float(val_range)) * gw if self.out_frame is not None else float(gw)
+            rx1 = gx + max(0.0, min(float(gw), min(in_pos, out_pos)))
+            rx2 = gx + max(0.0, min(float(gw), max(in_pos, out_pos)))
+            rw = max(2.0, rx2 - rx1)
+            r_top = t_top - 3.0
+            r_bot = t_bot + 3.0
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(255, 183, 0, 38))
+            painter.drawRoundedRect(QRectF(rx1, r_top, rw, r_bot - r_top), 2.0, 2.0)
+
+        # 4. 현재 재생 진행 바 (시안-블루 그라데이션)
+        curr_pct = max(0.0, min(1.0, (self.value() - min_val) / float(val_range)))
+        curr_x = gx + curr_pct * gw
+        prog_w = max(0.0, curr_x - gx)
+        if prog_w > 1.0:
+            grad = QLinearGradient(gx, 0, curr_x, 0)
+            grad.setColorAt(0.0, QColor("#0062AD"))
+            grad.setColorAt(1.0, QColor("#00D8FF"))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(grad)
+            painter.drawRoundedRect(QRectF(gx, t_top + 1, prog_w, th - 2), 3.0, 3.0)
+
+        # 5. 센트리 모션 감지 이벤트 블록 (코랄 레드 하이라이트 필)
+        if self.event_blocks:
+            painter.setPen(QPen(QColor(255, 140, 155, 225), 0.8))
+            painter.setBrush(QColor(255, 52, 84, 235))
+            for start_f, end_f in self.event_blocks:
+                x1 = gx + ((start_f - min_val) / float(val_range)) * gw
+                x2 = gx + ((end_f - min_val) / float(val_range)) * gw
+                block_w = max(5.0, x2 - x1)
+                painter.drawRoundedRect(QRectF(x1, t_top + 0.5, block_w, th - 1.0), 3.0, 3.0)
+
+        # 6. In / Out 선택 구간 하단 골드 라인 & 좌우 브래킷 핸들 [ ]
+        if has_range:
+            painter.setPen(QPen(QColor(255, 193, 7, 220), 1.8))
+            painter.drawLine(QPointF(rx1, r_bot), QPointF(rx2, r_bot))
+
+            bracket_pen = QPen(QColor("#FFC107"), 2.4)
+            bracket_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            painter.setPen(bracket_pen)
+            arm = 5.0
+            # Left [
+            painter.drawLine(QPointF(rx1, r_top - 1.0), QPointF(rx1, r_bot + 1.0))
+            painter.drawLine(QPointF(rx1, r_top - 1.0), QPointF(rx1 + arm, r_top - 1.0))
+            painter.drawLine(QPointF(rx1, r_bot + 1.0), QPointF(rx1 + arm, r_bot + 1.0))
+            # Right ]
+            painter.drawLine(QPointF(rx2, r_top - 1.0), QPointF(rx2, r_bot + 1.0))
+            painter.drawLine(QPointF(rx2 - arm, r_top - 1.0), QPointF(rx2, r_top - 1.0))
+            painter.drawLine(QPointF(rx2 - arm, r_bot + 1.0), QPointF(rx2, r_bot + 1.0))
+
+        # 6. 마우스 호버 가이드 라인
+        if self._hover_x is not None and gx <= self._hover_x <= gx + gw:
+            painter.setPen(QPen(QColor(0, 230, 255, 100), 1.0, Qt.PenStyle.DashLine))
+            painter.drawLine(QPointF(self._hover_x, 4.0), QPointF(self._hover_x, t_bot + 4.0))
+
+        # 7. 플레이헤드 (Playhead Handle: 룰러 영역 오각형 캡 + 수직 니들)
+        is_active = self._is_dragging or (self._hover_x is not None and abs(self._hover_x - curr_x) <= 10)
+        head_color = QColor("#FFFFFF") if is_active else QColor("#00E6FF")
+        border_color = QColor("#00E6FF") if is_active else QColor("#0B0E14")
+
+        # 플레이헤드 수직 니들
+        painter.setPen(QPen(head_color, 2.2))
+        painter.drawLine(QPointF(curr_x, 11.0), QPointF(curr_x, t_bot + 4.5))
+
+        # 상단 플레이헤드 캡 (오각형 마커)
+        cap_w = 11.0 if is_active else 10.0
+        cap_top = 1.5
+        cap_mid = 8.0
+        cap_tip = 13.0
+        poly = QPolygonF([
+            QPointF(curr_x - cap_w / 2.0, cap_top),
+            QPointF(curr_x + cap_w / 2.0, cap_top),
+            QPointF(curr_x + cap_w / 2.0, cap_mid),
+            QPointF(curr_x, cap_tip),
+            QPointF(curr_x - cap_w / 2.0, cap_mid),
+        ])
+        painter.setPen(QPen(border_color, 1.2))
+        painter.setBrush(head_color)
+        painter.drawPolygon(poly)
 
         painter.end()
-
-        # ── 3단계: 핸들만 다시 최상위에 렌더 (오버레이가 핸들을 덮지 않도록) ──
-        painter2 = QPainter(self)
-        opt2 = QStyleOptionSlider()
-        self.initStyleOption(opt2)
-        opt2.subControls = QStyle.SubControl.SC_SliderHandle
-        self.style().drawComplexControl(QStyle.ComplexControl.CC_Slider, opt2, painter2, self)
-        painter2.end()
 
 
 class SingleCameraPopup(QWidget):

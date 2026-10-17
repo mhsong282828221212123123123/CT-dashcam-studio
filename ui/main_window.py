@@ -277,42 +277,145 @@ class CTDashcamStudio(QMainWindow):
         self.preview_lbl.installEventFilter(self)
         right_layout.addWidget(self.preview_lbl, stretch=10)
 
-        # 하단 타임라인 컨트롤 그룹
-        timeline_group = QGroupBox("타임라인 컨트롤")
+        # 하단 타임라인 플로팅 컨트롤 덱 (모던 다크 슬레이트 카드형 패널)
+        timeline_group = QFrame()
+        timeline_group.setObjectName("timelineDeck")
+        timeline_group.setStyleSheet("""
+            QFrame#timelineDeck {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #181C26, stop:1 #11141C);
+                border: 1px solid #262C3A;
+                border-radius: 10px;
+            }
+        """)
         bottom_ctrl_layout = QVBoxLayout(timeline_group)
-        bottom_ctrl_layout.setContentsMargins(10, 6, 10, 6)
-        bottom_ctrl_layout.setSpacing(5)
+        bottom_ctrl_layout.setContentsMargins(12, 8, 12, 9)
+        bottom_ctrl_layout.setSpacing(6)
 
         def _make_v_divider():
             div = QFrame()
             div.setFrameShape(QFrame.Shape.VLine)
             div.setFrameShadow(QFrame.Shadow.Plain)
-            div.setStyleSheet("color: #262C38; background-color: #262C38;")
+            div.setStyleSheet("color: #262D3B; background-color: #262D3B; border: none;")
             div.setFixedSize(1, 18)
             return div
 
-        # ── [1단] 타임라인 슬라이더 ──
+        range_btn_style = """
+            QPushButton {
+                background-color: #181D27;
+                color: #D8DEE9;
+                border: 1px solid #2C3444;
+                border-radius: 5px;
+                padding: 2px 9px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #232A38;
+                border-color: #FFB300;
+                color: #FFD54F;
+            }
+            QPushButton:pressed {
+                background-color: #10141B;
+            }
+        """
+
+        transport_sub_btn_style = """
+            QPushButton {
+                background-color: #1A1F2B;
+                color: #E5E9F0;
+                border: 1px solid #2D3546;
+                border-radius: 6px;
+                padding: 3px 10px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #252C3D;
+                border-color: #00B4D8;
+                color: #FFFFFF;
+            }
+            QPushButton:pressed {
+                background-color: #11151E;
+            }
+        """
+
+        self._play_btn_idle_style = """
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0066B8, stop:1 #009CE8);
+                color: #FFFFFF;
+                border: 1px solid #00D4FF;
+                border-radius: 6px;
+                padding: 3px 14px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0078D7, stop:1 #00B4FF);
+                border-color: #80EAFF;
+            }
+            QPushButton:pressed {
+                background-color: #005090;
+            }
+        """
+
+        self._play_btn_active_style = """
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00897B, stop:1 #00BFA5);
+                color: #FFFFFF;
+                border: 1px solid #64FFDA;
+                border-radius: 6px;
+                padding: 3px 14px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #009688, stop:1 #1DE9B6);
+            }
+        """
+
+        # ── [1단] 커스텀 NLE 타임라인 스크러버 ──
         self.slider = HighlightSlider(Qt.Orientation.Horizontal)
         self.slider.setRange(0, 0)
         self.slider.sliderMoved.connect(self.on_slider_manual_seek)
         self.slider.valueChanged.connect(self.on_slider_manual_seek)
         bottom_ctrl_layout.addWidget(self.slider)
 
-        # ── [2단] 타임라인 상태 · 센트리 모션 분석 · 구간 편집 바 ──
+        # ── [2단] 타임코드 모니터 · 센트리 모션 클러스터 · 구간 편집 바 ──
         info_bar = QHBoxLayout()
         info_bar.setContentsMargins(2, 0, 2, 0)
         info_bar.setSpacing(6)
 
-        # (좌) 현재 재생 시간
-        self.lbl_curr_time = QLabel("00:00:00 / 00:00:00")
-        self.lbl_curr_time.setStyleSheet("color: #00E6FF; font-weight: bold; font-size: 13px; padding-right: 4px;")
+        # (좌) 디지털 타임코드 모니터 배지
+        self.lbl_curr_time = QLabel("0:00:00 / 0:00:00")
+        self.lbl_curr_time.setStyleSheet("""
+            QLabel {
+                background-color: #0B0E14;
+                color: #00E6FF;
+                border: 1px solid #232B3A;
+                border-radius: 5px;
+                padding: 3px 10px;
+                font-family: 'Consolas', 'Segoe UI Semibold', monospace;
+                font-weight: bold;
+                font-size: 12px;
+            }
+        """)
         info_bar.addWidget(self.lbl_curr_time)
 
         info_bar.addWidget(_make_v_divider())
 
-        # (중) 모션 감지 분석 상태 & 센트리 컨트롤 클러스터 (비어 있던 중앙 공간 활용)
+        # (중) 클립 모드 & 센트리 모션 감지 클러스터
         self.lbl_motion_status = QLabel("모션 분석: 대기 중")
-        self.lbl_motion_status.setStyleSheet("color: #00E6FF; font-size: 12px; font-weight: bold;")
+        self.lbl_motion_status.setStyleSheet("""
+            QLabel {
+                background-color: #141822;
+                color: #9AA4B8;
+                border: 1px solid #242B3A;
+                border-radius: 5px;
+                padding: 2px 9px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+        """)
         info_bar.addWidget(self.lbl_motion_status)
 
         self.chk_motion = QCheckBox("모션 감지")
@@ -320,8 +423,10 @@ class CTDashcamStudio(QMainWindow):
         self.chk_motion.stateChanged.connect(self.on_motion_chk_changed)
         info_bar.addWidget(self.chk_motion)
 
+        info_bar.addSpacing(8)
+
         self.lbl_sensitivity_tag = QLabel("감도:")
-        self.lbl_sensitivity_tag.setStyleSheet("font-size: 12px; color: #A0A6B5;")
+        self.lbl_sensitivity_tag.setStyleSheet("font-size: 12px; color: #9AA4B8; font-weight: bold;")
         info_bar.addWidget(self.lbl_sensitivity_tag)
 
         self.combo_sensitivity = QComboBox()
@@ -334,7 +439,7 @@ class CTDashcamStudio(QMainWindow):
         self.btn_prev_event = QPushButton("⚡ 이전")
         self.btn_prev_event.setToolTip("이전 모션 감지 구간으로 이동")
         self.btn_prev_event.setFixedHeight(26)
-        self.btn_prev_event.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_prev_event.setStyleSheet(range_btn_style)
         self.btn_prev_event.setVisible(False)
         self.btn_prev_event.clicked.connect(self.jump_to_prev_event)
         info_bar.addWidget(self.btn_prev_event)
@@ -342,67 +447,84 @@ class CTDashcamStudio(QMainWindow):
         self.btn_next_event = QPushButton("⚡ 다음")
         self.btn_next_event.setToolTip("다음 모션 감지 구간으로 이동")
         self.btn_next_event.setFixedHeight(26)
-        self.btn_next_event.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_next_event.setStyleSheet(range_btn_style)
         self.btn_next_event.setVisible(False)
         self.btn_next_event.clicked.connect(self.jump_to_next_event)
         info_bar.addWidget(self.btn_next_event)
 
         info_bar.addStretch(1)
 
-        # (우) 선택 구간 정보 & 구간 편집 버튼 (시작점 / 끝점 / 초기화 직관적 통합)
+        # (우) 선택 구간 배지 & NLE 구간 트림 버튼 클러스터
         self.lbl_range_info = QLabel("선택 구간: 미지정 (전체)")
-        self.lbl_range_info.setStyleSheet("color: #FFA726; font-size: 12px; font-weight: bold;")
+        self.lbl_range_info.setStyleSheet("""
+            QLabel {
+                background-color: rgba(255, 179, 0, 0.10);
+                color: #FFCA28;
+                border: 1px solid rgba(255, 179, 0, 0.35);
+                border-radius: 5px;
+                padding: 2px 9px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+        """)
         info_bar.addWidget(self.lbl_range_info)
 
-        info_bar.addSpacing(4)
+        info_bar.addSpacing(2)
 
         self.btn_in = QPushButton("[ 시작점")
         self.btn_in.setToolTip("구간 시작점 설정 (단축키: I)")
         self.btn_in.setFixedHeight(26)
-        self.btn_in.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_in.setStyleSheet(range_btn_style)
         self.btn_in.clicked.connect(self.set_in_point)
         info_bar.addWidget(self.btn_in)
 
         self.btn_out = QPushButton("] 끝점")
         self.btn_out.setToolTip("구간 종료점 설정 (단축키: O)")
         self.btn_out.setFixedHeight(26)
-        self.btn_out.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_out.setStyleSheet(range_btn_style)
         self.btn_out.clicked.connect(self.set_out_point)
         info_bar.addWidget(self.btn_out)
 
-        self.btn_reset_range = QPushButton("🔄 초기화")
+        self.btn_reset_range = QPushButton("↺ 초기화")
         self.btn_reset_range.setToolTip("구간 선택 초기화")
         self.btn_reset_range.setFixedHeight(26)
-        self.btn_reset_range.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_reset_range.setStyleSheet(range_btn_style)
         self.btn_reset_range.clicked.connect(self.reset_range_points)
         info_bar.addWidget(self.btn_reset_range)
 
         bottom_ctrl_layout.addLayout(info_bar)
 
-        # ── [3단] 메인 재생 · 배속 · 화면 보정 · 유틸리티 바 (균등 분할) ──
+        # 1단과 2단 사이 미세 수평 구분선
+        h_sep = QFrame()
+        h_sep.setFrameShape(QFrame.Shape.HLine)
+        h_sep.setFixedHeight(1)
+        h_sep.setStyleSheet("background-color: #1E2430; border: none;")
+        bottom_ctrl_layout.addWidget(h_sep)
+
+        # ── [3단] 트랜스포트 재생 · 배속 · 영상 보정 · 단축키 바 ──
         playback_bar = QHBoxLayout()
-        playback_bar.setContentsMargins(2, 0, 2, 0)
+        playback_bar.setContentsMargins(2, 1, 2, 0)
         playback_bar.setSpacing(6)
 
-        # (좌) 재생 컨트롤 그룹
-        self.btn_prev = QPushButton("◀ 이전")
+        # (좌) 메인 트랜스포트 클러스터
+        self.btn_prev = QPushButton("|◀ 이전")
         self.btn_prev.setToolTip("이전 클립 (단축키: [)")
         self.btn_prev.setFixedHeight(28)
-        self.btn_prev.setStyleSheet("padding: 2px 8px; font-weight: bold;")
+        self.btn_prev.setStyleSheet(transport_sub_btn_style)
         self.btn_prev.clicked.connect(self.play_prev_clip)
         playback_bar.addWidget(self.btn_prev)
 
         self.btn_play = QPushButton("▶ 재생 (Space)")
         self.btn_play.setToolTip("재생 / 일시정지 (단축키: Space)")
         self.btn_play.setFixedHeight(28)
-        self.btn_play.setStyleSheet("font-weight: bold; background-color: #0078D7; color: #FFFFFF; padding: 4px 12px;")
+        self.btn_play.setStyleSheet(self._play_btn_idle_style)
         self.btn_play.clicked.connect(self.toggle_play)
         playback_bar.addWidget(self.btn_play)
 
-        self.btn_next = QPushButton("다음 ▶")
+        self.btn_next = QPushButton("다음 ▶|")
         self.btn_next.setToolTip("다음 클립 (단축키: ])")
         self.btn_next.setFixedHeight(28)
-        self.btn_next.setStyleSheet("padding: 2px 8px; font-weight: bold;")
+        self.btn_next.setStyleSheet(transport_sub_btn_style)
         self.btn_next.clicked.connect(self.play_next_clip)
         playback_bar.addWidget(self.btn_next)
 
@@ -410,52 +532,68 @@ class CTDashcamStudio(QMainWindow):
         playback_bar.addWidget(_make_v_divider())
         playback_bar.addStretch(1)
 
-        # (중) 배속 & 자동재생 그룹
-        self.lbl_spd_tag = QLabel("배속:")
-        self.lbl_spd_tag.setStyleSheet("font-size: 12px; color: #E0E0E0;")
+        # (중) 배속 & 자동재생 클러스터
+        self.lbl_spd_tag = QLabel("⚡ 배속")
+        self.lbl_spd_tag.setStyleSheet("font-size: 12px; color: #C5CCD9; font-weight: bold;")
         self.lbl_spd_tag.setToolTip("더블클릭 시 1.0x 기본 배속으로 복원")
+        self.lbl_spd_tag.setCursor(Qt.CursorShape.PointingHandCursor)
         self.lbl_spd_tag.installEventFilter(self)
         playback_bar.addWidget(self.lbl_spd_tag)
 
         self.slider_preview_speed = QSlider(Qt.Orientation.Horizontal)
         self.slider_preview_speed.setRange(1, 10)  # 0.5x ~ 5.0x
         self.slider_preview_speed.setValue(2)      # 기본 1.0x
-        self.slider_preview_speed.setMinimumWidth(65)
-        self.slider_preview_speed.setMaximumWidth(110)
+        self.slider_preview_speed.setMinimumWidth(58)
+        self.slider_preview_speed.setMaximumWidth(96)
+        self.slider_preview_speed.setCursor(Qt.CursorShape.PointingHandCursor)
         self.slider_preview_speed.setToolTip("미리보기 재생 배속 (0.5x ~ 5.0x, 더블클릭 시 1.0x 복원)")
         self.slider_preview_speed.valueChanged.connect(self.on_preview_speed_slider_changed)
         self.slider_preview_speed.installEventFilter(self)
         playback_bar.addWidget(self.slider_preview_speed)
 
         self.lbl_preview_speed_val = QLabel("1.0x")
-        self.lbl_preview_speed_val.setStyleSheet("font-size: 12px; color: #FFD700; font-weight: bold; padding: 0 2px;")
+        self.lbl_preview_speed_val.setStyleSheet("""
+            QLabel {
+                background-color: #1A1F2B;
+                color: #FFD54F;
+                border: 1px solid #2E3748;
+                border-radius: 4px;
+                padding: 1px 6px;
+                font-family: 'Consolas', 'Segoe UI Semibold', monospace;
+                font-size: 12px;
+                font-weight: bold;
+            }
+        """)
         self.lbl_preview_speed_val.setToolTip("더블클릭 시 1.0x 기본 배속으로 복원")
+        self.lbl_preview_speed_val.setCursor(Qt.CursorShape.PointingHandCursor)
         self.lbl_preview_speed_val.installEventFilter(self)
         playback_bar.addWidget(self.lbl_preview_speed_val)
 
-        playback_bar.addSpacing(8)
+        playback_bar.addSpacing(6)
 
-        self.chk_auto_next = QCheckBox("다음 클립 자동재생")
+        self.chk_auto_next = QCheckBox("연속 재생")
         self.chk_auto_next.setChecked(False)  # 기본값: OFF
-        self.chk_auto_next.setToolTip("재생이 끝나면 자동으로 다음 클립으로 이동합니다")
+        self.chk_auto_next.setToolTip("현재 클립 재생이 끝나면 자동으로 다음 클립으로 이어서 재생합니다")
         playback_bar.addWidget(self.chk_auto_next)
 
         playback_bar.addStretch(1)
         playback_bar.addWidget(_make_v_divider())
         playback_bar.addStretch(1)
 
-        # (우) 화면 밝기/대비 보정 & 단축키 그룹
-        self.lbl_brightness_tag = QLabel("☀️ 밝기:")
-        self.lbl_brightness_tag.setStyleSheet("font-size: 12px; color: #E0E0E0;")
+        # (우) 화면 밝기/대비 보정 & 단축키 클러스터
+        self.lbl_brightness_tag = QLabel("☀ 밝기")
+        self.lbl_brightness_tag.setStyleSheet("font-size: 12px; color: #C5CCD9;")
         self.lbl_brightness_tag.setToolTip("더블클릭 시 밝기 기본값(0) 복원")
+        self.lbl_brightness_tag.setCursor(Qt.CursorShape.PointingHandCursor)
         self.lbl_brightness_tag.installEventFilter(self)
         playback_bar.addWidget(self.lbl_brightness_tag)
 
         self.slider_brightness = QSlider(Qt.Orientation.Horizontal)
         self.slider_brightness.setRange(-100, 100)
         self.slider_brightness.setValue(0)
-        self.slider_brightness.setMinimumWidth(60)
-        self.slider_brightness.setMaximumWidth(100)
+        self.slider_brightness.setMinimumWidth(55)
+        self.slider_brightness.setMaximumWidth(88)
+        self.slider_brightness.setCursor(Qt.CursorShape.PointingHandCursor)
         self.slider_brightness.setToolTip("화면 밝기 조절 (-100 ~ +100, 더블클릭 시 기본값 0 복원)")
         self.slider_brightness.valueChanged.connect(self.sync_preview)
         self.slider_brightness.installEventFilter(self)
@@ -463,28 +601,30 @@ class CTDashcamStudio(QMainWindow):
 
         playback_bar.addSpacing(4)
 
-        self.lbl_contrast_tag = QLabel("🌓 대비:")
-        self.lbl_contrast_tag.setStyleSheet("font-size: 12px; color: #E0E0E0;")
+        self.lbl_contrast_tag = QLabel("◑ 대비")
+        self.lbl_contrast_tag.setStyleSheet("font-size: 12px; color: #C5CCD9;")
         self.lbl_contrast_tag.setToolTip("더블클릭 시 대비 기본값(100%) 복원")
+        self.lbl_contrast_tag.setCursor(Qt.CursorShape.PointingHandCursor)
         self.lbl_contrast_tag.installEventFilter(self)
         playback_bar.addWidget(self.lbl_contrast_tag)
 
         self.slider_contrast = QSlider(Qt.Orientation.Horizontal)
         self.slider_contrast.setRange(50, 200)
         self.slider_contrast.setValue(100)
-        self.slider_contrast.setMinimumWidth(60)
-        self.slider_contrast.setMaximumWidth(100)
+        self.slider_contrast.setMinimumWidth(55)
+        self.slider_contrast.setMaximumWidth(88)
+        self.slider_contrast.setCursor(Qt.CursorShape.PointingHandCursor)
         self.slider_contrast.setToolTip("화면 대비 조절 (50% ~ 200%, 더블클릭 시 기본값 100% 복원)")
         self.slider_contrast.valueChanged.connect(self.sync_preview)
         self.slider_contrast.installEventFilter(self)
         playback_bar.addWidget(self.slider_contrast)
 
-        playback_bar.addSpacing(6)
+        playback_bar.addSpacing(4)
 
         self.btn_hotkeys = QPushButton("⌨ 단축키")
         self.btn_hotkeys.setToolTip("키보드 단축키 안내 (F1 또는 ?)")
         self.btn_hotkeys.setFixedHeight(28)
-        self.btn_hotkeys.setStyleSheet("padding: 2px 8px; font-size: 12px;")
+        self.btn_hotkeys.setStyleSheet(transport_sub_btn_style)
         self.btn_hotkeys.clicked.connect(self.show_hotkey_guide)
         playback_bar.addWidget(self.btn_hotkeys)
 
@@ -497,7 +637,7 @@ class CTDashcamStudio(QMainWindow):
         footer_layout.setContentsMargins(0, 0, 4, 0)
         footer_layout.addStretch()
         self.lbl_footer = QLabel(f"♥ Companion Turret  ·  v{APP_VERSION}")
-        self.lbl_footer.setStyleSheet("color: #454D5A; font-size: 11px; font-weight: normal;")
+        self.lbl_footer.setStyleSheet("color: #4A5364; font-size: 11px; font-weight: normal;")
         footer_layout.addWidget(self.lbl_footer)
         right_layout.addLayout(footer_layout)
 
@@ -698,18 +838,22 @@ class CTDashcamStudio(QMainWindow):
             QPushButton:hover { background-color: #252A36; border-color: #0078D7; }
             QPushButton:pressed { background-color: #0E1015; }
             QPushButton:disabled { background-color: #14161A; color: #555555; border-color: #1E2128; }
-            QTreeWidget { background-color: #161920; border: 1px solid #232731; border-radius: 4px; color: #FFFFFF; font-size: 13px; }
+            QTreeWidget { background-color: #151820; border: 1px solid #232834; border-radius: 5px; color: #FFFFFF; font-size: 13px; }
             QTreeWidget::item:selected { background-color: #005A9E; color: #FFFFFF; }
             QTreeWidget::item:hover { background-color: #1F2430; }
-            QComboBox { background-color: #1A1D24; border: 1px solid #2A2E39; border-radius: 3px; padding: 3px 8px; color: #FFFFFF; font-size: 13px; }
-            QComboBox QAbstractItemView { background-color: #1A1D24; selection-background-color: #0078D7; color: #FFFFFF; font-size: 13px; }
+            QHeaderView::section { background-color: #1B202C; color: #A6B0C3; border: none; border-bottom: 1px solid #2B3344; border-right: 1px solid #242B3A; padding: 5px 8px; font-weight: bold; font-size: 12px; }
+            QComboBox { background-color: #1A1F2B; border: 1px solid #2C3444; border-radius: 4px; padding: 3px 8px; color: #FFFFFF; font-size: 13px; }
+            QComboBox:hover { border-color: #0098E6; }
+            QComboBox QAbstractItemView { background-color: #1A1F2B; selection-background-color: #0078D7; color: #FFFFFF; font-size: 13px; }
             QCheckBox { spacing: 6px; color: #D0D4DC; font-size: 13px; }
-            QProgressBar { border: 1px solid #2A2E39; border-radius: 3px; text-align: center; background-color: #14161B; color: #FFFFFF; font-weight: bold; font-size: 11px; }
-            QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0078D7, stop:1 #00E6FF); border-radius: 2px; }
-            QSlider::groove:horizontal { border: 1px solid #2A2E39; height: 4px; background: #1C2028; border-radius: 2px; }
-            QSlider::sub-page:horizontal { background: #0078D7; border-radius: 2px; }
-            QSlider::handle:horizontal { background: #00E6FF; border: 1px solid #FFFFFF; width: 14px; margin-top: -5px; margin-bottom: -5px; border-radius: 7px; }
+            QProgressBar { border: 1px solid #2A2E39; border-radius: 4px; text-align: center; background-color: #14161B; color: #FFFFFF; font-weight: bold; font-size: 11px; }
+            QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0078D7, stop:1 #00E6FF); border-radius: 3px; }
+            QSlider::groove:horizontal { border: 1px solid #2A3242; height: 5px; background: #141822; border-radius: 2px; }
+            QSlider::sub-page:horizontal { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0066B8, stop:1 #00D2FF); border-radius: 2px; }
+            QSlider::handle:horizontal { background: #00E6FF; border: 1px solid #FFFFFF; width: 13px; margin-top: -5px; margin-bottom: -5px; border-radius: 6px; }
             QSlider::handle:horizontal:hover { background: #FFFFFF; border-color: #00E6FF; }
+            QSplitter::handle { background-color: #1C212C; width: 2px; }
+            QSplitter::handle:hover { background-color: #0098E6; }
         """)
 
     def load_directory_dialog(self):
@@ -848,6 +992,7 @@ class CTDashcamStudio(QMainWindow):
         if self.timer.isActive():
             self.timer.stop()
             self.btn_play.setText("▶ 재생 (Space)")
+            self.btn_play.setStyleSheet(self._play_btn_idle_style)
 
 
         self.current_item = item
@@ -879,6 +1024,44 @@ class CTDashcamStudio(QMainWindow):
         self.loader_worker.progress.connect(self._on_clips_load_progress)
         self.loader_worker.finished.connect(lambda decs, offs, tot, fps, itm_d=item_data: self._on_clips_loaded_callback(decs, offs, tot, fps, itm_d))
         self.loader_worker.start()
+
+    def _set_motion_badge_style(self, mode="idle"):
+        if mode == "detected":
+            self.lbl_motion_status.setStyleSheet("""
+                QLabel {
+                    background-color: rgba(255, 52, 82, 0.14);
+                    color: #FF6B81;
+                    border: 1px solid rgba(255, 82, 105, 0.45);
+                    border-radius: 5px;
+                    padding: 2px 9px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+            """)
+        elif mode == "scanning":
+            self.lbl_motion_status.setStyleSheet("""
+                QLabel {
+                    background-color: rgba(0, 230, 255, 0.10);
+                    color: #00E6FF;
+                    border: 1px solid rgba(0, 230, 255, 0.38);
+                    border-radius: 5px;
+                    padding: 2px 9px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+            """)
+        else:
+            self.lbl_motion_status.setStyleSheet("""
+                QLabel {
+                    background-color: #141822;
+                    color: #9AA4B8;
+                    border: 1px solid #242B3A;
+                    border-radius: 5px;
+                    padding: 2px 9px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+            """)
 
     def _on_clips_load_progress(self, val, msg):
         if hasattr(self, 'progress_dialog') and self.progress_dialog and not getattr(self, 'is_load_canceled', False):
@@ -949,6 +1132,7 @@ class CTDashcamStudio(QMainWindow):
             self.play_start_frame = 0
 
             self.slider.blockSignals(True)
+            self.slider.set_fps(self.fps)
             self.slider.setRange(0, max(0, self.total_frames - 1))
             self.slider.setValue(0)
             self.slider.set_event_blocks([])
@@ -976,12 +1160,14 @@ class CTDashcamStudio(QMainWindow):
                         cached_blocks = self.motion_cache[clip_key]
                         self.detected_event_blocks = cached_blocks
                         self.slider.set_event_blocks(cached_blocks)
-                        self.lbl_motion_status.setText(f"모션 분석 완료: {len(cached_blocks)}개 구간 감지")
+                        self._set_motion_badge_style("detected" if cached_blocks else "idle")
+                        self.lbl_motion_status.setText(f"⚡ 모션 감지: {len(cached_blocks)}개 구간")
                     else:
                         self.start_light_motion_scanner(self.active_clip_list)
                 else:
                     self.btn_prev_event.setVisible(False)
                     self.btn_next_event.setVisible(False)
+                    self._set_motion_badge_style("idle")
                     self.lbl_motion_status.setText("모션 분석: 대기 중")
             else:
                 self.chk_motion.setVisible(False)
@@ -991,7 +1177,8 @@ class CTDashcamStudio(QMainWindow):
                 self.btn_next_event.setVisible(False)
                 self.detected_event_blocks = []
                 self.slider.set_event_blocks([])
-                self.lbl_motion_status.setText("모션 분석: 비활성화")
+                self._set_motion_badge_style("idle")
+                self.lbl_motion_status.setText("🚗 일반 주행 클립")
 
             if getattr(self, 'was_playing_before_load', False):
                 if not self.timer.isActive():
@@ -1047,7 +1234,8 @@ class CTDashcamStudio(QMainWindow):
                     cached_blocks = self.motion_cache[clip_key]
                     self.detected_event_blocks = cached_blocks
                     self.slider.set_event_blocks(cached_blocks)
-                    self.lbl_motion_status.setText(f"모션 분석 완료: {len(cached_blocks)}개 구간 감지")
+                    self._set_motion_badge_style("detected" if cached_blocks else "idle")
+                    self.lbl_motion_status.setText(f"⚡ 모션 감지: {len(cached_blocks)}개 구간")
                 else:
                     self.start_light_motion_scanner(self.active_clip_list)
             else:
@@ -1056,7 +1244,8 @@ class CTDashcamStudio(QMainWindow):
                 self.detected_event_blocks = []
                 self.slider.set_event_blocks([])
                 self.stop_motion_scanner()
-                self.lbl_motion_status.setText("모션 분석: 비활성화")
+                self._set_motion_badge_style("idle")
+                self.lbl_motion_status.setText("모션 분석: OFF")
 
     def on_sensitivity_changed(self):
         if self.is_current_sentry and self.chk_motion.isChecked():
@@ -1071,7 +1260,8 @@ class CTDashcamStudio(QMainWindow):
 
         self.stop_motion_scanner()
 
-        self.lbl_motion_status.setText("모션 분석 중...")
+        self._set_motion_badge_style("scanning")
+        self.lbl_motion_status.setText("🔍 모션 분석 중...")
         self.detected_event_blocks = []
 
         sensitivity_preset = self.combo_sensitivity.currentText()
@@ -1090,7 +1280,8 @@ class CTDashcamStudio(QMainWindow):
         if clip_key:
             self.motion_cache[clip_key] = event_blocks
 
-        self.lbl_motion_status.setText(f"모션 분석 완료: {len(event_blocks)}개 구간 감지")
+        self._set_motion_badge_style("detected" if event_blocks else "idle")
+        self.lbl_motion_status.setText(f"⚡ 모션 감지: {len(event_blocks)}개 구간")
 
     def stop_motion_scanner(self):
         if self.scanner and self.scanner.isRunning():
@@ -1375,6 +1566,7 @@ class CTDashcamStudio(QMainWindow):
         if self.timer.isActive():
             self.timer.stop()
             self.btn_play.setText("▶ 재생 (Space)")
+            self.btn_play.setStyleSheet(self._play_btn_idle_style)
             self.play_start_wall_time = None
             if self.last_grid_image is not None:
                 self._display_grid_image(self.last_grid_image)
@@ -1385,6 +1577,7 @@ class CTDashcamStudio(QMainWindow):
             self.play_start_frame = self.slider.value()
             self.timer.start(16)
             self.btn_play.setText("⏸ 일시정지 (Space)")
+            self.btn_play.setStyleSheet(self._play_btn_active_style)
 
     def on_preview_speed_slider_changed(self, val):
         speed = val * 0.5  # 1→0.5x, 2→1.0x, ... 10→5.0x

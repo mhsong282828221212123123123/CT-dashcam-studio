@@ -156,7 +156,6 @@ class RealTeslaSEIDecoder:
         steering_deg = 0.0
         brake_applied = False
         autopilot_state = 0
-        fsd_profile_raw = 0
         left_blinker = False
         right_blinker = False
         lat_deg = 0.0
@@ -198,8 +197,6 @@ class RealTeslaSEIDecoder:
                         brake_applied = bool(val)
                     elif field_number == 10: 
                         autopilot_state = val
-                    elif field_number in (17, 18, 19, 20):
-                        fsd_profile_raw = val
 
                 elif wire_type == 5:
                     if pos + 4 > length: break
@@ -254,21 +251,13 @@ class RealTeslaSEIDecoder:
         }
         ap_mode_str = ap_modes.get(autopilot_state, "MANUAL")
 
-        fsd_profiles = {
-            1: "Chill",
-            2: "Standard",
-            3: "Assertive",
-            4: "Hurry"
-        }
-        fsd_profile_str = fsd_profiles.get(fsd_profile_raw, None)
-
         return {
             "speed_kmh": max(0, speed_kmh),
             "steering_deg": int(round(steering_deg)),
             "accel_pct": min(100, max(0, int(round(accel_pct)))),
+            "brake_applied": brake_applied,
             "brake_pct": 100 if brake_applied else 0,
             "ap_mode": ap_mode_str,
-            "fsd_profile": fsd_profile_str,
             "left_blinker": left_blinker,
             "right_blinker": right_blinker,
             "lat": lat_deg,
@@ -332,9 +321,9 @@ class RealTeslaSEIDecoder:
             "speed_kmh": 0,
             "steering_deg": 0,
             "accel_pct": 0,
+            "brake_applied": False,
             "brake_pct": 0,
             "ap_mode": "MANUAL",
-            "fsd_profile": None,
             "left_blinker": False,
             "right_blinker": False,
             "lat": 0.0,
