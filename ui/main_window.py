@@ -61,6 +61,8 @@ class CTDashcamStudio(QMainWindow):
         self.last_exported_video_path = None
         self.last_grid_image = None
         self.last_valid_preview_frames = {}
+        self.last_raw_preview_frames = {}
+        self.last_preview_slot_size = {}
 
         self.detected_event_blocks = []
         self.scanner = None
@@ -71,10 +73,12 @@ class CTDashcamStudio(QMainWindow):
 
         self.play_start_wall_time = None
         self.play_start_frame = 0
-        self._preview_pool = ThreadPoolExecutor(max_workers=4)
+        self._preview_pool = ThreadPoolExecutor(max_workers=6)
 
         self.current_single_cam = "front"
         self.single_cam_popup = None
+        self.telemetry_order = list(OverlayRenderer.DEFAULT_TELEMETRY_ORDER)
+        self._dragging_telemetry_key = None
 
         self.init_ui()
         self.setup_shortcuts()
@@ -273,7 +277,10 @@ class CTDashcamStudio(QMainWindow):
         self.preview_lbl.setStyleSheet("background-color: #0b0d10; border: 1px solid #1e222a; border-radius: 4px;")
         self.preview_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.preview_lbl.setMinimumSize(640, 360)
-        self.preview_lbl.setToolTip("화면을 더블클릭하면 클릭한 카메라의 단독 풀스크린 화면으로 즉시 전환/복귀합니다.")
+        self.preview_lbl.setMouseTracking(True)
+        self.preview_lbl.setToolTip(
+            "카메라 화면 더블클릭: 단독 풀스크린 전환/복귀  |  하단 텔레메트리 바 마우스 드래그: 좌우 표시 순서 변경"
+        )
         self.preview_lbl.installEventFilter(self)
         right_layout.addWidget(self.preview_lbl, stretch=10)
 
@@ -659,11 +666,118 @@ class CTDashcamStudio(QMainWindow):
 
         self.apply_dark_theme()
 
+    def _preview_pos_to_canvas(self, pos):
+        pm = self.preview_lbl.pixmap()
+        if pm is not None and not pm.isNull() and pm.width() > 0 and pm.height() > 0:
+            off_x = (self.preview_lbl.width() - pm.width()) / 2.0
+            off_y = (self.preview_lbl.height() - pm.height()) / 2.0
+            rx = (pos.x() - off_x) / float(pm.width())
+            ry = (pos.y() - off_y) / float(pm.height())
+        else:
+            if self.preview_lbl.width() <= 0 or self.preview_lbl.height() <= 0:
+                return None, None
+            rx = pos.x() / float(self.preview_lbl.width())
+            ry = pos.y() / float(self.preview_lbl.height())
+
+        if rx < 0.0 or rx > 1.0 or ry < 0.0 or ry > 1.0:
+            return None, None
+        return rx * 1920.0, ry * 1080.0
+
+    def _hit_test_telemetry_col(self, cx, cy):
+        if cx is None or cy is None:
+            return None
+        opts = self.get_current_options()
+        col_box_map, _, offset_x, _, front_h, bottom_h, _, _ = OverlayRenderer.compute_telemetry_layout(opts, 1920, 1080)
+        if bottom_h <= 0 or cy < front_h:
+            return None
+        pad = 10.0
+        for k, (x1, w) in col_box_map.items():
+            abs_x1 = offset_x + x1 - pad
+            abs_x2 = offset_x + x1 + w + pad
+            if abs_x1 <= cx <= abs_x2:
+                return k
+        return None
+
+    def _update_telemetry_drag(self, cx):
+        drag_k = getattr(self, "_dragging_telemetry_key", None)
+        if not drag_k or cx is None:
+            return False
+
+        opts = self.get_current_options()
+        col_box_map, _, offset_x, _, _, bottom_h, _, _ = OverlayRenderer.compute_telemetry_layout(opts, 1920, 1080)
+        if bottom_h <= 0 or drag_k not in col_box_map:
+            return False
+
+        active_keys = [k for k in self.telemetry_order if k in col_box_map]
+        if drag_k not in active_keys or len(active_keys) < 2:
+            return False
+
+        cur_idx = active_keys.index(drag_k)
+        target_k = None
+        if cur_idx > 0:
+            left_k = active_keys[cur_idx - 1]
+            lx1, lw = col_box_map[left_k]
+            if cx < (offset_x + lx1 + lw * 0.55):
+                target_k = left_k
+        if target_k is None and cur_idx < len(active_keys) - 1:
+            right_k = active_keys[cur_idx + 1]
+            rx1, rw = col_box_map[right_k]
+            if cx > (offset_x + rx1 + rw * 0.45):
+                target_k = right_k
+
+        if target_k is not None:
+            i1 = self.telemetry_order.index(drag_k)
+            i2 = self.telemetry_order.index(target_k)
+            self.telemetry_order[i1], self.telemetry_order[i2] = self.telemetry_order[i2], self.telemetry_order[i1]
+            if not (hasattr(self, "timer") and self.timer.isActive()):
+                self.sync_preview()
+            return True
+        return False
+
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.Type.MouseButtonDblClick:
+        etype = event.type()
+        if obj is getattr(self, "preview_lbl", None) and not self.is_exporting:
+            if etype == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
+                pos = event.position().toPoint() if hasattr(event, "position") else event.pos()
+                cx, cy = self._preview_pos_to_canvas(pos)
+                hit_k = self._hit_test_telemetry_col(cx, cy)
+                if hit_k:
+                    self._dragging_telemetry_key = hit_k
+                    self.preview_lbl.setCursor(Qt.CursorShape.ClosedHandCursor)
+                    if not (hasattr(self, "timer") and self.timer.isActive()):
+                        self.sync_preview()
+                    return True
+
+            elif etype == QEvent.Type.MouseMove:
+                pos = event.position().toPoint() if hasattr(event, "position") else event.pos()
+                cx, cy = self._preview_pos_to_canvas(pos)
+                if getattr(self, "_dragging_telemetry_key", None):
+                    self._update_telemetry_drag(cx)
+                    return True
+                else:
+                    hit_k = self._hit_test_telemetry_col(cx, cy)
+                    self.preview_lbl.setCursor(
+                        Qt.CursorShape.OpenHandCursor if hit_k else Qt.CursorShape.ArrowCursor
+                    )
+
+            elif etype == QEvent.Type.MouseButtonRelease and event.button() == Qt.MouseButton.LeftButton:
+                if getattr(self, "_dragging_telemetry_key", None):
+                    self._dragging_telemetry_key = None
+                    pos = event.position().toPoint() if hasattr(event, "position") else event.pos()
+                    cx, cy = self._preview_pos_to_canvas(pos)
+                    hit_k = self._hit_test_telemetry_col(cx, cy)
+                    self.preview_lbl.setCursor(
+                        Qt.CursorShape.OpenHandCursor if hit_k else Qt.CursorShape.ArrowCursor
+                    )
+                    if not (hasattr(self, "timer") and self.timer.isActive()):
+                        self.sync_preview()
+                    return True
+
+        if etype == QEvent.Type.MouseButtonDblClick:
             if self.is_exporting:
                 return False
             if obj is getattr(self, "preview_lbl", None):
+                self._dragging_telemetry_key = None
                 pos = event.position().toPoint() if hasattr(event, "position") else event.pos()
                 self._handle_preview_double_click(pos)
                 return True
@@ -683,23 +797,9 @@ class CTDashcamStudio(QMainWindow):
         if self.is_exporting:
             return
 
-        pm = self.preview_lbl.pixmap()
-        if pm is not None and not pm.isNull() and pm.width() > 0 and pm.height() > 0:
-            off_x = (self.preview_lbl.width() - pm.width()) / 2.0
-            off_y = (self.preview_lbl.height() - pm.height()) / 2.0
-            rx = (pos.x() - off_x) / float(pm.width())
-            ry = (pos.y() - off_y) / float(pm.height())
-        else:
-            if self.preview_lbl.width() <= 0 or self.preview_lbl.height() <= 0:
-                return
-            rx = pos.x() / float(self.preview_lbl.width())
-            ry = pos.y() / float(self.preview_lbl.height())
-
-        if rx < 0.0 or rx > 1.0 or ry < 0.0 or ry > 1.0:
+        cx, cy = self._preview_pos_to_canvas(pos)
+        if cx is None or cy is None:
             return
-
-        cx = rx * 1920.0
-        cy = ry * 1080.0
 
         opts = self.get_current_options()
         has_bottom_hud = any(
@@ -707,6 +807,9 @@ class CTDashcamStudio(QMainWindow):
         )
         front_h = 1080.0 - (180.0 if has_bottom_hud else 0.0)
         if cy >= front_h:
+            if self.telemetry_order != list(OverlayRenderer.DEFAULT_TELEMETRY_ORDER):
+                self.telemetry_order = list(OverlayRenderer.DEFAULT_TELEMETRY_ORDER)
+                self.sync_preview()
             return
 
         is_single = self.current_layout_mode in [
@@ -1120,6 +1223,8 @@ class CTDashcamStudio(QMainWindow):
             self.chks["pillar_pip"].blockSignals(False)
 
             self.last_valid_preview_frames.clear()
+            self.last_raw_preview_frames.clear()
+            self.last_preview_slot_size.clear()
             self.last_preview_cam_frame_idx = {}
             self.current_active_clip_idx = -1
 
@@ -1214,6 +1319,8 @@ class CTDashcamStudio(QMainWindow):
         stale_keys = [k for k in list(self.last_valid_preview_frames.keys()) if k not in self.caps]
         for k in stale_keys:
             del self.last_valid_preview_frames[k]
+            self.last_raw_preview_frames.pop(k, None)
+            self.last_preview_slot_size.pop(k, None)
 
         self.decoder = self.active_decoders[clip_idx] if clip_idx < len(self.active_decoders) else None
         self.current_active_clip_idx = clip_idx
@@ -1378,6 +1485,10 @@ class CTDashcamStudio(QMainWindow):
     def read_frames_with_cache(self, global_idx, is_seeking=False, skip_count=0, reuse_same_frame=False):
         if not hasattr(self, 'last_preview_cam_frame_idx'):
             self.last_preview_cam_frame_idx = {}
+        if not hasattr(self, 'last_raw_preview_frames'):
+            self.last_raw_preview_frames = {}
+        if not hasattr(self, 'last_preview_slot_size'):
+            self.last_preview_slot_size = {}
 
         clip_idx = 0
         for i in range(len(self.clip_frame_offsets) - 1):
@@ -1401,59 +1512,135 @@ class CTDashcamStudio(QMainWindow):
 
         # 현재 활성 레이아웃에 실제로 표시되는 카메라만 디코딩 및 AI 처리 (불필요한 연산 차단)
         layout_mode = getattr(self, 'current_layout_mode', "기본 (1:3 세로배치)")
-        if layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1", "단일", "단일 카메라", "단일 카메라 (풀스크린)"]:
+        is_single = layout_mode in ["전면 단독 (전방 풀스크린)", "전면 단독", "1:1", "단일", "단일 카메라", "단일 카메라 (풀스크린)"]
+        is_2x2 = layout_mode in ["2x2 분할 (전후/좌우)", "2x2"]
+
+        if is_single:
             active_cam_keys = {self.get_current_single_cam()}
         else:
             active_cam_keys = {'front', 'back', 'left_repeater', 'right_repeater'}
             if self.chks.get("pillar_pip") and self.chks["pillar_pip"].isChecked():
                 active_cam_keys.update({'left_pillar', 'right_pillar'})
 
-        frames = {}
-        for k in ['front', 'back', 'left_repeater', 'right_repeater', 'left_pillar', 'right_pillar']:
+        # 미리보기 화면에서 메인 화면을 제외한 서브 카메라들은 실제 슬롯 크기로 즉시 축소하여
+        # 저사양 PC에서 후속 연산(밝기/대비, AI 블러, 렌더러 리사이즈, 메모리 복사) 부하를 대폭 절감
+        has_bottom_hud = any(
+            self.chks.get(hk) and self.chks[hk].isChecked()
+            for hk in ("map", "timestamp", "speed", "fsd", "turn_signal", "steering", "pedal")
+        )
+        front_h = 900 if has_bottom_hud else 1080
+        sub_h = front_h // 3
+        half_h = front_h // 2
+
+        if is_single:
+            single_cam = self.get_current_single_cam()
+            slot_sizes = {single_cam: None}
+        elif is_2x2:
+            slot_sizes = {
+                'front': (960, half_h),
+                'back': (960, front_h - half_h),
+                'left_repeater': (960, half_h),
+                'right_repeater': (960, front_h - half_h),
+                'left_pillar': (236, 132),
+                'right_pillar': (236, 132),
+            }
+        else:
+            slot_sizes = {
+                'front': None,  # 메인 화면은 풀사이즈 유지
+                'back': (480, sub_h),
+                'left_repeater': (480, sub_h),
+                'right_repeater': (480, front_h - 2 * sub_h),
+                'left_pillar': (320, 180),
+                'right_pillar': (320, 180),
+            }
+
+        def _fit_slot(raw_img, target_slot):
+            if raw_img is None or raw_img.size == 0 or target_slot is None:
+                return raw_img
+            return OverlayRenderer.crop_and_resize_cover(raw_img, target_slot[0], target_slot[1], is_preview=True)
+
+        all_cam_keys = ['front', 'back', 'left_repeater', 'right_repeater', 'left_pillar', 'right_pillar']
+        frames = {k: None for k in all_cam_keys}
+        cams_to_read = []
+
+        for k in all_cam_keys:
             if k not in active_cam_keys:
-                frames[k] = None
                 continue
-            if reuse_same_frame and k in self.last_valid_preview_frames and self.last_preview_cam_frame_idx.get(k) == global_idx:
-                frames[k] = self.last_valid_preview_frames[k]
-                continue
-            if k in self.caps:
-                cap = self.caps[k]
-                k_fps = getattr(self, 'cam_fps', {}).get(k, front_fps)
-                k_fc = getattr(self, 'cam_fc', {}).get(k, 2160)
-                target_k_f = max(0, min(k_fc - 1, int(round(t_sec * k_fps))))
-
-                pos = getattr(self, 'current_cap_pos', {}).get(k, -1)
-                img = None
-                ret = False
-
-                if is_seeking or pos < 0 or target_k_f < pos or (target_k_f - pos) > 15:
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, target_k_f)
-                    ret, img = cap.read()
-                    self.current_cap_pos[k] = target_k_f + 1
-                elif target_k_f == pos:
-                    ret, img = cap.read()
-                    self.current_cap_pos[k] = pos + 1
-                elif target_k_f > pos:
-                    while pos < target_k_f:
-                        cap.grab()
-                        pos += 1
-                    ret, img = cap.read()
-                    self.current_cap_pos[k] = target_k_f + 1
-                else:
-                    # target_k_f == pos - 1: 이전 프레임과 동일한 프레임 유지
-                    img = self.last_valid_preview_frames.get(k)
-                    ret = img is not None
-
-                if ret and img is not None and img.size > 0:
-                    self.last_valid_preview_frames[k] = img
-                    self.last_preview_cam_frame_idx[k] = global_idx
-                    frames[k] = img
-                elif k in self.last_valid_preview_frames:
+            target_slot = slot_sizes.get(k)
+            if reuse_same_frame and self.last_preview_cam_frame_idx.get(k) == global_idx:
+                if k in self.last_valid_preview_frames and self.last_preview_slot_size.get(k) == target_slot:
                     frames[k] = self.last_valid_preview_frames[k]
-                else:
-                    frames[k] = None
+                    continue
+                raw_cached = self.last_raw_preview_frames.get(k)
+                if raw_cached is not None and raw_cached.size > 0:
+                    sized = _fit_slot(raw_cached, target_slot)
+                    self.last_valid_preview_frames[k] = sized
+                    self.last_preview_slot_size[k] = target_slot
+                    frames[k] = sized
+                    continue
+            if k in self.caps:
+                cams_to_read.append(k)
+
+        def _read_one_cam(k):
+            cap = self.caps[k]
+            target_slot = slot_sizes.get(k)
+            k_fps = getattr(self, 'cam_fps', {}).get(k, front_fps)
+            k_fc = getattr(self, 'cam_fc', {}).get(k, 2160)
+            target_k_f = max(0, min(k_fc - 1, int(round(t_sec * k_fps))))
+
+            pos = getattr(self, 'current_cap_pos', {}).get(k, -1)
+            raw_img = None
+            ret = False
+            new_frame_read = False
+
+            if is_seeking or pos < 0 or target_k_f < pos or (target_k_f - pos) > 15:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, target_k_f)
+                ret, raw_img = cap.read()
+                self.current_cap_pos[k] = target_k_f + 1
+                new_frame_read = True
+            elif target_k_f == pos:
+                ret, raw_img = cap.read()
+                self.current_cap_pos[k] = pos + 1
+                new_frame_read = True
+            elif target_k_f > pos:
+                while pos < target_k_f:
+                    cap.grab()
+                    pos += 1
+                ret, raw_img = cap.read()
+                self.current_cap_pos[k] = target_k_f + 1
+                new_frame_read = True
             else:
-                frames[k] = None
+                # target_k_f == pos - 1: 이전 프레임과 동일한 프레임 유지
+                if k in self.last_valid_preview_frames and self.last_preview_slot_size.get(k) == target_slot:
+                    return k, self.last_valid_preview_frames[k]
+                raw_img = self.last_raw_preview_frames.get(k)
+                ret = raw_img is not None and raw_img.size > 0
+                if not ret:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, target_k_f)
+                    ret, raw_img = cap.read()
+                    self.current_cap_pos[k] = target_k_f + 1
+                    new_frame_read = True
+
+            if ret and raw_img is not None and raw_img.size > 0:
+                if new_frame_read:
+                    self.last_raw_preview_frames[k] = raw_img
+                sized_img = _fit_slot(raw_img, target_slot)
+                self.last_valid_preview_frames[k] = sized_img
+                self.last_preview_slot_size[k] = target_slot
+                self.last_preview_cam_frame_idx[k] = global_idx
+                return k, sized_img
+            elif k in self.last_valid_preview_frames:
+                return k, self.last_valid_preview_frames[k]
+            return k, None
+
+        if len(cams_to_read) > 1 and hasattr(self, '_preview_pool') and self._preview_pool:
+            for k, img in self._preview_pool.map(_read_one_cam, cams_to_read):
+                frames[k] = img
+        else:
+            for k in cams_to_read:
+                _, img = _read_one_cam(k)
+                frames[k] = img
+
         return frames
 
     def on_enhance_plate_toggled(self, state):
@@ -1536,14 +1723,13 @@ class CTDashcamStudio(QMainWindow):
         grid = OverlayRenderer.render(
             frames, local_idx, clip_base_time, opts, decoder, self.fps, target_size=(1920, 1080)
         )
-        self.last_grid_image = grid.copy()
+        self.last_grid_image = grid
         self._display_grid_image(grid)
 
 
     def _display_grid_image(self, grid_mat):
-        grid_rgb = cv2.cvtColor(grid_mat, cv2.COLOR_BGR2RGB)
-        h, w, ch = grid_rgb.shape
-        qimg = QImage(grid_rgb.data, w, h, ch * w, QImage.Format.Format_RGB888).copy()
+        h, w, ch = grid_mat.shape
+        qimg = QImage(grid_mat.data, w, h, ch * w, QImage.Format.Format_BGR888)
         pixmap = QPixmap.fromImage(qimg)
 
         is_playing = hasattr(self, 'timer') and self.timer.isActive()
@@ -1862,6 +2048,8 @@ class CTDashcamStudio(QMainWindow):
         opts["export_speed"] = float(m.group(1)) if m else 1.0
         opts["preview_speed"] = (self.slider_preview_speed.value() * 0.5) if hasattr(self, 'slider_preview_speed') else 1.0
         opts["is_preview"] = not getattr(self, 'is_exporting', False)
+        opts["telemetry_order"] = list(getattr(self, "telemetry_order", OverlayRenderer.DEFAULT_TELEMETRY_ORDER))
+        opts["dragging_col"] = getattr(self, "_dragging_telemetry_key", None)
 
         opts["brightness"] = self.slider_brightness.value()
         opts["contrast"] = self.slider_contrast.value() / 100.0
