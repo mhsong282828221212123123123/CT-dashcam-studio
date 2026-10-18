@@ -733,28 +733,18 @@ class OverlayRenderer:
         font_pedal_val = cls._get_pil_font("bold", 20 * scale)
         font_brk_state = cls._get_pil_font("bold", 14.5 * scale)
 
-        # 1. SPEED (상단 숫자 ink = content_top, 하단 게이지 바 바닥 = baseline_y)
+        # 1. SPEED (상단 가감속 프로그레스 바 + 하단 중앙 정렬 속도 숫자/단위)
         if "speed" in col_box_map:
             cx1, cw = col_box_map["speed"]
             spd_val = int(round(float(data.get("speed_kmh", 0))))
             spd_str = f"{spd_val}"
-            s_bbox = draw.textbbox((0, 0), spd_str, font=font_spd_num)
-            s_w = s_bbox[2] - s_bbox[0]
-            s_h = s_bbox[3] - s_bbox[1]
-
             yellow_bgr = (10, 228, 255)
-            num_draw_y = content_top - s_bbox[1]
-            draw.text((cx1, num_draw_y), spd_str, font=font_spd_num, fill=yellow_bgr)
-
-            u_bbox = draw.textbbox((0, 0), "km/h", font=font_spd_unit)
-            unit_draw_y = (content_top + s_h) - u_bbox[3]
-            draw.text((cx1 + s_w + int(8 * scale), unit_draw_y), "km/h", font=font_spd_unit, fill=(215, 205, 195))
 
             bar_x1 = cx1
-            bar_x2 = cx1 + int(150 * scale)
+            bar_x2 = cx1 + int(152 * scale)
             bar_h_spd = max(4, int(7 * scale))
-            bar_y2 = baseline_y
-            bar_y1 = bar_y2 - bar_h_spd
+            bar_y1 = int(67 * scale)
+            bar_y2 = bar_y1 + bar_h_spd
             bar_r = max(2, int(3.5 * scale))
             draw.rounded_rectangle([bar_x1, bar_y1, bar_x2, bar_y2], radius=bar_r, fill=(52, 41, 34))
             spd_pct = max(0.0, min(1.0, spd_val / 150.0))
@@ -762,15 +752,29 @@ class OverlayRenderer:
                 fill_x2 = max(bar_x1 + bar_r * 2, int(round(bar_x1 + (bar_x2 - bar_x1) * spd_pct)))
                 draw.rounded_rectangle([bar_x1, bar_y1, fill_x2, bar_y2], radius=bar_r, fill=yellow_bgr)
 
-        # 2. PEDALS (ACC 수직 게이지 상단 = content_top, 게이지 및 BRK 배지 하단 = baseline_y 일직선 정렬)
+            s_bbox = draw.textbbox((0, 0), spd_str, font=font_spd_num)
+            s_w = s_bbox[2] - s_bbox[0]
+            u_bbox = draw.textbbox((0, 0), "km/h", font=font_spd_unit)
+            u_w = u_bbox[2] - u_bbox[0]
+            gap_su = int(7 * scale)
+            total_su_w = s_w + gap_su + u_w
+            spd_x = bar_x1 + max(0, ((bar_x2 - bar_x1) - total_su_w) // 2) - s_bbox[0]
+
+            spd_bot_y = int(129 * scale)
+            num_draw_y = spd_bot_y - s_bbox[3]
+            unit_draw_y = spd_bot_y - u_bbox[3]
+            draw.text((spd_x, num_draw_y), spd_str, font=font_spd_num, fill=yellow_bgr)
+            draw.text((spd_x + s_bbox[0] + s_w + gap_su, unit_draw_y), "km/h", font=font_spd_unit, fill=(215, 205, 195))
+
+        # 2. PEDALS (자연스러운 중앙 밸런스 배치: 60~140px)
         if "pedal" in col_box_map:
             cx1, cw = col_box_map["pedal"]
             acc_pct = int(round(max(0.0, min(100.0, float(data.get("accel_pct", 0))))))
             brk_on = bool(data.get("brake_applied", False)) or (float(data.get("brake_pct", 0)) > 0)
 
             bar_w = int(22 * scale)
-            by1 = content_top
-            by2 = baseline_y
+            by1 = int(60 * scale)
+            by2 = int(140 * scale)
             bar_h = by2 - by1
             bx1 = cx1
             bx2 = bx1 + bar_w
@@ -792,17 +796,16 @@ class OverlayRenderer:
                 fy1 = max(by1 + 1, by2 - fh)
                 draw.rounded_rectangle([bx1 + 1, fy1, bx2 - 1, by2 - 1], radius=max(2, br - 1), fill=(110, 235, 0))
 
-            # ACC / BRK 상단 라벨 및 하단 퍼센트 / 배지 (하단 라인을 baseline_y에 일치)
             acc_tx = bx2 + int(10 * scale)
             brk_x = cx1 + int(98 * scale)
 
             lbl_bbox = draw.textbbox((0, 0), "ACC", font=font_pedal_lbl)
-            lbl_draw_y = (content_top + int(16 * scale)) - lbl_bbox[1]
+            lbl_draw_y = (by1 + int(16 * scale)) - lbl_bbox[1]
             draw.text((acc_tx, lbl_draw_y), "ACC", font=font_pedal_lbl, fill=(215, 205, 195))
             draw.text((brk_x, lbl_draw_y), "BRK", font=font_pedal_lbl, fill=(215, 205, 195))
 
             lamp_h = int(29 * scale)
-            lamp_y2 = baseline_y
+            lamp_y2 = by2
             lamp_y1 = lamp_y2 - lamp_h
             lamp_x2 = brk_x + int(72 * scale)
             lamp_r = max(4, int(6 * scale))
@@ -810,8 +813,7 @@ class OverlayRenderer:
             acc_str = f"{acc_pct}%"
             v_bbox = draw.textbbox((0, 0), acc_str, font=font_pedal_val)
             acc_val_c = (150, 255, 80) if acc_pct > 0 else (165, 155, 145)
-            # % 텍스트 하단도 baseline_y(배지 하단)와 수평 정렬
-            val_draw_y = baseline_y - v_bbox[3]
+            val_draw_y = by2 - v_bbox[3]
             draw.text((acc_tx, val_draw_y), acc_str, font=font_pedal_val, fill=acc_val_c)
 
             if brk_on:
@@ -843,7 +845,7 @@ class OverlayRenderer:
             st_y = lamp_y1 + (lamp_y2 - lamp_y1 - st_h) // 2 - st_bbox[1]
             draw.text((ld_cx + int(10 * scale), st_y), state_str, font=font_brk_state, fill=txt_c)
 
-        # 5. TIME (날짜 상단 = content_top, 시간 텍스트 하단 = baseline_y 일직선 정렬)
+        # 5. TIME (날짜와 시간 사이 수평 구분선 포함 및 밀도감 있는 수직 간격)
         if "timestamp" in col_box_map:
             cx1, cw = col_box_map["timestamp"]
             curr_dt = base_time + timedelta(seconds=time_sec)
@@ -852,11 +854,20 @@ class OverlayRenderer:
 
             d_bbox = draw.textbbox((0, 0), d_str, font=font_date)
             t_bbox = draw.textbbox((0, 0), t_str, font=font_time)
+            t_w = t_bbox[2] - t_bbox[0]
 
-            d_draw_y = content_top - d_bbox[1]
-            t_draw_y = baseline_y - t_bbox[3]
+            d_top_y = int(68 * scale)
+            d_draw_y = d_top_y - d_bbox[1]
+            div_y = int(97 * scale)
+            t_bot_y = int(135 * scale)
+            t_draw_y = t_bot_y - t_bbox[3]
 
             draw.text((cx1, d_draw_y), d_str, font=font_date, fill=(245, 202, 115))
+            draw.line(
+                [(cx1, div_y), (cx1 + max(t_w, int(142 * scale)), div_y)],
+                fill=(66, 56, 48),
+                width=max(1, int(round(1.2 * scale)))
+            )
             draw.text((cx1 - int(1 * scale), t_draw_y), t_str, font=font_time, fill=(252, 252, 255))
 
         # 6. 주행 모드 (맨 우측 끝 열: MANUAL, TACC, AUTOPILOT, FSD 4단계 + 반투명 사각 박스 하이라이트)
@@ -916,21 +927,22 @@ class OverlayRenderer:
         hud_final = np.asarray(pil_hud)
         canvas[front_h:out_h, offset_x:out_w] = hud_final
 
-        # 3. STEERING 나노바나나 핸들 아이콘 (콘텐츠 영역의 정확한 수직 중앙 center_y에 배치)
+        # 3. STEERING 나노바나나 핸들 아이콘 (수직 중심 103*scale에 배치)
+        icon_center_y = int(103 * scale)
         if "steering" in col_box_map:
             cx1, cw = col_box_map["steering"]
             x_steer_wheel = offset_x + cx1 + int(52 * scale)
-            y_steer_wheel = front_h + center_y
+            y_steer_wheel = front_h + icon_center_y
             cls.draw_rotated_steering(
                 canvas, (x_steer_wheel, y_steer_wheel),
                 data.get("steering_deg", 0), scale, wheel_px=96
             )
 
-        # 4. BLINKER 화살표 (콘텐츠 영역의 정확한 수직 중앙 center_y에 배치)
+        # 4. BLINKER 화살표 (수직 중심 103*scale에 배치)
         if "turn_signal" in col_box_map:
             cx1, cw = col_box_map["turn_signal"]
             x_blinker_center = offset_x + cx1 + int(52 * scale)
-            y_blinker_center = front_h + center_y
+            y_blinker_center = front_h + icon_center_y
             cls.draw_turn_signals(
                 canvas, x_blinker_center, y_blinker_center,
                 data.get("left_blinker", False), data.get("right_blinker", False),
