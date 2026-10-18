@@ -17,7 +17,7 @@ class OverlayRenderer:
     _QR_CACHE = {}
 
     RELEASES_QR_URL = "https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases/"
-    DEFAULT_TELEMETRY_ORDER = ["timestamp", "speed", "pedal", "steering", "turn_signal", "fsd"]
+    DEFAULT_TELEMETRY_ORDER = ["timestamp", "steering", "turn_signal", "speed", "pedal", "fsd"]
     COL_WIDTH_BASE = {
         "timestamp":   185,
         "speed":       162,
