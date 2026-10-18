@@ -183,8 +183,8 @@ class QRShareDialog(QDialog):
 class HotkeyGuideDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("⌨ 키보드 단축키 안내")
-        self.setFixedSize(500, 480)
+        self.setWindowTitle("⌨ 단축키 및 화면 조작 안내")
+        self.setFixedSize(560, 620)
         self.setStyleSheet("""
             QDialog {
                 background-color: #101216;
@@ -195,6 +195,12 @@ class HotkeyGuideDialog(QDialog):
                 border: none;
                 padding: 0px;
             }
+            QLabel#sectionTitle {
+                color: #94A3B8;
+                font-size: 12px;
+                font-weight: bold;
+                padding-left: 2px;
+            }
             QFrame#shortcutsCard {
                 background-color: #161920;
                 border: 1px solid #262B36;
@@ -203,13 +209,25 @@ class HotkeyGuideDialog(QDialog):
             QLabel#keyBadge {
                 background-color: #222733;
                 color: #00E6FF;
-                font-family: 'Consolas', 'Segoe UI', monospace;
+                font-family: 'Consolas', 'Segoe UI', 'Malgun Gothic', monospace;
                 font-size: 11px;
                 font-weight: bold;
                 border: 1px solid #363E50;
                 border-radius: 5px;
                 padding: 4px 10px;
-                min-width: 120px;
+                min-width: 145px;
+                max-height: 24px;
+            }
+            QLabel#mouseBadge {
+                background-color: #23221C;
+                color: #FACC15;
+                font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+                font-size: 11px;
+                font-weight: bold;
+                border: 1px solid #4A4228;
+                border-radius: 5px;
+                padding: 4px 10px;
+                min-width: 145px;
                 max-height: 24px;
             }
             QLabel#descLabel {
@@ -240,53 +258,88 @@ class HotkeyGuideDialog(QDialog):
         from PyQt6.QtWidgets import QGridLayout
         
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(24, 20, 24, 20)
-        main_layout.setSpacing(14)
+        main_layout.setContentsMargins(24, 18, 24, 18)
+        main_layout.setSpacing(10)
 
         # 1. Header Title
-        title_lbl = QLabel("⌨ 키보드 단축키 가이드")
+        title_lbl = QLabel("⌨ 단축키 및 마우스 조작 가이드")
         title_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #00E6FF;")
         title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(title_lbl)
 
-        sub_lbl = QLabel("마우스 없이도 영상을 빠르고 편리하게 탐색하고 편집할 수 있습니다.")
-        sub_lbl.setStyleSheet("font-size: 11px; color: #8E95A5; margin-bottom: 4px;")
+        sub_lbl = QLabel("키보드 단축키와 마우스 직관 조작으로 빠르고 편리하게 탐색·편집할 수 있습니다.")
+        sub_lbl.setStyleSheet("font-size: 11px; color: #8E95A5; margin-bottom: 2px;")
         sub_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(sub_lbl)
 
-        # 2. Shortcuts Card Box
-        card = QFrame()
-        card.setObjectName("shortcutsCard")
-        card_layout = QGridLayout(card)
-        card_layout.setContentsMargins(18, 14, 18, 14)
-        card_layout.setHorizontalSpacing(16)
-        card_layout.setVerticalSpacing(10)
+        # 2. Keyboard Shortcuts Card
+        kb_sec_lbl = QLabel("⌨ 키보드 단축키")
+        kb_sec_lbl.setObjectName("sectionTitle")
+        main_layout.addWidget(kb_sec_lbl)
+
+        kb_card = QFrame()
+        kb_card.setObjectName("shortcutsCard")
+        kb_layout = QGridLayout(kb_card)
+        kb_layout.setContentsMargins(16, 12, 16, 12)
+        kb_layout.setHorizontalSpacing(14)
+        kb_layout.setVerticalSpacing(8)
 
         shortcuts = [
             ("Space", "재생 / 일시정지 토글"),
             ("←  /  →", "1초 뒤로 / 앞으로 이동"),
             ("Shift + ←  /  →", "5초 고속 뒤로 / 앞으로 이동"),
-            ("I", "내보내기 구간 시작점(In) 설정"),
-            ("O", "내보내기 구간 종료점(Out) 설정"),
+            ("I  /  O", "내보내기 구간 시작점(In) / 종료점(Out) 설정"),
             ("[  /  ]", "이전 클립 / 다음 클립 전환"),
-            ("Home", "영상 첫 프레임(0)으로 이동"),
-            ("F1  또는  ?", "단축키 안내 창 열기")
+            ("Home", "영상 첫 프레임(0초)으로 이동"),
+            ("F1  또는  ?", "단축키 및 조작 안내 창 열기"),
         ]
 
         for row_idx, (key_text, desc_text) in enumerate(shortcuts):
             key_badge = QLabel(key_text)
             key_badge.setObjectName("keyBadge")
             key_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            card_layout.addWidget(key_badge, row_idx, 0)
+            kb_layout.addWidget(key_badge, row_idx, 0)
 
             desc_lbl = QLabel(desc_text)
             desc_lbl.setObjectName("descLabel")
             desc_lbl.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-            card_layout.addWidget(desc_lbl, row_idx, 1)
+            kb_layout.addWidget(desc_lbl, row_idx, 1)
 
-        main_layout.addWidget(card)
+        main_layout.addWidget(kb_card)
 
-        # 3. Bottom Close Button
+        # 3. Mouse & UI Interaction Card
+        mouse_sec_lbl = QLabel("🖱 마우스 화면 조작 팁")
+        mouse_sec_lbl.setObjectName("sectionTitle")
+        main_layout.addWidget(mouse_sec_lbl)
+
+        mouse_card = QFrame()
+        mouse_card.setObjectName("shortcutsCard")
+        mouse_layout = QGridLayout(mouse_card)
+        mouse_layout.setContentsMargins(16, 12, 16, 12)
+        mouse_layout.setHorizontalSpacing(14)
+        mouse_layout.setVerticalSpacing(8)
+
+        mouse_tips = [
+            ("카메라 화면 더블클릭", "해당 카메라 단독 풀스크린 전환 / 분할 화면 복귀"),
+            ("하단 텔레메트리 드래그", "항목(TIME·SPEED 등)을 좌우로 끌어 표시 순서 변경"),
+            ("하단 텔레메트리 더블클릭", "텔레메트리 표시 순서를 기본 배치로 초기화"),
+            ("배속·밝기·대비 더블클릭", "슬라이더 또는 라벨 더블클릭 시 기본값 즉시 복원"),
+        ]
+
+        for row_idx, (act_text, desc_text) in enumerate(mouse_tips):
+            act_badge = QLabel(act_text)
+            act_badge.setObjectName("mouseBadge")
+            act_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            mouse_layout.addWidget(act_badge, row_idx, 0)
+
+            desc_lbl = QLabel(desc_text)
+            desc_lbl.setObjectName("descLabel")
+            desc_lbl.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+            mouse_layout.addWidget(desc_lbl, row_idx, 1)
+
+        main_layout.addWidget(mouse_card)
+
+        # 4. Bottom Close Button
         btn_close = QPushButton("확인")
         btn_close.setObjectName("btnClose")
         btn_close.clicked.connect(self.accept)
