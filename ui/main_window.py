@@ -28,7 +28,7 @@ from core.scanner import LightMotionScanner
 from core.exporter import ExportWorker
 from core.privacy_filter import PrivacyFilter
 from network.updater import UpdateCheckWorker
-from ui.widgets import ClickableLabel, HighlightSlider, SingleCameraPopup
+from ui.widgets import ClickableLabel, HighlightSlider, SingleCameraPopup, ToastNotification
 from ui.dialogs import QRShareDialog, HotkeyGuideDialog
 from ui.loader_worker import ClipLoaderWorker
 
@@ -77,9 +77,11 @@ class CTDashcamStudio(QMainWindow):
 
         self.current_single_cam = "front"
         self.single_cam_popup = None
+        self.toast_widget = None
         self.telemetry_order = list(OverlayRenderer.DEFAULT_TELEMETRY_ORDER)
         self._dragging_telemetry_key = None
 
+        self.setAcceptDrops(True)
         self.init_ui()
         self.setup_shortcuts()
 
@@ -959,6 +961,61 @@ class CTDashcamStudio(QMainWindow):
             QSplitter::handle:hover { background-color: #0098E6; }
         """)
 
+    def show_toast(self, message: str, duration_ms: int = 5500, icon: str = "🔒"):
+        """화면 상단 중앙에 플로팅 토스트 알림을 띄웁니다."""
+        if self.toast_widget is None:
+            self.toast_widget = ToastNotification(self)
+        self.toast_widget.show_message(message, duration_ms=duration_ms, icon=icon)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            paths = [u.toLocalFile() for u in urls if u.isLocalFile()]
+            if paths:
+                self.handle_dropped_paths(paths)
+            event.acceptProposedAction()
+        else:
+            super().dropEvent(event)
+
+    def handle_dropped_paths(self, paths):
+        """드래그 앤 드롭된 파일/폴더 경로 처리"""
+        has_encrypted = any("encryptedclips" in p.lower() for p in paths)
+        if has_encrypted:
+            self.show_toast(
+                "테슬라 차량의 블랙박스 암호화(EncryptedClips) 폴더가 감지되었습니다. "
+                "암호화된 클립은 차량 내 화면이나 테슬라 앱에서만 재생할 수 있습니다."
+            )
+
+        valid_paths = [p for p in paths if "encryptedclips" not in p.lower()]
+        if not valid_paths:
+            return
+
+        self.motion_cache.clear()
+
+        target_dir = None
+        for p in valid_paths:
+            if os.path.isdir(p):
+                target_dir = p
+                break
+
+        if not target_dir:
+            first_file = valid_paths[0]
+            parent = os.path.dirname(first_file)
+            grandparent = os.path.dirname(parent)
+            if grandparent and any(k in os.path.basename(parent).lower() for k in ["saved", "sentry", "recent", "clips"]):
+                target_dir = grandparent
+            elif parent:
+                target_dir = parent
+
+        if target_dir and os.path.exists(target_dir):
+            self.scan_and_populate_tree(target_dir)
+
     def load_directory_dialog(self):
         default_dir = get_app_dir()
         folder = QFileDialog.getExistingDirectory(self, "TeslaCam 폴더 선택", default_dir)
@@ -973,6 +1030,14 @@ class CTDashcamStudio(QMainWindow):
         self.reset_range_points()
         self.slider.set_event_blocks([])
         
+        has_encrypted_detected = False
+
+        # 1. 루트 경로 자체에 EncryptedClips가 포함되어 있는지 확인
+        norm_root = os.path.normpath(str(root_path)).lower()
+        if "encryptedclips" in norm_root:
+            has_encrypted_detected = True
+            self.show_toast("테슬라 차량의 블랙박스 암호화(EncryptedClips) 폴더가 감지되었습니다. 암호화된 클립은 차량 내 화면이나 테슬라 앱에서만 재생할 수 있습니다.")
+
         cam_suffixes = {
             "front": ["-front.mp4"],
             "back": ["-back.mp4"],
@@ -983,57 +1048,86 @@ class CTDashcamStudio(QMainWindow):
         }
 
         tree_data = {}
-        for dirpath, _, filenames in os.walk(root_path):
-            front_files = [f for f in filenames if f.endswith("-front.mp4")]
-            if not front_files:
-                continue
 
-            front_files.sort()
-            rel = os.path.relpath(dirpath, root_path)
-            parts = rel.split(os.sep) if rel != "." else [os.path.basename(dirpath)]
+        # 루트 경로 자체가 EncryptedClips인 경우 내부 파일은 모두 암호화되어 있으므로 스캔 제외
+        if not ("encryptedclips" in norm_root):
+            for dirpath, dirs, filenames in os.walk(root_path):
+                # 하위 디렉토리 중 EncryptedClips 발견 시 즉시 제외 및 알림
+                enc_dirs = [d for d in dirs if "encryptedclips" in d.lower()]
+                if enc_dirs:
+                    if not has_encrypted_detected:
+                        has_encrypted_detected = True
+                        self.show_toast("테슬라 차량의 블랙박스 암호화(EncryptedClips) 폴더가 감지되었습니다. 암호화된 클립은 차량 내 화면이나 테슬라 앱에서만 재생할 수 있습니다.")
+                    for d in enc_dirs:
+                        dirs.remove(d)
 
-            category = parts[0] if len(parts) > 1 else "TeslaCam"
-            event_name = parts[-1]
+                # 현재 탐색 디렉토리 경로에 EncryptedClips가 포함되어 있으면 제외
+                if "encryptedclips" in dirpath.lower():
+                    if not has_encrypted_detected:
+                        has_encrypted_detected = True
+                        self.show_toast("테슬라 차량의 블랙박스 암호화(EncryptedClips) 폴더가 감지되었습니다. 암호화된 클립은 차량 내 화면이나 테슬라 앱에서만 재생할 수 있습니다.")
+                    continue
 
-            if category not in tree_data:
-                tree_data[category] = {}
-            if event_name not in tree_data[category]:
-                tree_data[category][event_name] = []
+                # 파일 목록 중 EncryptedClips 포함 파일 감지 및 제외
+                enc_files = [f for f in filenames if "encryptedclips" in f.lower()]
+                if enc_files and not has_encrypted_detected:
+                    has_encrypted_detected = True
+                    self.show_toast("테슬라 차량의 블랙박스 암호화(EncryptedClips) 폴더가 감지되었습니다. 암호화된 클립은 차량 내 화면이나 테슬라 앱에서만 재생할 수 있습니다.")
 
-            dir_lower = dirpath.lower()
-            is_sentry_folder = ("sentryclips" in dir_lower or "sentry" in dir_lower) and not ("savedclips" in dir_lower)
-            is_recent_folder = "recentclips" in dir_lower or "recent" in dir_lower
+                front_files = [
+                    f for f in filenames 
+                    if f.endswith("-front.mp4") and "encryptedclips" not in f.lower()
+                ]
+                if not front_files:
+                    continue
 
-            for ff in front_files:
-                prefix = ff[:-10]
-                front_path = os.path.join(dirpath, ff)
-                cams = {"front": front_path}
+                front_files.sort()
+                rel = os.path.relpath(dirpath, root_path)
+                parts = rel.split(os.sep) if rel != "." else [os.path.basename(dirpath)]
 
-                for c_key, s_list in cam_suffixes.items():
-                    if c_key == "front":
-                        continue
-                    for s in s_list:
-                        candidate = os.path.join(dirpath, prefix + s)
-                        if os.path.exists(candidate):
-                            cams[c_key] = candidate
-                            break
+                category = parts[0] if len(parts) > 1 else "TeslaCam"
+                event_name = parts[-1]
 
-                ts_display = prefix
-                m = re.match(r'(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})', prefix)
-                if m:
-                    ts_display = f"{m.group(1)} {m.group(2)}:{m.group(3)}:{m.group(4)}"
+                if category not in tree_data:
+                    tree_data[category] = {}
+                if event_name not in tree_data[category]:
+                    tree_data[category][event_name] = []
 
-                tree_data[category][event_name].append({
-                    "prefix": prefix,
-                    "display": ts_display,
-                    "cams": cams,
-                    "dirpath": dirpath,
-                    "is_sentry": is_sentry_folder,
-                    "is_recent": is_recent_folder
-                })
+                dir_lower = dirpath.lower()
+                is_sentry_folder = ("sentryclips" in dir_lower or "sentry" in dir_lower) and not ("savedclips" in dir_lower)
+                is_recent_folder = "recentclips" in dir_lower or "recent" in dir_lower
+
+                for ff in front_files:
+                    prefix = ff[:-10]
+                    front_path = os.path.join(dirpath, ff)
+                    cams = {"front": front_path}
+
+                    for c_key, s_list in cam_suffixes.items():
+                        if c_key == "front":
+                            continue
+                        for s in s_list:
+                            candidate = os.path.join(dirpath, prefix + s)
+                            if os.path.exists(candidate):
+                                cams[c_key] = candidate
+                                break
+
+                    ts_display = prefix
+                    m = re.match(r'(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})', prefix)
+                    if m:
+                        ts_display = f"{m.group(1)} {m.group(2)}:{m.group(3)}:{m.group(4)}"
+
+                    tree_data[category][event_name].append({
+                        "prefix": prefix,
+                        "display": ts_display,
+                        "cams": cams,
+                        "dirpath": dirpath,
+                        "is_sentry": is_sentry_folder,
+                        "is_recent": is_recent_folder
+                    })
 
         if not tree_data:
-            QMessageBox.warning(self, "경고", "선택한 폴더 내에서 테슬라 영상 파일(*-front.mp4)을 찾지 못했습니다.")
+            if not has_encrypted_detected:
+                QMessageBox.warning(self, "경고", "선택한 폴더 내에서 테슬라 영상 파일(*-front.mp4)을 찾지 못했습니다.")
             return
 
         brush_white = QBrush(QColor("#FFFFFF"))
@@ -2649,6 +2743,8 @@ class CTDashcamStudio(QMainWindow):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        if hasattr(self, 'toast_widget') and self.toast_widget and self.toast_widget.isVisible():
+            self.toast_widget.reposition()
         if hasattr(self, 'single_cam_popup') and self.single_cam_popup and self.single_cam_popup.isVisible():
             self.single_cam_popup.close()
         if self.last_grid_image is not None and not self.is_exporting:

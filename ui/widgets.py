@@ -1,9 +1,10 @@
 from datetime import timedelta
 from PyQt6.QtWidgets import (
     QLabel, QSlider, QStyleOptionSlider, QStyle, QWidget,
-    QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QFrame, QToolTip
+    QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QFrame, QToolTip,
+    QGraphicsOpacityEffect
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QRect, QRectF, QPoint, QPointF
+from PyQt6.QtCore import Qt, pyqtSignal, QRect, QRectF, QPoint, QPointF, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QPainter, QColor, QPen, QLinearGradient, QPolygonF
 
 
@@ -370,6 +371,133 @@ class SingleCameraPopup(QWidget):
             event.accept()
             return
         super().keyPressEvent(event)
+
+
+class ToastNotification(QFrame):
+    """
+    모던 다크 테마 플로팅 토스트 알림 위젯
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("ToastNotificationFrame")
+        self.setFixedWidth(540)
+        self.setStyleSheet("""
+            QFrame#ToastNotificationFrame {
+                background-color: rgba(24, 28, 36, 0.96);
+                border: 1.5px solid #F59E0B;
+                border-radius: 8px;
+            }
+            QLabel#ToastIcon {
+                font-size: 20px;
+                padding-left: 2px;
+            }
+            QLabel#ToastMsg {
+                color: #F3F4F6;
+                font-size: 12px;
+                font-weight: 500;
+                line-height: 1.4;
+            }
+            QPushButton#ToastClose {
+                background: transparent;
+                color: #9CA3AF;
+                border: none;
+                font-size: 15px;
+                font-weight: bold;
+                padding: 0px 4px;
+            }
+            QPushButton#ToastClose:hover {
+                color: #FFFFFF;
+            }
+        """)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(14, 10, 12, 10)
+        layout.setSpacing(12)
+
+        self.icon_label = QLabel("🔒", self)
+        self.icon_label.setObjectName("ToastIcon")
+        layout.addWidget(self.icon_label)
+
+        self.msg_label = QLabel(self)
+        self.msg_label.setObjectName("ToastMsg")
+        self.msg_label.setWordWrap(True)
+        layout.addWidget(self.msg_label, stretch=1)
+
+        self.btn_close = QPushButton("✕", self)
+        self.btn_close.setObjectName("ToastClose")
+        self.btn_close.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_close.clicked.connect(self.hide_toast)
+        layout.addWidget(self.btn_close)
+
+        self.opacity_effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self.opacity_effect)
+        self.opacity_anim = QPropertyAnimation(self.opacity_effect, b"opacity")
+
+        self.dismiss_timer = QTimer(self)
+        self.dismiss_timer.setSingleShot(True)
+        self.dismiss_timer.timeout.connect(self.hide_toast)
+
+        self.hide()
+
+    def show_message(self, message: str, duration_ms: int = 5500, icon: str = "🔒"):
+        self.msg_label.setText(message)
+        self.icon_label.setText(icon)
+        self.adjustSize()
+        self.reposition()
+        self.show()
+        self.raise_()
+
+        self.opacity_anim.stop()
+        try:
+            self.opacity_anim.finished.disconnect(self._on_hide_finished)
+        except (TypeError, RuntimeError):
+            pass
+
+        self.opacity_anim.setDuration(220)
+        self.opacity_anim.setStartValue(0.0)
+        self.opacity_anim.setEndValue(1.0)
+        self.opacity_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self.opacity_anim.start()
+
+        self.dismiss_timer.stop()
+        self.dismiss_timer.start(duration_ms)
+
+    def reposition(self):
+        if self.parent():
+            parent_rect = self.parent().rect()
+            x = (parent_rect.width() - self.width()) // 2
+            y = 20
+            self.move(max(10, x), y)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.hide_toast()
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def hide_toast(self):
+        self.dismiss_timer.stop()
+        self.opacity_anim.stop()
+        try:
+            self.opacity_anim.finished.disconnect(self._on_hide_finished)
+        except (TypeError, RuntimeError):
+            pass
+
+        self.opacity_anim.setDuration(220)
+        self.opacity_anim.setStartValue(self.opacity_effect.opacity())
+        self.opacity_anim.setEndValue(0.0)
+        self.opacity_anim.setEasingCurve(QEasingCurve.Type.InCubic)
+        self.opacity_anim.finished.connect(self._on_hide_finished)
+        self.opacity_anim.start()
+
+    def _on_hide_finished(self):
+        try:
+            self.opacity_anim.finished.disconnect(self._on_hide_finished)
+        except (TypeError, RuntimeError):
+            pass
+        self.hide()
+
 
 
 
