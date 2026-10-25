@@ -1136,9 +1136,10 @@ class CTDashcamStudio(QMainWindow):
 
         def create_group_header_widget(title, color_hex, count_text=""):
             widget = QWidget()
+            widget.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             widget.setStyleSheet("background: transparent;")
             layout = QHBoxLayout(widget)
-            layout.setContentsMargins(2, 4, 2, 4)
+            layout.setContentsMargins(4, 2, 8, 2)
             layout.setSpacing(8)
 
             lbl_title = QLabel(f"● {title}")
@@ -1153,15 +1154,16 @@ class CTDashcamStudio(QMainWindow):
             line = QFrame()
             line.setFrameShape(QFrame.Shape.HLine)
             line.setFrameShadow(QFrame.Shadow.Plain)
-            line.setStyleSheet("background-color: #4E5D78; border: none; min-height: 1.5px; max-height: 1.5px;")
+            line.setStyleSheet("background-color: #4E5D78; border: none; min-height: 1px; max-height: 1px;")
             layout.addWidget(line, stretch=1)
 
             return widget
 
         def create_big_group_item(title, color_hex, count_text, group_type):
-            group_item = QTreeWidgetItem(self.tree_explorer, [title, count_text])
+            # QTreeWidget의 기본 텍스트와 setItemWidget 텍스트가 겹치지 않도록 빈 문자열 전달
+            group_item = QTreeWidgetItem(self.tree_explorer, ["", ""])
             group_item.setFirstColumnSpanned(True)
-            group_item.setSizeHint(0, QSize(100, 26))
+            group_item.setSizeHint(0, QSize(100, 28))
             group_item.setData(0, Qt.ItemDataRole.UserRole, {
                 "is_big_group": True,
                 "group_type": group_type
