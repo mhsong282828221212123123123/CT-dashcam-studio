@@ -1134,171 +1134,179 @@ class CTDashcamStudio(QMainWindow):
         brush_green = QBrush(QColor("#00FF66"))
         brush_red = QBrush(QColor("#FF3333"))
 
-        def add_horizon_divider(parent_container):
-            """최근클립, 저장된클립, 센트리 사이를 명확히 구분하는 가로 호라이즌 선"""
-            divider_item = QTreeWidgetItem(parent_container)
-            divider_item.setFlags(Qt.ItemFlag.NoItemFlags)
-            divider_item.setFirstColumnSpanned(True)
-            divider_item.setSizeHint(0, QSize(100, 15))
+        def create_group_header_widget(title, color_hex, count_text=""):
+            widget = QWidget()
+            widget.setStyleSheet("background: transparent;")
+            layout = QHBoxLayout(widget)
+            layout.setContentsMargins(2, 4, 2, 4)
+            layout.setSpacing(8)
 
-            div_container = QWidget()
-            div_layout = QVBoxLayout(div_container)
-            div_layout.setContentsMargins(4, 6, 4, 6)
-            div_layout.setSpacing(0)
-            div_line = QFrame()
-            div_line.setFrameShape(QFrame.Shape.HLine)
-            div_line.setFrameShadow(QFrame.Shadow.Plain)
-            div_line.setStyleSheet("background-color: #4E5D78; border: none; min-height: 1.5px; max-height: 1.5px;")
-            div_layout.addWidget(div_line)
+            lbl_title = QLabel(f"● {title}")
+            lbl_title.setStyleSheet(f"color: {color_hex}; font-size: 13px; font-weight: bold; background: transparent;")
+            layout.addWidget(lbl_title)
 
-            self.tree_explorer.setItemWidget(divider_item, 0, div_container)
-            return divider_item
+            if count_text:
+                lbl_count = QLabel(count_text)
+                lbl_count.setStyleSheet("color: #8C9BAE; font-size: 11px; font-weight: normal; background: transparent;")
+                layout.addWidget(lbl_count)
 
-        for cat_idx, (cat_name, events) in enumerate(tree_data.items()):
-            if cat_idx > 0:
-                add_horizon_divider(self.tree_explorer)
+            line = QFrame()
+            line.setFrameShape(QFrame.Shape.HLine)
+            line.setFrameShadow(QFrame.Shadow.Plain)
+            line.setStyleSheet("background-color: #4E5D78; border: none; min-height: 1.5px; max-height: 1.5px;")
+            layout.addWidget(line, stretch=1)
 
-            cat_item = QTreeWidgetItem(self.tree_explorer, [f"📁 {cat_name}", f"{len(events)}개 그룹"])
-            cat_item.setExpanded(True)
+            return widget
 
-            # 이벤트들을 1) 최근클립, 2) 저장된클립, 3) 센트리 3개 섹션으로 명확히 분류
-            recent_events = []
-            saved_events = []
-            sentry_events = []
+        def create_big_group_item(title, color_hex, count_text, group_type):
+            group_item = QTreeWidgetItem(self.tree_explorer, [title, count_text])
+            group_item.setFirstColumnSpanned(True)
+            group_item.setSizeHint(0, QSize(100, 26))
+            group_item.setData(0, Qt.ItemDataRole.UserRole, {
+                "is_big_group": True,
+                "group_type": group_type
+            })
+            group_item.setExpanded(True)
+            self.tree_explorer.setItemWidget(group_item, 0, create_group_header_widget(title, color_hex, count_text))
+            return group_item
 
+        # 전체 이벤트를 최근클립, 저장된클립, 센트리 3대 대그룹으로 분류
+        all_recent_events = []
+        all_saved_events = []
+        all_sentry_events = []
+
+        for cat_name, events in tree_data.items():
             for ev_name, clips in events.items():
-                is_sentry_group = any(c["is_sentry"] for c in clips)
-                is_recent_group = any(c["is_recent"] for c in clips)
+                is_sentry = any(c["is_sentry"] for c in clips)
+                is_recent = any(c["is_recent"] for c in clips)
 
-                if is_sentry_group and not is_recent_group:
-                    sentry_events.append((ev_name, clips))
-                elif is_recent_group:
-                    recent_events.append((ev_name, clips))
+                if is_sentry and not is_recent:
+                    all_sentry_events.append((ev_name, clips))
+                elif is_recent:
+                    all_recent_events.append((ev_name, clips))
                 else:
-                    saved_events.append((ev_name, clips))
+                    all_saved_events.append((ev_name, clips))
 
-            sections = []
-            if recent_events:
-                sections.append(("recent", recent_events))
-            if saved_events:
-                sections.append(("saved", saved_events))
-            if sentry_events:
-                sections.append(("sentry", sentry_events))
+        def _get_clip_dt(c):
+            pfx = c.get("prefix", "")
+            m = re.match(r'(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})', pfx)
+            if m:
+                try:
+                    return datetime.strptime(f"{m.group(1)} {m.group(2)}:{m.group(3)}:{m.group(4)}", "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    pass
+            return datetime.min
 
-            for sec_idx, (sec_type, ev_list) in enumerate(sections):
-                if sec_idx > 0:
-                    # 최근클립, 저장된클립, 센트리 사이를 구분하는 가로 호라이즌 선 삽입!
-                    add_horizon_divider(cat_item)
+        # 1. 최근 클립 (RecentClips) 대그룹: 초록색 (#00FF66), 첫 시작 시각부터 30분 단위 가상 디렉토리 분류
+        if all_recent_events:
+            # 전체 최근 클립 청크 분할
+            all_recent_clips = []
+            for ev_name, clips in all_recent_events:
+                all_recent_clips.extend(clips)
+            all_recent_clips.sort(key=_get_clip_dt)
 
-                if sec_type == "recent":
-                    # 1. 최근 클립 (RecentClips): 초록색 (#00FF66), 첫 시작 시각부터 30분 단위 가상 디렉토리 분류
-                    def _get_clip_dt(c):
-                        pfx = c.get("prefix", "")
-                        m = re.match(r'(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})', pfx)
-                        if m:
-                            try:
-                                return datetime.strptime(f"{m.group(1)} {m.group(2)}:{m.group(3)}:{m.group(4)}", "%Y-%m-%d %H:%M:%S")
-                            except Exception:
-                                pass
-                        return datetime.min
+            recent_chunks = []
+            curr_chunk = []
+            chunk_start_dt = None
 
-                    for ev_name, clips in ev_list:
-                        sorted_clips = sorted(clips, key=_get_clip_dt)
+            for c in all_recent_clips:
+                c_dt = _get_clip_dt(c)
+                if not curr_chunk:
+                    curr_chunk = [c]
+                    chunk_start_dt = c_dt
+                else:
+                    prev_dt = _get_clip_dt(curr_chunk[-1])
+                    time_gap = (c_dt - prev_dt).total_seconds()
+                    elapsed = (c_dt - chunk_start_dt).total_seconds()
 
-                        chunks = []
-                        curr_chunk = []
-                        chunk_start_dt = None
+                    if (c_dt != datetime.min and chunk_start_dt != datetime.min and elapsed >= 1800) or time_gap > 300:
+                        recent_chunks.append(curr_chunk)
+                        curr_chunk = [c]
+                        chunk_start_dt = c_dt
+                    else:
+                        curr_chunk.append(c)
 
-                        for c in sorted_clips:
-                            c_dt = _get_clip_dt(c)
-                            if not curr_chunk:
-                                curr_chunk = [c]
-                                chunk_start_dt = c_dt
-                            else:
-                                prev_dt = _get_clip_dt(curr_chunk[-1])
-                                time_gap = (c_dt - prev_dt).total_seconds()
-                                elapsed = (c_dt - chunk_start_dt).total_seconds()
+            if curr_chunk:
+                recent_chunks.append(curr_chunk)
 
-                                if (c_dt != datetime.min and chunk_start_dt != datetime.min and elapsed >= 1800) or time_gap > 300:
-                                    chunks.append(curr_chunk)
-                                    curr_chunk = [c]
-                                    chunk_start_dt = c_dt
-                                else:
-                                    curr_chunk.append(c)
+            recent_header = create_big_group_item("최근 클립", "#00FF66", f"{len(recent_chunks)}개 구간 ({len(all_recent_clips)}개 클립)", "recent")
 
-                        if curr_chunk:
-                            chunks.append(curr_chunk)
+            for chunk in recent_chunks:
+                s_dt = _get_clip_dt(chunk[0])
+                e_dt = _get_clip_dt(chunk[-1]) + timedelta(minutes=1)
 
-                        for chunk in chunks:
-                            s_dt = _get_clip_dt(chunk[0])
-                            e_dt = _get_clip_dt(chunk[-1]) + timedelta(minutes=1)
+                if s_dt != datetime.min and e_dt != datetime.min:
+                    if s_dt.date() == e_dt.date():
+                        vdir_title = f"📁 {s_dt.strftime('%Y-%m-%d %H:%M')} ~ {e_dt.strftime('%H:%M')}"
+                    else:
+                        vdir_title = f"📁 {s_dt.strftime('%Y-%m-%d %H:%M')} ~ {e_dt.strftime('%Y-%m-%d %H:%M')}"
+                else:
+                    vdir_title = f"📁 {chunk[0]['prefix']} (30분 구간)"
 
-                            if s_dt != datetime.min and e_dt != datetime.min:
-                                if s_dt.date() == e_dt.date():
-                                    vdir_title = f"📁 {s_dt.strftime('%Y-%m-%d %H:%M')} ~ {e_dt.strftime('%H:%M')}"
-                                else:
-                                    vdir_title = f"📁 {s_dt.strftime('%Y-%m-%d %H:%M')} ~ {e_dt.strftime('%Y-%m-%d %H:%M')}"
-                            else:
-                                vdir_title = f"📁 {chunk[0]['prefix']} (30분 구간)"
+                vdir_item = QTreeWidgetItem(recent_header, [vdir_title, f"{len(chunk)}개 클립"])
+                vdir_item.setForeground(0, brush_green)
+                vdir_item.setForeground(1, brush_green)
+                vdir_item.setExpanded(False)
+                vdir_item.setData(0, Qt.ItemDataRole.UserRole, {
+                    "is_virtual_dir": True,
+                    "clip_type": "recent",
+                    "clip_list": chunk
+                })
 
-                            vdir_item = QTreeWidgetItem(cat_item, [vdir_title, f"{len(chunk)}개 클립"])
-                            vdir_item.setForeground(0, brush_green)
-                            vdir_item.setForeground(1, brush_green)
-                            vdir_item.setExpanded(False)
-                            vdir_item.setData(0, Qt.ItemDataRole.UserRole, {
-                                "is_virtual_dir": True,
-                                "clip_type": "recent",
-                                "clip_list": chunk
-                            })
+                for clip in chunk:
+                    ch_count = len(clip["cams"])
+                    clip_item = QTreeWidgetItem(vdir_item, [f"🎬 {clip['display']}", f"[최근] {ch_count}채널"])
+                    clip_item.setForeground(0, brush_white)
+                    clip_item.setForeground(1, brush_green)
+                    clip_item.setData(0, Qt.ItemDataRole.UserRole, {
+                        "is_group": False,
+                        "is_sentry": False,
+                        "is_recent": True,
+                        "clip_type": "recent",
+                        "clip_list": [clip]
+                    })
 
-                            for clip in chunk:
-                                ch_count = len(clip["cams"])
-                                clip_item = QTreeWidgetItem(vdir_item, [f"🎬 {clip['display']}", f"[최근] {ch_count}채널"])
-                                clip_item.setForeground(0, brush_white)
-                                clip_item.setForeground(1, brush_green)
-                                clip_item.setData(0, Qt.ItemDataRole.UserRole, {
-                                    "is_group": False,
-                                    "is_sentry": False,
-                                    "is_recent": True,
-                                    "clip_type": "recent",
-                                    "clip_list": [clip]
-                                })
+        # 2. 저장된 클립 (SavedClips) 대그룹: 하얀색 (#FFFFFF), 절대 합치지 않고 개별 이벤트 폴더 유지
+        if all_saved_events:
+            total_saved_clips = sum(len(clips) for _, clips in all_saved_events)
+            saved_header = create_big_group_item("저장된 클립", "#FFFFFF", f"{len(all_saved_events)}개 이벤트 ({total_saved_clips}개 클립)", "saved")
 
-                elif sec_type == "saved":
-                    # 2. 저장된 클립 (SavedClips): 하얀색 (#FFFFFF), 절대 합치지 않고 개별 이벤트 폴더 유지
-                    for ev_name, clips in ev_list:
-                        ev_item = QTreeWidgetItem(cat_item, [f"📂 {ev_name}", f"{len(clips)}개 클립"])
-                        ev_item.setForeground(0, brush_white)
-                        ev_item.setForeground(1, brush_white)
-                        ev_item.setExpanded(False)
+            for ev_name, clips in all_saved_events:
+                ev_item = QTreeWidgetItem(saved_header, [f"📂 {ev_name}", f"{len(clips)}개 클립"])
+                ev_item.setForeground(0, brush_white)
+                ev_item.setForeground(1, brush_white)
+                ev_item.setExpanded(False)
 
-                        for clip in clips:
-                            ch_count = len(clip["cams"])
-                            clip_item = QTreeWidgetItem(ev_item, [f"🎬 {clip['display']}", f"[저장] {ch_count}채널"])
-                            clip_item.setForeground(0, brush_white)
-                            clip_item.setForeground(1, brush_white)
-                            clip_item.setData(0, Qt.ItemDataRole.UserRole, {
-                                "is_group": False,
-                                "is_sentry": False,
-                                "is_recent": False,
-                                "is_saved": True,
-                                "clip_type": "saved",
-                                "clip_list": [clip]
-                            })
+                for clip in clips:
+                    ch_count = len(clip["cams"])
+                    clip_item = QTreeWidgetItem(ev_item, [f"🎬 {clip['display']}", f"[저장] {ch_count}채널"])
+                    clip_item.setForeground(0, brush_white)
+                    clip_item.setForeground(1, brush_white)
+                    clip_item.setData(0, Qt.ItemDataRole.UserRole, {
+                        "is_group": False,
+                        "is_sentry": False,
+                        "is_recent": False,
+                        "is_saved": True,
+                        "clip_type": "saved",
+                        "clip_list": [clip]
+                    })
 
-                elif sec_type == "sentry":
-                    # 3. 센트리 모드 (SentryClips): 빨간색 (#FF3333), 주차 세션 단위 통합 유지
-                    for ev_name, clips in ev_list:
-                        tag = "[센트리]"
-                        ev_item = QTreeWidgetItem(cat_item, [f"📂 {ev_name} (주차 세션)", f"{tag} {len(clips)}개 영상 통합"])
-                        ev_item.setForeground(0, brush_white)
-                        ev_item.setForeground(1, brush_red)
-                        ev_item.setData(0, Qt.ItemDataRole.UserRole, {
-                            "is_group": True,
-                            "is_sentry": True,
-                            "clip_type": "sentry",
-                            "clip_list": clips
-                        })
+        # 3. 센트리 모드 (SentryClips) 대그룹: 빨간색 (#FF3333), 주차 세션 단위 통합 유지
+        if all_sentry_events:
+            total_sentry_clips = sum(len(clips) for _, clips in all_sentry_events)
+            sentry_header = create_big_group_item("센트리 클립", "#FF3333", f"{len(all_sentry_events)}개 세션 ({total_sentry_clips}개 클립)", "sentry")
+
+            for ev_name, clips in all_sentry_events:
+                tag = "[센트리]"
+                ev_item = QTreeWidgetItem(sentry_header, [f"📂 {ev_name} (주차 세션)", f"{tag} {len(clips)}개 영상 통합"])
+                ev_item.setForeground(0, brush_white)
+                ev_item.setForeground(1, brush_red)
+                ev_item.setData(0, Qt.ItemDataRole.UserRole, {
+                    "is_group": True,
+                    "is_sentry": True,
+                    "clip_type": "sentry",
+                    "clip_list": clips
+                })
 
     def get_current_clip_key(self):
         if not self.active_clip_list:
