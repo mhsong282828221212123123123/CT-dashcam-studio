@@ -1266,39 +1266,31 @@ class CTDashcamStudio(QMainWindow):
                         "clip_list": [clip]
                     })
 
-        # 2. 저장된 클립 (SavedClips) 대그룹: 하얀색 (#FFFFFF), 절대 합치지 않고 개별 이벤트 폴더 유지
+        # 2. 저장된 클립 (SavedClips) 대그룹: 센트리처럼 클립 디렉토리 클릭 시 한 클립으로 통합 로드
         if all_saved_events:
             total_saved_clips = sum(len(clips) for _, clips in all_saved_events)
             saved_header = create_big_group_item("저장된 클립", "#FFFFFF", f"{len(all_saved_events)}개 이벤트 ({total_saved_clips}개 클립)", "saved")
 
             for ev_name, clips in all_saved_events:
-                ev_item = QTreeWidgetItem(saved_header, [f"📂 {ev_name}", f"{len(clips)}개 클립"])
+                ev_item = QTreeWidgetItem(saved_header, [f"📂 {ev_name}", f"{len(clips)}개 영상 통합"])
                 ev_item.setForeground(0, brush_white)
                 ev_item.setForeground(1, brush_white)
-                ev_item.setExpanded(False)
+                ev_item.setData(0, Qt.ItemDataRole.UserRole, {
+                    "is_group": True,
+                    "is_sentry": False,
+                    "is_recent": False,
+                    "is_saved": True,
+                    "clip_type": "saved",
+                    "clip_list": clips
+                })
 
-                for clip in clips:
-                    ch_count = len(clip["cams"])
-                    clip_item = QTreeWidgetItem(ev_item, [f"🎬 {clip['display']}", f"[저장] {ch_count}채널"])
-                    clip_item.setForeground(0, brush_white)
-                    clip_item.setForeground(1, brush_white)
-                    clip_item.setData(0, Qt.ItemDataRole.UserRole, {
-                        "is_group": False,
-                        "is_sentry": False,
-                        "is_recent": False,
-                        "is_saved": True,
-                        "clip_type": "saved",
-                        "clip_list": [clip]
-                    })
-
-        # 3. 센트리 모드 (SentryClips) 대그룹: 빨간색 (#FF3333), 주차 세션 단위 통합 유지
+        # 3. 센트리 모드 (SentryClips) 대그룹: 빨간색 (#FF3333), 주차 세션 단위 통합 유지 (날짜만 표기, [센트리] 태그 제외)
         if all_sentry_events:
             total_sentry_clips = sum(len(clips) for _, clips in all_sentry_events)
             sentry_header = create_big_group_item("센트리 클립", "#FF3333", f"{len(all_sentry_events)}개 세션 ({total_sentry_clips}개 클립)", "sentry")
 
             for ev_name, clips in all_sentry_events:
-                tag = "[센트리]"
-                ev_item = QTreeWidgetItem(sentry_header, [f"📂 {ev_name} (주차 세션)", f"{tag} {len(clips)}개 영상 통합"])
+                ev_item = QTreeWidgetItem(sentry_header, [f"📂 {ev_name}", f"{len(clips)}개 영상 통합"])
                 ev_item.setForeground(0, brush_white)
                 ev_item.setForeground(1, brush_white)
                 ev_item.setData(0, Qt.ItemDataRole.UserRole, {
