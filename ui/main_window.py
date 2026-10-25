@@ -1131,8 +1131,6 @@ class CTDashcamStudio(QMainWindow):
             return
 
         brush_white = QBrush(QColor("#FFFFFF"))
-        brush_green = QBrush(QColor("#00FF66"))
-        brush_red = QBrush(QColor("#FF3333"))
 
         def create_group_header_widget(title, color_hex, count_text=""):
             widget = QWidget()
@@ -1246,8 +1244,8 @@ class CTDashcamStudio(QMainWindow):
                     vdir_title = f"📁 {chunk[0]['prefix']} (30분 구간)"
 
                 vdir_item = QTreeWidgetItem(recent_header, [vdir_title, f"{len(chunk)}개 클립"])
-                vdir_item.setForeground(0, brush_green)
-                vdir_item.setForeground(1, brush_green)
+                vdir_item.setForeground(0, brush_white)
+                vdir_item.setForeground(1, brush_white)
                 vdir_item.setExpanded(False)
                 vdir_item.setData(0, Qt.ItemDataRole.UserRole, {
                     "is_virtual_dir": True,
@@ -1259,7 +1257,7 @@ class CTDashcamStudio(QMainWindow):
                     ch_count = len(clip["cams"])
                     clip_item = QTreeWidgetItem(vdir_item, [f"🎬 {clip['display']}", f"[최근] {ch_count}채널"])
                     clip_item.setForeground(0, brush_white)
-                    clip_item.setForeground(1, brush_green)
+                    clip_item.setForeground(1, brush_white)
                     clip_item.setData(0, Qt.ItemDataRole.UserRole, {
                         "is_group": False,
                         "is_sentry": False,
@@ -1302,7 +1300,7 @@ class CTDashcamStudio(QMainWindow):
                 tag = "[센트리]"
                 ev_item = QTreeWidgetItem(sentry_header, [f"📂 {ev_name} (주차 세션)", f"{tag} {len(clips)}개 영상 통합"])
                 ev_item.setForeground(0, brush_white)
-                ev_item.setForeground(1, brush_red)
+                ev_item.setForeground(1, brush_white)
                 ev_item.setData(0, Qt.ItemDataRole.UserRole, {
                     "is_group": True,
                     "is_sentry": True,
@@ -2398,45 +2396,24 @@ class CTDashcamStudio(QMainWindow):
         self.update_range_highlight()
 
     def _clear_tree_range_highlights(self):
-        """트리 내 모든 클립 아이템의 범위 하이라이트(배경·텍스트색)를 초기 색상 정책대로 복원."""
+        """트리 내 모든 클립 아이템의 범위 하이라이트(배경·텍스트색)를 기본 하얀색으로 복원."""
         brush_white = QBrush(QColor("#FFFFFF"))
-        brush_green = QBrush(QColor("#00FF66"))
-        brush_red   = QBrush(QColor("#FF3333"))
 
         it = QTreeWidgetItemIterator(self.tree_explorer)
         while it.value():
             item = it.value()
             cdata = item.data(0, Qt.ItemDataRole.UserRole) or {}
-            ctype = cdata.get("clip_type", "")
 
-            if cdata.get("is_virtual_dir", False):
-                # 최근 클립 가상 디렉토리: 초록색
+            if cdata.get("is_virtual_dir", False) or "clip_list" in cdata:
                 item.setBackground(0, QBrush())
                 item.setBackground(1, QBrush())
-                item.setForeground(0, brush_green)
-                item.setForeground(1, brush_green)
-            elif "clip_list" in cdata:
-                item.setBackground(0, QBrush())
-                item.setBackground(1, QBrush())
-                if ctype == "sentry" or cdata.get("is_sentry", False):
-                    # 센트리: 빨간색 (#FF3333)
-                    item.setForeground(0, brush_white)
-                    item.setForeground(1, brush_red)
-                elif ctype == "recent" or cdata.get("is_recent", False):
-                    # 최근 클립: 초록색 (#00FF66)
-                    item.setForeground(0, brush_white)
-                    item.setForeground(1, brush_green)
-                else:
-                    # 저장된 클립 (SavedClips): 하얀색 (#FFFFFF)
-                    item.setForeground(0, brush_white)
-                    item.setForeground(1, brush_white)
+                item.setForeground(0, brush_white)
+                item.setForeground(1, brush_white)
             it += 1
 
     def _apply_tree_range_highlights(self, s_dt, e_dt):
-        """s_dt ~ e_dt 구간에 걸치는 클립 아이템을 노란색으로 하이라이트하고 미선택 클립은 색상 정책대로 복원."""
+        """s_dt ~ e_dt 구간에 걸치는 클립 아이템을 노란색으로 하이라이트하고 미선택 클립은 기본 하얀색으로 복원."""
         brush_white     = QBrush(QColor("#FFFFFF"))
-        brush_green     = QBrush(QColor("#00FF66"))
-        brush_red       = QBrush(QColor("#FF3333"))
         brush_yellow_bg = QBrush(QColor("#5C4A00"))   # 어두운 황금색 배경 (다크 테마용)
         brush_yellow_fg = QBrush(QColor("#FFD700"))   # 골드 텍스트
         clip_dur = timedelta(seconds=60)              # 테슬라 클립 기본 길이 1분
@@ -2466,19 +2443,8 @@ class CTDashcamStudio(QMainWindow):
                         else:
                             item.setBackground(0, QBrush())
                             item.setBackground(1, QBrush())
-                            ctype = cdata.get("clip_type", "")
-                            if ctype == "sentry" or cdata.get("is_sentry", False):
-                                # 센트리: 빨간색
-                                item.setForeground(0, brush_white)
-                                item.setForeground(1, brush_red)
-                            elif ctype == "recent" or cdata.get("is_recent", False):
-                                # 최근 클립: 초록색
-                                item.setForeground(0, brush_white)
-                                item.setForeground(1, brush_green)
-                            else:
-                                # 저장된 클립: 하얀색
-                                item.setForeground(0, brush_white)
-                                item.setForeground(1, brush_white)
+                            item.setForeground(0, brush_white)
+                            item.setForeground(1, brush_white)
                     except Exception:
                         pass
             it += 1
