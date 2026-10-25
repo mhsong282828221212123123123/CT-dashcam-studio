@@ -12,7 +12,7 @@ import cv2
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QPushButton, QLabel, QCheckBox, QFileDialog, QGroupBox,
-    QProgressBar, QMessageBox, QComboBox, QTreeWidget, QTreeWidgetItem,
+    QProgressBar, QMessageBox, QComboBox, QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator,
     QSplitter, QStyleFactory, QDialog, QProgressDialog, QApplication,
     QSizePolicy, QSlider, QFrame
 )
@@ -1085,7 +1085,7 @@ class CTDashcamStudio(QMainWindow):
                 rel = os.path.relpath(dirpath, root_path)
                 parts = rel.split(os.sep) if rel != "." else [os.path.basename(dirpath)]
 
-                category = parts[0] if len(parts) > 1 else "TeslaCam"
+                category = parts[0] if (parts and parts[0] != ".") else "TeslaCam"
                 event_name = parts[-1]
 
                 if category not in tree_data:
@@ -1152,23 +1152,87 @@ class CTDashcamStudio(QMainWindow):
                         "clip_list": clips
                     })
                 else:
-                    ev_item = QTreeWidgetItem(cat_item, [f"📂 {ev_name}", f"{len(clips)}개 클립"])
-                    ev_item.setExpanded(True)
+                    # 주행 클립: 연속된 주행 클립의 첫 시작 시각부터 30분씩 묶어서 가상 디렉토리로 분류
+                    def _get_clip_dt(c):
+                        pfx = c.get("prefix", "")
+                        m = re.match(r'(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})', pfx)
+                        if m:
+                            try:
+                                return datetime.strptime(f"{m.group(1)} {m.group(2)}:{m.group(3)}:{m.group(4)}", "%Y-%m-%d %H:%M:%S")
+                            except Exception:
+                                pass
+                        return datetime.min
 
-                    for clip in clips:
-                        front_path = clip["cams"]["front"]
-                        ch_count = len(clip["cams"])
-                        
-                        is_park = RealTeslaSEIDecoder.quick_check_is_parking(front_path)
-                        tag = "[주차]" if is_park else "[주행]"
-                        
-                        clip_item = QTreeWidgetItem(ev_item, [f"🎬 {clip['display']}", f"{tag} {ch_count}채널"])
-                        clip_item.setForeground(1, brush_green if is_park else brush_white)
-                        clip_item.setData(0, Qt.ItemDataRole.UserRole, {
-                            "is_group": False,
-                            "is_sentry": is_park,
-                            "clip_list": [clip]
+                    sorted_clips = sorted(clips, key=_get_clip_dt)
+
+                    # 연속된 주행 클립 기준 첫 시작 시각부터 30분(1800초) 단위로 청크 분할
+                    chunks = []
+                    curr_chunk = []
+                    chunk_start_dt = None
+
+                    for c in sorted_clips:
+                        c_dt = _get_clip_dt(c)
+                        if not curr_chunk:
+                            curr_chunk = [c]
+                            chunk_start_dt = c_dt
+                        else:
+                            prev_dt = _get_clip_dt(curr_chunk[-1])
+                            time_gap = (c_dt - prev_dt).total_seconds()
+                            elapsed = (c_dt - chunk_start_dt).total_seconds()
+
+                            # 시작 시각부터 30분(1800초) 초과 또는 5분(300초) 이상 공백 발생 시 새 청크 분리
+                            if (c_dt != datetime.min and chunk_start_dt != datetime.min and elapsed >= 1800) or time_gap > 300:
+                                chunks.append(curr_chunk)
+                                curr_chunk = [c]
+                                chunk_start_dt = c_dt
+                            else:
+                                curr_chunk.append(c)
+
+                    if curr_chunk:
+                        chunks.append(curr_chunk)
+
+                    # 폴더명이 카테고리와 같거나 단일 루트인 경우 불필요한 중간 폴더 생략
+                    is_flat_folder = ev_name.lower() in [cat_name.lower(), "recentclips", "recent", "savedclips", "saved"]
+                    parent_for_chunks = cat_item if is_flat_folder else QTreeWidgetItem(cat_item, [f"📂 {ev_name}", f"{len(clips)}개 클립"])
+                    if not is_flat_folder:
+                        parent_for_chunks.setExpanded(True)
+
+                    brush_cyan = QBrush(QColor("#00E6FF"))
+
+                    for chunk in chunks:
+                        s_dt = _get_clip_dt(chunk[0])
+                        e_dt = _get_clip_dt(chunk[-1]) + timedelta(minutes=1)
+
+                        if s_dt != datetime.min and e_dt != datetime.min:
+                            if s_dt.date() == e_dt.date():
+                                vdir_title = f"📁 {s_dt.strftime('%Y-%m-%d %H:%M')} ~ {e_dt.strftime('%H:%M')}"
+                            else:
+                                vdir_title = f"📁 {s_dt.strftime('%Y-%m-%d %H:%M')} ~ {e_dt.strftime('%Y-%m-%d %H:%M')}"
+                        else:
+                            vdir_title = f"📁 {chunk[0]['prefix']} (30분 구간)"
+
+                        vdir_item = QTreeWidgetItem(parent_for_chunks, [vdir_title, f"{len(chunk)}개 클립"])
+                        vdir_item.setForeground(0, brush_cyan)
+                        vdir_item.setExpanded(True)
+                        vdir_item.setData(0, Qt.ItemDataRole.UserRole, {
+                            "is_virtual_dir": True,
+                            "clip_list": chunk
                         })
+
+                        for clip in chunk:
+                            front_path = clip["cams"]["front"]
+                            ch_count = len(clip["cams"])
+
+                            is_park = RealTeslaSEIDecoder.quick_check_is_parking(front_path)
+                            tag = "[주차]" if is_park else "[주행]"
+
+                            clip_item = QTreeWidgetItem(vdir_item, [f"🎬 {clip['display']}", f"{tag} {ch_count}채널"])
+                            clip_item.setForeground(1, brush_green if is_park else brush_white)
+                            clip_item.setData(0, Qt.ItemDataRole.UserRole, {
+                                "is_group": False,
+                                "is_sentry": is_park,
+                                "clip_list": [clip]
+                            })
 
     def get_current_clip_key(self):
         if not self.active_clip_list:
@@ -1180,6 +1244,11 @@ class CTDashcamStudio(QMainWindow):
             return
         item_data = item.data(0, Qt.ItemDataRole.UserRole)
         if not item_data or "clip_list" not in item_data:
+            return
+
+        # 30분 가상 디렉토리 클릭 시: 단순 트리 접기/펼치기만 수행
+        if item_data.get("is_virtual_dir", False):
+            item.setExpanded(not item.isExpanded())
             return
 
         self.stop_motion_scanner()
@@ -1521,15 +1590,21 @@ class CTDashcamStudio(QMainWindow):
         if not curr_item:
             return None
 
-        parent_item = curr_item.parent()
-        if not parent_item:
-            return None
+        # 모든 재생 가능한 개별/그룹 클립 아이템 수집
+        all_clips = []
+        it = QTreeWidgetItemIterator(self.tree_explorer)
+        while it.value():
+            item = it.value()
+            cdata = item.data(0, Qt.ItemDataRole.UserRole) or {}
+            if "clip_list" in cdata and not cdata.get("is_virtual_dir", False):
+                all_clips.append(item)
+            it += 1
 
-        idx = parent_item.indexOfChild(curr_item)
-        target_idx = idx + direction
-
-        if 0 <= target_idx < parent_item.childCount():
-            return parent_item.child(target_idx)
+        if curr_item in all_clips:
+            idx = all_clips.index(curr_item)
+            target_idx = idx + direction
+            if 0 <= target_idx < len(all_clips):
+                return all_clips[target_idx]
         return None
 
     def play_prev_clip(self):
@@ -2254,28 +2329,21 @@ class CTDashcamStudio(QMainWindow):
         brush_green = QBrush(QColor("#00FF66"))
         brush_red   = QBrush(QColor("#FF3333"))
 
-        root = self.tree_explorer.invisibleRootItem()
-        for ci in range(root.childCount()):         # 카테고리
-            cat = root.child(ci)
-            for ei in range(cat.childCount()):      # 이벤트 그룹
-                ev = cat.child(ei)
-                cdata = ev.data(0, Qt.ItemDataRole.UserRole) or {}
+        it = QTreeWidgetItemIterator(self.tree_explorer)
+        while it.value():
+            item = it.value()
+            cdata = item.data(0, Qt.ItemDataRole.UserRole) or {}
+            if "clip_list" in cdata and not cdata.get("is_virtual_dir", False):
+                item.setBackground(0, QBrush())
+                item.setBackground(1, QBrush())
                 if cdata.get("is_group", False):
-                    # 센트리 그룹: 배경·텍스트 모두 초기화
-                    ev.setBackground(0, QBrush())
-                    ev.setBackground(1, QBrush())
-                    ev.setForeground(0, brush_white)
-                    ev.setForeground(1, brush_red if cdata.get("is_sentry") else brush_white)
+                    item.setForeground(0, brush_white)
+                    item.setForeground(1, brush_red if cdata.get("is_sentry") else brush_white)
                 else:
-                    for ki in range(ev.childCount()):  # 개별 클립
-                        clip_item = ev.child(ki)
-                        kdata = clip_item.data(0, Qt.ItemDataRole.UserRole) or {}
-                        is_park = kdata.get("is_sentry", False)
-                        clip_item.setBackground(0, QBrush())
-                        clip_item.setBackground(1, QBrush())
-                        clip_item.setForeground(0, brush_white)
-                        clip_item.setForeground(1, brush_green if is_park else brush_white)
-
+                    is_park = cdata.get("is_sentry", False)
+                    item.setForeground(0, brush_white)
+                    item.setForeground(1, brush_green if is_park else brush_white)
+            it += 1
 
     def _apply_tree_range_highlights(self, s_dt, e_dt):
         """s_dt ~ e_dt 구간에 걸치는 클립 아이템을 노란색으로 하이라이트."""
@@ -2283,60 +2351,42 @@ class CTDashcamStudio(QMainWindow):
         brush_yellow_fg = QBrush(QColor("#FFD700"))   # 골드 텍스트
         clip_dur = timedelta(seconds=60)              # 테슬라 클립 기본 길이 1분
 
-        root = self.tree_explorer.invisibleRootItem()
-        for ci in range(root.childCount()):
-            cat = root.child(ci)
-            for ei in range(cat.childCount()):
-                ev = cat.child(ei)
-                cdata = ev.data(0, Qt.ItemDataRole.UserRole) or {}
-
-                if cdata.get("is_group", False):
-                    # 센트리 그룹: clip_list 첫/마지막 prefix로 범위 추정
-                    clips = cdata.get("clip_list", [])
-                    if not clips:
-                        continue
+        it = QTreeWidgetItemIterator(self.tree_explorer)
+        while it.value():
+            item = it.value()
+            cdata = item.data(0, Qt.ItemDataRole.UserRole) or {}
+            if "clip_list" in cdata and not cdata.get("is_virtual_dir", False):
+                clips = cdata.get("clip_list", [])
+                if clips:
                     try:
                         def parse_prefix(pfx):
                             m = re.match(r'(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})', pfx)
                             return datetime.strptime(f"{m.group(1)} {m.group(2)}:{m.group(3)}:{m.group(4)}", "%Y-%m-%d %H:%M:%S") if m else None
+
                         clip_start = parse_prefix(clips[0]["prefix"])
                         clip_end   = parse_prefix(clips[-1]["prefix"])
                         if clip_end:
                             clip_end += clip_dur
+
                         if clip_start and clip_end and clip_start < e_dt and clip_end > s_dt:
-                            ev.setBackground(0, brush_yellow_bg)
-                            ev.setBackground(1, brush_yellow_bg)
-                            ev.setForeground(0, brush_yellow_fg)
+                            item.setBackground(0, brush_yellow_bg)
+                            item.setBackground(1, brush_yellow_bg)
+                            item.setForeground(0, brush_yellow_fg)
+                        else:
+                            item.setBackground(0, QBrush())
+                            item.setBackground(1, QBrush())
+                            if cdata.get("is_group", False):
+                                is_sentry = cdata.get("is_sentry", False)
+                                item.setForeground(0, brush_white)
+                                item.setForeground(1, brush_red if is_sentry else brush_white)
+                            else:
+                                is_park = cdata.get("is_sentry", False)
+                                orig_color = QColor("#00FF66") if is_park else QColor("#FFFFFF")
+                                item.setForeground(0, brush_white)
+                                item.setForeground(1, QBrush(orig_color))
                     except Exception:
                         pass
-                else:
-                    for ki in range(ev.childCount()):
-                        clip_item = ev.child(ki)
-                        kdata = clip_item.data(0, Qt.ItemDataRole.UserRole) or {}
-                        clips = kdata.get("clip_list", [])
-                        if not clips:
-                            continue
-                        try:
-                            m = re.match(r'(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})', clips[0]["prefix"])
-                            if not m:
-                                continue
-                            clip_start = datetime.strptime(
-                                f"{m.group(1)} {m.group(2)}:{m.group(3)}:{m.group(4)}", "%Y-%m-%d %H:%M:%S")
-                            clip_end = clip_start + clip_dur
-                            # 겹치면 하이라이트 (clip_start < e_dt AND clip_end > s_dt)
-                            if clip_start < e_dt and clip_end > s_dt:
-                                clip_item.setBackground(0, brush_yellow_bg)
-                                clip_item.setBackground(1, brush_yellow_bg)
-                                clip_item.setForeground(0, brush_yellow_fg)
-                            else:
-                                clip_item.setBackground(0, QBrush())
-                                clip_item.setBackground(1, QBrush())
-                                # 원래 텍스트 색 복원 (주차=green, 주행=white)
-                                is_park = kdata.get("is_sentry", False)
-                                orig_color = QColor("#00FF66") if is_park else QColor("#FFFFFF")
-                                clip_item.setForeground(0, QBrush(orig_color))
-                        except Exception:
-                            pass
+            it += 1
 
     def update_range_highlight(self):
         if not self.active_clip_list or (not self.start_point and not self.end_point):
@@ -2360,19 +2410,29 @@ class CTDashcamStudio(QMainWindow):
             in_f = self.start_point["frame"] if self.start_point else 0
             out_f = self.end_point["frame"] if self.end_point else (self.total_frames - 1)
         else:
-            # 개별 클립 모드: 현재 활성 아이템과 start_point / end_point 아이템의 트리 계층 비교
+            # 개별 클립 모드: 현재 활성 아이템과 start_point / end_point 아이템의 순서 비교
             curr_item = self.current_item
             start_item = self.start_point.get("item") if self.start_point else None
             end_item = self.end_point.get("item") if self.end_point else None
-            parent = curr_item.parent() if curr_item else None
+
+            all_clip_items = []
+            it = QTreeWidgetItemIterator(self.tree_explorer)
+            while it.value():
+                it_item = it.value()
+                it_data = it_item.data(0, Qt.ItemDataRole.UserRole) or {}
+                if not it_data.get("is_group", False) and not it_data.get("is_virtual_dir", False) and it_data.get("clip_list"):
+                    all_clip_items.append(it_item)
+                it += 1
+
+            curr_idx = all_clip_items.index(curr_item) if curr_item in all_clip_items else -1
+            start_idx = all_clip_items.index(start_item) if start_item in all_clip_items else -1
+            end_idx = all_clip_items.index(end_item) if end_item in all_clip_items else -1
 
             # in_f 결정
             if self.start_point:
                 if start_item == curr_item:
                     in_f = self.start_point["frame"]
-                elif parent and start_item and start_item.parent() == parent:
-                    start_idx = parent.indexOfChild(start_item)
-                    curr_idx = parent.indexOfChild(curr_item)
+                elif start_idx != -1 and curr_idx != -1:
                     in_f = 0 if start_idx < curr_idx else None
                 else:
                     in_f = None
@@ -2383,9 +2443,7 @@ class CTDashcamStudio(QMainWindow):
             if self.end_point:
                 if end_item == curr_item:
                     out_f = self.end_point["frame"]
-                elif parent and end_item and end_item.parent() == parent:
-                    end_idx = parent.indexOfChild(end_item)
-                    curr_idx = parent.indexOfChild(curr_item)
+                elif end_idx != -1 and curr_idx != -1:
                     out_f = (self.total_frames - 1) if end_idx > curr_idx else None
                 else:
                     out_f = None
@@ -2498,12 +2556,20 @@ class CTDashcamStudio(QMainWindow):
                     "end_f": e_f
                 }]
 
-        # 2) 서로 다른 개별 클립 간에 걸쳐 선택된 경우
+        # 2) 서로 다른 개별 클립 간에 걸쳐 선택된 경우 (같은 폴더 및 가상 디렉토리 간 연계 지원)
         if start_item and end_item:
-            parent_item = start_item.parent()
-            if parent_item and parent_item == end_item.parent():
-                start_idx = parent_item.indexOfChild(start_item)
-                end_idx = parent_item.indexOfChild(end_item)
+            all_clip_items = []
+            it = QTreeWidgetItemIterator(self.tree_explorer)
+            while it.value():
+                it_item = it.value()
+                it_data = it_item.data(0, Qt.ItemDataRole.UserRole) or {}
+                if not it_data.get("is_group", False) and not it_data.get("is_virtual_dir", False) and it_data.get("clip_list"):
+                    all_clip_items.append(it_item)
+                it += 1
+
+            if start_item in all_clip_items and end_item in all_clip_items:
+                start_idx = all_clip_items.index(start_item)
+                end_idx = all_clip_items.index(end_item)
 
                 if start_idx > end_idx:
                     QMessageBox.warning(self, "경고", "시간 순서가 올바르지 않습니다.")
@@ -2511,7 +2577,7 @@ class CTDashcamStudio(QMainWindow):
 
                 target_clips = []
                 for i in range(start_idx, end_idx + 1):
-                    child_item = parent_item.child(i)
+                    child_item = all_clip_items[i]
                     cdata = child_item.data(0, Qt.ItemDataRole.UserRole)
                     if not cdata or not cdata.get("clip_list"):
                         continue
