@@ -1209,7 +1209,7 @@ class CTDashcamStudio(QMainWindow):
                         vdir_item = QTreeWidgetItem(cat_item, [vdir_title, f"{len(chunk)}개 클립"])
                         vdir_item.setForeground(0, brush_green)
                         vdir_item.setForeground(1, brush_green)
-                        vdir_item.setExpanded(True)
+                        vdir_item.setExpanded(False)
                         vdir_item.setData(0, Qt.ItemDataRole.UserRole, {
                             "is_virtual_dir": True,
                             "clip_type": "recent",
@@ -1233,7 +1233,7 @@ class CTDashcamStudio(QMainWindow):
                     ev_item = QTreeWidgetItem(cat_item, [f"📂 {ev_name}", f"{len(clips)}개 클립"])
                     ev_item.setForeground(0, brush_white)
                     ev_item.setForeground(1, brush_white)
-                    ev_item.setExpanded(True)
+                    ev_item.setExpanded(False)
 
                     for clip in clips:
                         ch_count = len(clip["cams"])
@@ -1258,12 +1258,10 @@ class CTDashcamStudio(QMainWindow):
         if self.is_exporting:
             return
         item_data = item.data(0, Qt.ItemDataRole.UserRole)
-        if not item_data or "clip_list" not in item_data:
-            return
-
-        # 30분 가상 디렉토리 클릭 시: 단순 트리 접기/펼치기만 수행
-        if item_data.get("is_virtual_dir", False):
-            item.setExpanded(not item.isExpanded())
+        # 하위 클립을 가진 폴더(30분 가상 디렉토리 또는 이벤트 폴더 등) 클릭 시: 단순 트리 접기/펼치기만 수행
+        if not item_data or "clip_list" not in item_data or item_data.get("is_virtual_dir", False):
+            if item.childCount() > 0:
+                item.setExpanded(not item.isExpanded())
             return
 
         self.stop_motion_scanner()
