@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
     QSplitter, QStyleFactory, QDialog, QProgressDialog, QApplication,
     QSizePolicy, QSlider, QFrame
 )
-from PyQt6.QtCore import Qt, QTimer, QRect, QPoint, QEvent
+from PyQt6.QtCore import Qt, QTimer, QRect, QPoint, QEvent, QSize
 from PyQt6.QtGui import QImage, QPixmap, QColor, QBrush, QIcon, QKeySequence, QShortcut
 
 from core.constants import APP_VERSION, RESOLUTIONS, SENSITIVITY_LEVELS
@@ -1134,7 +1134,26 @@ class CTDashcamStudio(QMainWindow):
         brush_green = QBrush(QColor("#00FF66"))
         brush_red = QBrush(QColor("#FF3333"))
 
-        for cat_name, events in tree_data.items():
+        for cat_idx, (cat_name, events) in enumerate(tree_data.items()):
+            if cat_idx > 0:
+                # 카테고리(RecentClips, SavedClips, SentryClips) 구분용 가로 호라이즌 선
+                divider_item = QTreeWidgetItem(self.tree_explorer)
+                divider_item.setFlags(Qt.ItemFlag.NoItemFlags)
+                divider_item.setFirstColumnSpanned(True)
+                divider_item.setSizeHint(0, QSize(100, 14))
+
+                div_container = QWidget()
+                div_layout = QVBoxLayout(div_container)
+                div_layout.setContentsMargins(4, 6, 4, 6)
+                div_layout.setSpacing(0)
+                div_line = QFrame()
+                div_line.setFrameShape(QFrame.Shape.HLine)
+                div_line.setFrameShadow(QFrame.Shadow.Plain)
+                div_line.setStyleSheet("background-color: #262E3D; border: none; min-height: 1px; max-height: 1px;")
+                div_layout.addWidget(div_line)
+
+                self.tree_explorer.setItemWidget(divider_item, 0, div_container)
+
             cat_item = QTreeWidgetItem(self.tree_explorer, [f"📁 {cat_name}", f"{len(events)}개 그룹"])
             cat_item.setExpanded(True)
 
