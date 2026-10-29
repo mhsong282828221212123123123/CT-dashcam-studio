@@ -375,13 +375,13 @@ class SingleCameraPopup(QWidget):
 
             if not is_available:
                 btn.setStyleSheet(disabled_style)
-                btn.setToolTip("현재 클립에 이 카메라 영상이 없습니다.")
+                btn.setToolTip(tr("tt_cam_missing"))
             elif key == active_cam:
                 btn.setStyleSheet(active_style)
-                btn.setToolTip("현재 전체화면으로 표시 중인 카메라입니다.")
+                btn.setToolTip(tr("tt_cam_active"))
             else:
                 btn.setStyleSheet(enabled_style)
-                btn.setToolTip("클릭하여 이 카메라 화면을 전체 화면으로 표시")
+                btn.setToolTip(tr("tt_cam_click"))
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:

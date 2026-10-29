@@ -70,13 +70,13 @@ class QRShareDialog(QDialog):
         main_layout.setSpacing(12)
 
         # 1. Header Title & File info
-        title_lbl = QLabel("📱 스마트폰으로 비디오 무선 전송")
+        title_lbl = QLabel(tr("qr_dialog_header"))
         title_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #FFFFFF;")
         title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(title_lbl)
 
         file_size_mb = os.path.getsize(self.video_path) / (1024 * 1024) if os.path.exists(self.video_path) else 0
-        info_lbl = QLabel(f"파일명: {self.video_filename}\n용량: {file_size_mb:.1f} MB  |  IP: {self.server.ip}")
+        info_lbl = QLabel(tr("qr_file_info", filename=self.video_filename, size=f"{file_size_mb:.1f}", ip=self.server.ip))
         info_lbl.setStyleSheet("font-size: 12px; color: #8E95A5;")
         info_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         info_lbl.setWordWrap(True)
@@ -161,7 +161,7 @@ class QRShareDialog(QDialog):
             pix = QPixmap.fromImage(qimg)
             self.lbl_qr.setPixmap(pix.scaled(185, 185, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         except Exception as e:
-            self.lbl_qr.setText(f"QR 코드 생성 실패:\n{e}")
+            self.lbl_qr.setText(tr("qr_failed", err=str(e)))
 
     def copy_url(self):
         cb = QApplication.clipboard()
@@ -288,7 +288,7 @@ class HotkeyGuideDialog(QDialog):
             ("I  /  O", tr("hk_io")),
             ("[  /  ]", tr("hk_brackets")),
             ("Home", tr("hk_home")),
-            ("F1  또는  ?", tr("hk_f1")),
+            ("F1  /  ?", tr("hk_f1")),
         ]
 
         for row_idx, (key_text, desc_text) in enumerate(shortcuts):
