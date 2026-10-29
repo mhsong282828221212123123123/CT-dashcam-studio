@@ -113,54 +113,11 @@ class CTDashcamStudio(QMainWindow):
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(6)
 
-        top_btn_layout = QHBoxLayout()
-        top_btn_layout.setContentsMargins(0, 0, 0, 0)
-        top_btn_layout.setSpacing(6)
-
         self.btn_load = QPushButton(tr("btn_load"))
         self.btn_load.setFixedHeight(34)
         self.btn_load.setStyleSheet("background-color: #0078D7; color: #FFFFFF; font-weight: bold; font-size: 13px;")
         self.btn_load.clicked.connect(self.load_directory_dialog)
-        top_btn_layout.addWidget(self.btn_load, stretch=1)
-
-        self.combo_lang = QComboBox()
-        self.combo_lang.setFixedHeight(34)
-        self.combo_lang.setFixedWidth(130)
-        self.combo_lang.setStyleSheet("""
-            QComboBox {
-                background-color: #1A2234;
-                color: #E2E8F0;
-                border: 1px solid #2E384D;
-                border-radius: 4px;
-                padding: 4px 8px;
-                font-size: 12px;
-                font-weight: bold;
-            }
-            QComboBox:hover {
-                border-color: #0078D7;
-            }
-            QComboBox::drop-down {
-                border: none;
-                width: 18px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #141B2D;
-                color: #FFFFFF;
-                selection-background-color: #0078D7;
-                selection-color: #FFFFFF;
-                border: 1px solid #2E384D;
-            }
-        """)
-        for code, name in LANGUAGES.items():
-            self.combo_lang.addItem(name, code)
-        curr_lang = get_current_language()
-        idx = self.combo_lang.findData(curr_lang)
-        if idx >= 0:
-            self.combo_lang.setCurrentIndex(idx)
-        self.combo_lang.currentIndexChanged.connect(self.on_language_changed)
-        top_btn_layout.addWidget(self.combo_lang)
-
-        left_layout.addLayout(top_btn_layout)
+        left_layout.addWidget(self.btn_load)
 
         self.tree_explorer = QTreeWidget()
         self.tree_explorer.setHeaderLabels([tr("tree_col_explorer"), tr("tree_col_type")])
@@ -638,7 +595,54 @@ class CTDashcamStudio(QMainWindow):
         playback_bar.addWidget(_make_v_divider())
         playback_bar.addStretch(1)
 
-        # (우) 화면 밝기/대비 보정 & 단축키 클러스터
+        # (우) 언어 선택 드롭다운 · 화면 밝기/대비 보정 · 단축키 클러스터
+        self.combo_lang = QComboBox()
+        self.combo_lang.setFixedHeight(24)
+        self.combo_lang.setFixedWidth(108)
+        self.combo_lang.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.combo_lang.setToolTip("Language / 언어 선택")
+        self.combo_lang.setStyleSheet("""
+            QComboBox {
+                background-color: #1A1F2B;
+                color: #E2E8F0;
+                border: 1px solid #2D3546;
+                border-radius: 4px;
+                padding: 1px 5px;
+                font-size: 11px;
+                font-weight: bold;
+            }
+            QComboBox:hover {
+                background-color: #242B3D;
+                border-color: #00B4D8;
+                color: #FFFFFF;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 14px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #141822;
+                color: #FFFFFF;
+                selection-background-color: #0078D7;
+                selection-color: #FFFFFF;
+                border: 1px solid #2D3546;
+                outline: none;
+                padding: 2px;
+            }
+        """)
+        for code, name in LANGUAGES.items():
+            self.combo_lang.addItem(name, code)
+        curr_lang = get_current_language()
+        idx = self.combo_lang.findData(curr_lang)
+        if idx >= 0:
+            self.combo_lang.setCurrentIndex(idx)
+        self.combo_lang.currentIndexChanged.connect(self.on_language_changed)
+        playback_bar.addWidget(self.combo_lang)
+
+        playback_bar.addSpacing(6)
+        playback_bar.addWidget(_make_v_divider())
+        playback_bar.addSpacing(6)
+
         self.lbl_brightness_tag = QLabel(tr("lbl_brightness_tag"))
         self.lbl_brightness_tag.setStyleSheet("font-size: 12px; color: #C5CCD9;")
         self.lbl_brightness_tag.setToolTip("더블클릭 시 밝기 기본값(0) 복원")
