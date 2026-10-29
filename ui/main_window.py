@@ -21,6 +21,7 @@ from PyQt6.QtGui import QImage, QPixmap, QColor, QBrush, QIcon, QKeySequence, QS
 
 from core.constants import APP_VERSION, RESOLUTIONS, SENSITIVITY_LEVELS
 from core.utils import resource_path, get_app_dir
+from core.i18n import tr, set_language, get_current_language, LANGUAGES
 from core.decoder import RealTeslaSEIDecoder
 from core.map_loader import OpenStreetMapTileLoader
 from core.renderer import OverlayRenderer
@@ -81,12 +82,12 @@ class CTDashcamStudio(QMainWindow):
         self.telemetry_order = list(OverlayRenderer.DEFAULT_TELEMETRY_ORDER)
         self._dragging_telemetry_key = None
 
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.play_next_frame_smooth)
+
         self.setAcceptDrops(True)
         self.init_ui()
         self.setup_shortcuts()
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.play_next_frame_smooth)
 
         self.checker = UpdateCheckWorker(self)
         self.checker.update_available.connect(self.on_update_found)
@@ -112,14 +113,57 @@ class CTDashcamStudio(QMainWindow):
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(6)
 
-        self.btn_load = QPushButton("📁 TeslaCam 폴더 지정")
+        top_btn_layout = QHBoxLayout()
+        top_btn_layout.setContentsMargins(0, 0, 0, 0)
+        top_btn_layout.setSpacing(6)
+
+        self.btn_load = QPushButton(tr("btn_load"))
         self.btn_load.setFixedHeight(34)
         self.btn_load.setStyleSheet("background-color: #0078D7; color: #FFFFFF; font-weight: bold; font-size: 13px;")
         self.btn_load.clicked.connect(self.load_directory_dialog)
-        left_layout.addWidget(self.btn_load)
+        top_btn_layout.addWidget(self.btn_load, stretch=1)
+
+        self.combo_lang = QComboBox()
+        self.combo_lang.setFixedHeight(34)
+        self.combo_lang.setFixedWidth(130)
+        self.combo_lang.setStyleSheet("""
+            QComboBox {
+                background-color: #1A2234;
+                color: #E2E8F0;
+                border: 1px solid #2E384D;
+                border-radius: 4px;
+                padding: 4px 8px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QComboBox:hover {
+                border-color: #0078D7;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 18px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #141B2D;
+                color: #FFFFFF;
+                selection-background-color: #0078D7;
+                selection-color: #FFFFFF;
+                border: 1px solid #2E384D;
+            }
+        """)
+        for code, name in LANGUAGES.items():
+            self.combo_lang.addItem(name, code)
+        curr_lang = get_current_language()
+        idx = self.combo_lang.findData(curr_lang)
+        if idx >= 0:
+            self.combo_lang.setCurrentIndex(idx)
+        self.combo_lang.currentIndexChanged.connect(self.on_language_changed)
+        top_btn_layout.addWidget(self.combo_lang)
+
+        left_layout.addLayout(top_btn_layout)
 
         self.tree_explorer = QTreeWidget()
-        self.tree_explorer.setHeaderLabels(["클립 탐색기", "유형 / 채널"])
+        self.tree_explorer.setHeaderLabels([tr("tree_col_explorer"), tr("tree_col_type")])
         self.tree_explorer.setColumnWidth(0, 240)
         self.tree_explorer.setColumnWidth(1, 110)
         self.tree_explorer.header().setStretchLastSection(True)
@@ -127,24 +171,24 @@ class CTDashcamStudio(QMainWindow):
         left_layout.addWidget(self.tree_explorer, stretch=1)
 
         # 1) 오버레이 표시 옵션 (컴팩트 2열 그리드)
-        opt_group = QGroupBox("오버레이 요소")
-        opt_layout = QGridLayout(opt_group)
+        self.opt_group = QGroupBox(tr("grp_overlays"))
+        opt_layout = QGridLayout(self.opt_group)
         opt_layout.setContentsMargins(8, 6, 8, 6)
         opt_layout.setHorizontalSpacing(8)
         opt_layout.setVerticalSpacing(3)
 
         self.chks = {
-            "timestamp": QCheckBox("실제 시간 (Timestamp)"),
-            "speed": QCheckBox("실제 속도 (km/h)"),
-            "fsd": QCheckBox("FSD / 자율주행 모드"),
-            "turn_signal": QCheckBox("방향지시등 (점멸 깜빡이)"),
-            "steering": QCheckBox("스티어링 핸들 각도"),
-            "pedal": QCheckBox("가속 / 브레이크 페달"),
-            "pillar_pip": QCheckBox("필러 카메라 (PIP)"),
-            "map": QCheckBox("GPS 미니맵 (OSM)"),
-            "blur_face": QCheckBox("얼굴 모자이크"),
-            "blur_plate": QCheckBox("번호판 모자이크"),
-            "enhance_plate": QCheckBox("번호판 선명화"),
+            "timestamp": QCheckBox(tr("chk_timestamp")),
+            "speed": QCheckBox(tr("chk_speed")),
+            "fsd": QCheckBox(tr("chk_fsd")),
+            "turn_signal": QCheckBox(tr("chk_turn_signal")),
+            "steering": QCheckBox(tr("chk_steering_wheel")),
+            "pedal": QCheckBox(tr("chk_pedals")),
+            "pillar_pip": QCheckBox(tr("chk_pillar_pip")),
+            "map": QCheckBox(tr("chk_osm_minimap")),
+            "blur_face": QCheckBox(tr("chk_blur_faces")),
+            "blur_plate": QCheckBox(tr("chk_blur_plates")),
+            "enhance_plate": QCheckBox(tr("chk_enhance_plates")),
         }
 
         chk_positions = [
@@ -160,11 +204,11 @@ class CTDashcamStudio(QMainWindow):
             chk.stateChanged.connect(self.sync_preview)
             opt_layout.addWidget(chk, r, c)
 
-        left_layout.addWidget(opt_group)
+        left_layout.addWidget(self.opt_group)
 
         # 1-2) 개인정보 보호 및 번호판 개선 그룹박스
-        privacy_group = QGroupBox("개인정보 보호 및 번호판 개선")
-        privacy_layout = QGridLayout(privacy_group)
+        self.privacy_group = QGroupBox(tr("grp_privacy"))
+        privacy_layout = QGridLayout(self.privacy_group)
         privacy_layout.setContentsMargins(8, 6, 8, 6)
         privacy_layout.setHorizontalSpacing(8)
         privacy_layout.setVerticalSpacing(3)
@@ -187,38 +231,40 @@ class CTDashcamStudio(QMainWindow):
         chk_enh.stateChanged.connect(self.on_enhance_plate_toggled)
         privacy_layout.addWidget(chk_enh, 1, 0, 1, 2)
 
-        left_layout.addWidget(privacy_group)
+        left_layout.addWidget(self.privacy_group)
 
         # 2) 내보내기 설정 (사이드바 하단 정렬)
-        exp_group = QGroupBox("내보내기 설정")
-        exp_layout = QGridLayout(exp_group)
+        self.exp_group = QGroupBox(tr("grp_export"))
+        exp_layout = QGridLayout(self.exp_group)
         exp_layout.setContentsMargins(8, 6, 8, 6)
         exp_layout.setHorizontalSpacing(6)
         exp_layout.setVerticalSpacing(4)
 
-        exp_layout.addWidget(QLabel("출력 해상도:"), 0, 0)
+        self.lbl_export_res = QLabel(tr("lbl_res"))
+        exp_layout.addWidget(self.lbl_export_res, 0, 0)
         self.combo_res = QComboBox()
         for res_name in RESOLUTIONS.keys():
             self.combo_res.addItem(res_name)
         self.combo_res.currentIndexChanged.connect(self.update_estimated_size)
         exp_layout.addWidget(self.combo_res, 0, 1, 1, 3)
 
-        exp_layout.addWidget(QLabel("화면 레이아웃:"), 1, 0)
+        self.lbl_export_layout = QLabel(tr("lbl_layout"))
+        exp_layout.addWidget(self.lbl_export_layout, 1, 0)
         layout_btn_box = QHBoxLayout()
         layout_btn_box.setSpacing(3)
 
-        self.btn_layout_1to3 = QPushButton("🔲 1:3")
-        self.btn_layout_1to3.setToolTip("기본 (전방 대형 + 3개 측후방 세로배치)")
+        self.btn_layout_1to3 = QPushButton(f"🔲 {tr('layout_1to3')}")
+        self.btn_layout_1to3.setToolTip(tr("layout_1to3_tooltip"))
         self.btn_layout_1to3.setFixedHeight(26)
         self.btn_layout_1to3.clicked.connect(lambda: self.set_layout_mode("기본 (1:3 세로배치)"))
 
-        self.btn_layout_2x2 = QPushButton("⊞ 2x2")
-        self.btn_layout_2x2.setToolTip("2x2 분할 (전후/좌우 4분할)")
+        self.btn_layout_2x2 = QPushButton(f"⊞ {tr('layout_2x2')}")
+        self.btn_layout_2x2.setToolTip(tr("layout_2x2_tooltip"))
         self.btn_layout_2x2.setFixedHeight(26)
         self.btn_layout_2x2.clicked.connect(lambda: self.set_layout_mode("2x2 분할 (전후/좌우)"))
 
-        self.btn_layout_single = QPushButton("⏹ 단일")
-        self.btn_layout_single.setToolTip("단일 카메라 (클릭 시 6채널 선택 팝업)")
+        self.btn_layout_single = QPushButton(f"⏹ {tr('layout_single')}")
+        self.btn_layout_single.setToolTip(tr("layout_single_tooltip"))
         self.btn_layout_single.setFixedHeight(26)
         self.btn_layout_single.clicked.connect(self.on_click_layout_single)
         self.btn_layout_front = self.btn_layout_single  # 하위 호환성 유지
@@ -229,23 +275,25 @@ class CTDashcamStudio(QMainWindow):
 
         exp_layout.addLayout(layout_btn_box, 1, 1, 1, 3)
 
-        exp_layout.addWidget(QLabel("저장 배속:"), 2, 0)
+        self.lbl_export_speed = QLabel(tr("lbl_speed"))
+        exp_layout.addWidget(self.lbl_export_speed, 2, 0)
         self.combo_export_speed = QComboBox()
         self.combo_export_speed.addItems(["0.5x (슬로우)", "1.0x (표준)", "1.5x (빠르게)", "2.0x (2배속)", "4.0x (4배속)", "5.0x (5배속)"])
         self.combo_export_speed.setCurrentIndex(1)  # 기본값: 1.0x (표준)
         self.combo_export_speed.currentIndexChanged.connect(self.on_export_speed_changed)
         exp_layout.addWidget(self.combo_export_speed, 2, 1)
 
-        exp_layout.addWidget(QLabel("출력 FPS:"), 2, 2)
+        self.lbl_export_fps = QLabel(tr("lbl_fps"))
+        exp_layout.addWidget(self.lbl_export_fps, 2, 2)
         self.combo_fps = QComboBox()
         self.combo_fps.currentIndexChanged.connect(self.update_estimated_size)
         exp_layout.addWidget(self.combo_fps, 2, 3)
 
-        self.lbl_est_size = QLabel("예상 크기: 약 0 MB")
+        self.lbl_est_size = QLabel(tr("lbl_est_size", size="0"))
         self.lbl_est_size.setStyleSheet("color: #00E6FF; font-weight: bold; font-size: 13px;")
         exp_layout.addWidget(self.lbl_est_size, 3, 0, 1, 4)
 
-        self.btn_export = QPushButton("선택 구간 내보내기 (MP4)")
+        self.btn_export = QPushButton(tr("btn_export"))
         self.btn_export.setFixedHeight(34)
         self.btn_export.setStyleSheet("background-color: #0078D7; color: #FFFFFF; font-weight: bold; font-size: 13px;")
         self.btn_export.clicked.connect(self.on_click_export_button)
@@ -256,13 +304,13 @@ class CTDashcamStudio(QMainWindow):
         self.pbar.setFixedHeight(12)
         exp_layout.addWidget(self.pbar, 5, 0, 1, 4)
 
-        self.btn_qr_share = QPushButton("📱 스마트폰 무선 전송 (QR)")
+        self.btn_qr_share = QPushButton(f"📱 {tr('chk_qr_share')}")
         self.btn_qr_share.setFixedHeight(28)
         self.btn_qr_share.setEnabled(False)
         self.btn_qr_share.clicked.connect(self.on_click_qr_share)
         exp_layout.addWidget(self.btn_qr_share, 6, 0, 1, 4)
 
-        left_layout.addWidget(exp_group)
+        left_layout.addWidget(self.exp_group)
         splitter.addWidget(left_panel)
 
         # =========================================================================
@@ -434,18 +482,19 @@ class CTDashcamStudio(QMainWindow):
 
         info_bar.addSpacing(8)
 
-        self.lbl_sensitivity_tag = QLabel("감도:")
+        self.lbl_sensitivity_tag = QLabel(tr("lbl_sensitivity"))
         self.lbl_sensitivity_tag.setStyleSheet("font-size: 12px; color: #9AA4B8; font-weight: bold;")
         info_bar.addWidget(self.lbl_sensitivity_tag)
 
         self.combo_sensitivity = QComboBox()
-        for s_name in SENSITIVITY_LEVELS.keys():
-            self.combo_sensitivity.addItem(s_name)
-        self.combo_sensitivity.setCurrentText("보통")
+        sens_keys = [("낮음", "sens_low"), ("보통", "sens_normal"), ("높음", "sens_high"), ("매우높음", "sens_ultra")]
+        for raw_k, tr_k in sens_keys:
+            self.combo_sensitivity.addItem(tr(tr_k), raw_k)
+        self.combo_sensitivity.setCurrentIndex(1)
         self.combo_sensitivity.currentIndexChanged.connect(self.on_sensitivity_changed)
         info_bar.addWidget(self.combo_sensitivity)
 
-        self.btn_prev_event = QPushButton("⚡ 이전")
+        self.btn_prev_event = QPushButton(tr("btn_prev_event"))
         self.btn_prev_event.setToolTip("이전 모션 감지 구간으로 이동")
         self.btn_prev_event.setFixedHeight(26)
         self.btn_prev_event.setStyleSheet(range_btn_style)
@@ -453,7 +502,7 @@ class CTDashcamStudio(QMainWindow):
         self.btn_prev_event.clicked.connect(self.jump_to_prev_event)
         info_bar.addWidget(self.btn_prev_event)
 
-        self.btn_next_event = QPushButton("⚡ 다음")
+        self.btn_next_event = QPushButton(tr("btn_next_event"))
         self.btn_next_event.setToolTip("다음 모션 감지 구간으로 이동")
         self.btn_next_event.setFixedHeight(26)
         self.btn_next_event.setStyleSheet(range_btn_style)
@@ -464,7 +513,7 @@ class CTDashcamStudio(QMainWindow):
         info_bar.addStretch(1)
 
         # (우) 선택 구간 배지 & NLE 구간 트림 버튼 클러스터
-        self.lbl_range_info = QLabel("선택 구간: 미지정 (전체)")
+        self.lbl_range_info = QLabel(tr("range_none", total="0.0초"))
         self.lbl_range_info.setStyleSheet("""
             QLabel {
                 background-color: rgba(255, 179, 0, 0.10);
@@ -480,22 +529,22 @@ class CTDashcamStudio(QMainWindow):
 
         info_bar.addSpacing(2)
 
-        self.btn_in = QPushButton("[ 시작점")
-        self.btn_in.setToolTip("구간 시작점 설정 (단축키: I)")
+        self.btn_in = QPushButton(tr("btn_in"))
+        self.btn_in.setToolTip(tr("btn_in_tooltip"))
         self.btn_in.setFixedHeight(26)
         self.btn_in.setStyleSheet(range_btn_style)
         self.btn_in.clicked.connect(self.set_in_point)
         info_bar.addWidget(self.btn_in)
 
-        self.btn_out = QPushButton("] 끝점")
-        self.btn_out.setToolTip("구간 종료점 설정 (단축키: O)")
+        self.btn_out = QPushButton(tr("btn_out"))
+        self.btn_out.setToolTip(tr("btn_out_tooltip"))
         self.btn_out.setFixedHeight(26)
         self.btn_out.setStyleSheet(range_btn_style)
         self.btn_out.clicked.connect(self.set_out_point)
         info_bar.addWidget(self.btn_out)
 
-        self.btn_reset_range = QPushButton("↺ 초기화")
-        self.btn_reset_range.setToolTip("구간 선택 초기화")
+        self.btn_reset_range = QPushButton(tr("btn_reset_range"))
+        self.btn_reset_range.setToolTip(tr("btn_reset_tooltip"))
         self.btn_reset_range.setFixedHeight(26)
         self.btn_reset_range.setStyleSheet(range_btn_style)
         self.btn_reset_range.clicked.connect(self.reset_range_points)
@@ -516,21 +565,21 @@ class CTDashcamStudio(QMainWindow):
         playback_bar.setSpacing(6)
 
         # (좌) 메인 트랜스포트 클러스터
-        self.btn_prev = QPushButton("|◀ 이전")
+        self.btn_prev = QPushButton(f"|◀ {tr('btn_prev')}")
         self.btn_prev.setToolTip("이전 클립 (단축키: [)")
         self.btn_prev.setFixedHeight(28)
         self.btn_prev.setStyleSheet(transport_sub_btn_style)
         self.btn_prev.clicked.connect(self.play_prev_clip)
         playback_bar.addWidget(self.btn_prev)
 
-        self.btn_play = QPushButton("▶ 재생 (Space)")
+        self.btn_play = QPushButton(tr("btn_play"))
         self.btn_play.setToolTip("재생 / 일시정지 (단축키: Space)")
         self.btn_play.setFixedHeight(28)
         self.btn_play.setStyleSheet(self._play_btn_idle_style)
         self.btn_play.clicked.connect(self.toggle_play)
         playback_bar.addWidget(self.btn_play)
 
-        self.btn_next = QPushButton("다음 ▶|")
+        self.btn_next = QPushButton(f"{tr('btn_next')} ▶|")
         self.btn_next.setToolTip("다음 클립 (단축키: ])")
         self.btn_next.setFixedHeight(28)
         self.btn_next.setStyleSheet(transport_sub_btn_style)
@@ -542,7 +591,7 @@ class CTDashcamStudio(QMainWindow):
         playback_bar.addStretch(1)
 
         # (중) 배속 & 자동재생 클러스터
-        self.lbl_spd_tag = QLabel("⚡ 배속")
+        self.lbl_spd_tag = QLabel(tr("lbl_speed_tag"))
         self.lbl_spd_tag.setStyleSheet("font-size: 12px; color: #C5CCD9; font-weight: bold;")
         self.lbl_spd_tag.setToolTip("더블클릭 시 1.0x 기본 배속으로 복원")
         self.lbl_spd_tag.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -580,9 +629,9 @@ class CTDashcamStudio(QMainWindow):
 
         playback_bar.addSpacing(6)
 
-        self.chk_auto_next = QCheckBox("연속 재생")
+        self.chk_auto_next = QCheckBox(tr("chk_auto_next"))
         self.chk_auto_next.setChecked(False)  # 기본값: OFF
-        self.chk_auto_next.setToolTip("현재 클립 재생이 끝나면 자동으로 다음 클립으로 이어서 재생합니다")
+        self.chk_auto_next.setToolTip(tr("chk_auto_next_tooltip"))
         playback_bar.addWidget(self.chk_auto_next)
 
         playback_bar.addStretch(1)
@@ -590,7 +639,7 @@ class CTDashcamStudio(QMainWindow):
         playback_bar.addStretch(1)
 
         # (우) 화면 밝기/대비 보정 & 단축키 클러스터
-        self.lbl_brightness_tag = QLabel("☀ 밝기")
+        self.lbl_brightness_tag = QLabel(tr("lbl_brightness_tag"))
         self.lbl_brightness_tag.setStyleSheet("font-size: 12px; color: #C5CCD9;")
         self.lbl_brightness_tag.setToolTip("더블클릭 시 밝기 기본값(0) 복원")
         self.lbl_brightness_tag.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -603,14 +652,14 @@ class CTDashcamStudio(QMainWindow):
         self.slider_brightness.setMinimumWidth(55)
         self.slider_brightness.setMaximumWidth(88)
         self.slider_brightness.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.slider_brightness.setToolTip("화면 밝기 조절 (-100 ~ +100, 더블클릭 시 기본값 0 복원)")
+        self.slider_brightness.setToolTip(tr("slider_brightness_tooltip"))
         self.slider_brightness.valueChanged.connect(self.sync_preview)
         self.slider_brightness.installEventFilter(self)
         playback_bar.addWidget(self.slider_brightness)
 
         playback_bar.addSpacing(4)
 
-        self.lbl_contrast_tag = QLabel("◑ 대비")
+        self.lbl_contrast_tag = QLabel(tr("lbl_contrast_tag"))
         self.lbl_contrast_tag.setStyleSheet("font-size: 12px; color: #C5CCD9;")
         self.lbl_contrast_tag.setToolTip("더블클릭 시 대비 기본값(100%) 복원")
         self.lbl_contrast_tag.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -623,14 +672,14 @@ class CTDashcamStudio(QMainWindow):
         self.slider_contrast.setMinimumWidth(55)
         self.slider_contrast.setMaximumWidth(88)
         self.slider_contrast.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.slider_contrast.setToolTip("화면 대비 조절 (50% ~ 200%, 더블클릭 시 기본값 100% 복원)")
+        self.slider_contrast.setToolTip(tr("slider_contrast_tooltip"))
         self.slider_contrast.valueChanged.connect(self.sync_preview)
         self.slider_contrast.installEventFilter(self)
         playback_bar.addWidget(self.slider_contrast)
 
         playback_bar.addSpacing(4)
 
-        self.btn_hotkeys = QPushButton("⌨ 단축키")
+        self.btn_hotkeys = QPushButton(tr("btn_hotkeys"))
         self.btn_hotkeys.setToolTip("키보드 단축키 안내 (F1 또는 ?)")
         self.btn_hotkeys.setFixedHeight(28)
         self.btn_hotkeys.setStyleSheet(transport_sub_btn_style)
@@ -667,6 +716,7 @@ class CTDashcamStudio(QMainWindow):
             btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         self.apply_dark_theme()
+        self.retranslate_ui()
 
     def _preview_pos_to_canvas(self, pos):
         pm = self.preview_lbl.pixmap()
@@ -1016,9 +1066,175 @@ class CTDashcamStudio(QMainWindow):
         if target_dir and os.path.exists(target_dir):
             self.scan_and_populate_tree(target_dir)
 
+    def on_language_changed(self, index):
+        lang_code = self.combo_lang.currentData()
+        if lang_code:
+            set_language(lang_code)
+            self.retranslate_ui()
+
+    def _create_group_header_widget(self, title, color_hex, count_text=""):
+        widget = QWidget()
+        widget.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        widget.setStyleSheet("background: transparent;")
+        layout = QHBoxLayout(widget)
+        layout.setContentsMargins(4, 2, 8, 2)
+        layout.setSpacing(8)
+
+        lbl_title = QLabel(f"● {title}")
+        lbl_title.setStyleSheet(f"color: {color_hex}; font-size: 13px; font-weight: bold; background: transparent;")
+        layout.addWidget(lbl_title)
+
+        if count_text:
+            lbl_count = QLabel(count_text)
+            lbl_count.setStyleSheet("color: #8C9BAE; font-size: 11px; font-weight: normal; background: transparent;")
+            layout.addWidget(lbl_count)
+
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Plain)
+        line.setStyleSheet("background-color: #4E5D78; border: none; min-height: 1px; max-height: 1px;")
+        layout.addWidget(line, stretch=1)
+
+        return widget
+
+    def _retranslate_tree(self):
+        """트리 탐색기에 이미 로드된 대그룹 헤더 및 하위 항목들을 현재 언어로 갱신"""
+        root = self.tree_explorer.invisibleRootItem()
+        for i in range(root.childCount()):
+            item = root.child(i)
+            cdata = item.data(0, Qt.ItemDataRole.UserRole) or {}
+            if cdata.get("is_big_group"):
+                gtype = cdata.get("group_type")
+                counts = cdata.get("counts", (0, 0))
+                color_hex = cdata.get("color_hex", "#FFFFFF")
+                if gtype == "recent":
+                    title = tr("tree_recent_title")
+                    count_text = tr("tree_recent_summary", chunks=counts[0], clips=counts[1])
+                elif gtype == "saved":
+                    title = tr("tree_saved_title")
+                    count_text = tr("tree_saved_summary", events=counts[0], clips=counts[1])
+                elif gtype == "sentry":
+                    title = tr("tree_sentry_title")
+                    count_text = tr("tree_sentry_summary", sessions=counts[0], clips=counts[1])
+                else:
+                    continue
+                self.tree_explorer.setItemWidget(item, 0, self._create_group_header_widget(title, color_hex, count_text))
+
+                for j in range(item.childCount()):
+                    sub = item.child(j)
+                    sdata = sub.data(0, Qt.ItemDataRole.UserRole) or {}
+                    if sdata.get("is_virtual_dir"):
+                        c_list = sdata.get("clip_list", [])
+                        sub.setText(1, tr("tree_n_clips", clips=len(c_list)))
+                        for k in range(sub.childCount()):
+                            clip_item = sub.child(k)
+                            c_info = clip_item.data(0, Qt.ItemDataRole.UserRole) or {}
+                            ch_cnt = len(c_info.get("clip_list", [{}])[0].get("cams", {}))
+                            clip_item.setText(1, tr("tree_recent_tag", channels=ch_cnt))
+                    elif sdata.get("is_group"):
+                        c_list = sdata.get("clip_list", [])
+                        sub.setText(1, tr("tree_n_merged", clips=len(c_list)))
+
+    def retranslate_ui(self):
+        """다국어 변경 시 프로그램 전체 UI 텍스트를 실시간 일괄 갱신"""
+        self.setWindowTitle(tr("app_title"))
+        self.btn_load.setText(tr("btn_load"))
+        self.tree_explorer.setHeaderLabels([tr("tree_col_explorer"), tr("tree_col_type")])
+
+        if hasattr(self, 'opt_group'):
+            self.opt_group.setTitle(tr("grp_overlays"))
+        chk_trans_map = {
+            "timestamp": "chk_timestamp",
+            "speed": "chk_speed",
+            "fsd": "chk_fsd",
+            "turn_signal": "chk_turn_signal",
+            "steering": "chk_steering_wheel",
+            "pedal": "chk_pedals",
+            "pillar_pip": "chk_pillar_pip",
+            "map": "chk_osm_minimap",
+            "blur_face": "chk_blur_faces",
+            "blur_plate": "chk_blur_plates",
+            "enhance_plate": "chk_enhance_plates"
+        }
+        for k, tr_k in chk_trans_map.items():
+            if k in self.chks:
+                self.chks[k].setText(tr(tr_k))
+
+        if hasattr(self, 'privacy_group'):
+            self.privacy_group.setTitle(tr("grp_privacy"))
+
+        if hasattr(self, 'exp_group'):
+            self.exp_group.setTitle(tr("grp_export"))
+        if hasattr(self, 'lbl_export_res'):
+            self.lbl_export_res.setText(tr("lbl_res"))
+        if hasattr(self, 'lbl_export_layout'):
+            self.lbl_export_layout.setText(tr("lbl_layout"))
+        if hasattr(self, 'lbl_export_speed'):
+            self.lbl_export_speed.setText(tr("lbl_speed"))
+        if hasattr(self, 'lbl_export_fps'):
+            self.lbl_export_fps.setText(tr("lbl_fps"))
+        if not getattr(self, 'is_exporting', False):
+            self.btn_export.setText(tr("btn_export"))
+        self.btn_qr_share.setText(f"📱 {tr('chk_qr_share')}")
+
+        self.btn_layout_1to3.setText(f"🔲 {tr('layout_1to3')}")
+        self.btn_layout_1to3.setToolTip(tr("layout_1to3_tooltip"))
+        self.btn_layout_2x2.setText(f"⊞ {tr('layout_2x2')}")
+        self.btn_layout_2x2.setToolTip(tr("layout_2x2_tooltip"))
+        self.btn_layout_single.setText(f"⏹ {tr('layout_single')}")
+        self.btn_layout_single.setToolTip(tr("layout_single_tooltip"))
+
+        self.btn_prev.setText(f"|◀ {tr('btn_prev')}")
+        self.btn_play.setText(tr("btn_pause") if getattr(self, 'timer', None) and self.timer.isActive() else tr("btn_play"))
+        self.btn_next.setText(f"{tr('btn_next')} ▶|")
+        self.chk_motion.setText(tr("chk_motion"))
+        if hasattr(self, 'lbl_sensitivity_tag'):
+            self.lbl_sensitivity_tag.setText(tr("lbl_sensitivity"))
+
+        if hasattr(self, 'combo_sensitivity'):
+            curr_sens = self.combo_sensitivity.currentData() or "보통"
+            self.combo_sensitivity.blockSignals(True)
+            self.combo_sensitivity.clear()
+            sens_keys = [("낮음", "sens_low"), ("보통", "sens_normal"), ("높음", "sens_high"), ("매우높음", "sens_ultra")]
+            for raw_k, tr_k in sens_keys:
+                self.combo_sensitivity.addItem(tr(tr_k), raw_k)
+            idx = self.combo_sensitivity.findData(curr_sens)
+            if idx >= 0:
+                self.combo_sensitivity.setCurrentIndex(idx)
+            self.combo_sensitivity.blockSignals(False)
+
+        self.btn_in.setText(tr("btn_in"))
+        self.btn_in.setToolTip(tr("btn_in_tooltip"))
+        self.btn_out.setText(tr("btn_out"))
+        self.btn_out.setToolTip(tr("btn_out_tooltip"))
+        self.btn_reset_range.setText(tr("btn_reset_range"))
+        self.btn_reset_range.setToolTip(tr("btn_reset_tooltip"))
+
+        self.lbl_spd_tag.setText(tr("lbl_speed_tag"))
+        self.chk_auto_next.setText(tr("chk_auto_next"))
+        self.chk_auto_next.setToolTip(tr("chk_auto_next_tooltip"))
+        self.lbl_brightness_tag.setText(tr("lbl_brightness_tag"))
+        self.slider_brightness.setToolTip(tr("slider_brightness_tooltip"))
+        self.lbl_contrast_tag.setText(tr("lbl_contrast_tag"))
+        self.slider_contrast.setToolTip(tr("slider_contrast_tooltip"))
+        self.btn_hotkeys.setText(tr("btn_hotkeys"))
+
+        if hasattr(self, 'btn_prev_event'):
+            self.btn_prev_event.setText(tr("btn_prev_event"))
+        if hasattr(self, 'btn_next_event'):
+            self.btn_next_event.setText(tr("btn_next_event"))
+        if hasattr(self, 'single_cam_popup') and self.single_cam_popup:
+            self.single_cam_popup.retranslate_ui()
+        if not getattr(self, 'active_clip_list', None) and hasattr(self, 'lbl_motion_status'):
+            self.lbl_motion_status.setText(tr("motion_ready"))
+
+        self.update_range_highlight()
+        self.update_estimated_size()
+        self._retranslate_tree()
+
     def load_directory_dialog(self):
         default_dir = get_app_dir()
-        folder = QFileDialog.getExistingDirectory(self, "TeslaCam 폴더 선택", default_dir)
+        folder = QFileDialog.getExistingDirectory(self, tr("btn_load"), default_dir)
         if not folder:
             return
 
@@ -1057,7 +1273,7 @@ class CTDashcamStudio(QMainWindow):
                 if enc_dirs:
                     if not has_encrypted_detected:
                         has_encrypted_detected = True
-                        self.show_toast("테슬라 차량의 블랙박스 암호화(EncryptedClips) 폴더가 감지되었습니다. 암호화된 클립은 차량 내 화면이나 테슬라 앱에서만 재생할 수 있습니다.")
+                        self.show_toast(tr("encrypted_clips_toast"))
                     for d in enc_dirs:
                         dirs.remove(d)
 
@@ -1065,14 +1281,14 @@ class CTDashcamStudio(QMainWindow):
                 if "encryptedclips" in dirpath.lower():
                     if not has_encrypted_detected:
                         has_encrypted_detected = True
-                        self.show_toast("테슬라 차량의 블랙박스 암호화(EncryptedClips) 폴더가 감지되었습니다. 암호화된 클립은 차량 내 화면이나 테슬라 앱에서만 재생할 수 있습니다.")
+                        self.show_toast(tr("encrypted_clips_toast"))
                     continue
 
                 # 파일 목록 중 EncryptedClips 포함 파일 감지 및 제외
                 enc_files = [f for f in filenames if "encryptedclips" in f.lower()]
                 if enc_files and not has_encrypted_detected:
                     has_encrypted_detected = True
-                    self.show_toast("테슬라 차량의 블랙박스 암호화(EncryptedClips) 폴더가 감지되었습니다. 암호화된 클립은 차량 내 화면이나 테슬라 앱에서만 재생할 수 있습니다.")
+                    self.show_toast(tr("encrypted_clips_toast"))
 
                 front_files = [
                     f for f in filenames 
@@ -1127,47 +1343,24 @@ class CTDashcamStudio(QMainWindow):
 
         if not tree_data:
             if not has_encrypted_detected:
-                QMessageBox.warning(self, "경고", "선택한 폴더 내에서 테슬라 영상 파일(*-front.mp4)을 찾지 못했습니다.")
+                QMessageBox.warning(self, tr("warning_title"), tr("no_clips_warning"))
             return
 
         brush_white = QBrush(QColor("#FFFFFF"))
 
-        def create_group_header_widget(title, color_hex, count_text=""):
-            widget = QWidget()
-            widget.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-            widget.setStyleSheet("background: transparent;")
-            layout = QHBoxLayout(widget)
-            layout.setContentsMargins(4, 2, 8, 2)
-            layout.setSpacing(8)
-
-            lbl_title = QLabel(f"● {title}")
-            lbl_title.setStyleSheet(f"color: {color_hex}; font-size: 13px; font-weight: bold; background: transparent;")
-            layout.addWidget(lbl_title)
-
-            if count_text:
-                lbl_count = QLabel(count_text)
-                lbl_count.setStyleSheet("color: #8C9BAE; font-size: 11px; font-weight: normal; background: transparent;")
-                layout.addWidget(lbl_count)
-
-            line = QFrame()
-            line.setFrameShape(QFrame.Shape.HLine)
-            line.setFrameShadow(QFrame.Shadow.Plain)
-            line.setStyleSheet("background-color: #4E5D78; border: none; min-height: 1px; max-height: 1px;")
-            layout.addWidget(line, stretch=1)
-
-            return widget
-
-        def create_big_group_item(title, color_hex, count_text, group_type):
+        def create_big_group_item(title, color_hex, count_text, group_type, counts=(0, 0)):
             # QTreeWidget의 기본 텍스트와 setItemWidget 텍스트가 겹치지 않도록 빈 문자열 전달
             group_item = QTreeWidgetItem(self.tree_explorer, ["", ""])
             group_item.setFirstColumnSpanned(True)
             group_item.setSizeHint(0, QSize(100, 28))
             group_item.setData(0, Qt.ItemDataRole.UserRole, {
                 "is_big_group": True,
-                "group_type": group_type
+                "group_type": group_type,
+                "color_hex": color_hex,
+                "counts": counts
             })
             group_item.setExpanded(True)
-            self.tree_explorer.setItemWidget(group_item, 0, create_group_header_widget(title, color_hex, count_text))
+            self.tree_explorer.setItemWidget(group_item, 0, self._create_group_header_widget(title, color_hex, count_text))
             return group_item
 
         # 전체 이벤트를 최근클립, 저장된클립, 센트리 3대 대그룹으로 분류
@@ -1229,7 +1422,13 @@ class CTDashcamStudio(QMainWindow):
             if curr_chunk:
                 recent_chunks.append(curr_chunk)
 
-            recent_header = create_big_group_item("최근 클립", "#00FF66", f"{len(recent_chunks)}개 구간 ({len(all_recent_clips)}개 클립)", "recent")
+            recent_header = create_big_group_item(
+                tr("tree_recent_title"),
+                "#00FF66",
+                tr("tree_recent_summary", chunks=len(recent_chunks), clips=len(all_recent_clips)),
+                "recent",
+                (len(recent_chunks), len(all_recent_clips))
+            )
 
             for chunk in recent_chunks:
                 s_dt = _get_clip_dt(chunk[0])
@@ -1243,7 +1442,7 @@ class CTDashcamStudio(QMainWindow):
                 else:
                     vdir_title = f"📁 {chunk[0]['prefix']} (30분 구간)"
 
-                vdir_item = QTreeWidgetItem(recent_header, [vdir_title, f"{len(chunk)}개 클립"])
+                vdir_item = QTreeWidgetItem(recent_header, [vdir_title, tr("tree_n_clips", clips=len(chunk))])
                 vdir_item.setForeground(0, brush_white)
                 vdir_item.setForeground(1, brush_white)
                 vdir_item.setExpanded(False)
@@ -1255,7 +1454,7 @@ class CTDashcamStudio(QMainWindow):
 
                 for clip in chunk:
                     ch_count = len(clip["cams"])
-                    clip_item = QTreeWidgetItem(vdir_item, [f"🎬 {clip['display']}", f"[최근] {ch_count}채널"])
+                    clip_item = QTreeWidgetItem(vdir_item, [f"🎬 {clip['display']}", tr("tree_recent_tag", channels=ch_count)])
                     clip_item.setForeground(0, brush_white)
                     clip_item.setForeground(1, brush_white)
                     clip_item.setData(0, Qt.ItemDataRole.UserRole, {
@@ -1269,10 +1468,16 @@ class CTDashcamStudio(QMainWindow):
         # 2. 저장된 클립 (SavedClips) 대그룹: 센트리처럼 클립 디렉토리 클릭 시 한 클립으로 통합 로드
         if all_saved_events:
             total_saved_clips = sum(len(clips) for _, clips in all_saved_events)
-            saved_header = create_big_group_item("저장된 클립", "#FFFFFF", f"{len(all_saved_events)}개 이벤트 ({total_saved_clips}개 클립)", "saved")
+            saved_header = create_big_group_item(
+                tr("tree_saved_title"),
+                "#FFFFFF",
+                tr("tree_saved_summary", events=len(all_saved_events), clips=total_saved_clips),
+                "saved",
+                (len(all_saved_events), total_saved_clips)
+            )
 
             for ev_name, clips in all_saved_events:
-                ev_item = QTreeWidgetItem(saved_header, [f"📂 {ev_name}", f"{len(clips)}개 영상 통합"])
+                ev_item = QTreeWidgetItem(saved_header, [f"📂 {ev_name}", tr("tree_n_merged", clips=len(clips))])
                 ev_item.setForeground(0, brush_white)
                 ev_item.setForeground(1, brush_white)
                 ev_item.setData(0, Qt.ItemDataRole.UserRole, {
@@ -1287,10 +1492,16 @@ class CTDashcamStudio(QMainWindow):
         # 3. 센트리 모드 (SentryClips) 대그룹: 빨간색 (#FF3333), 주차 세션 단위 통합 유지 (날짜만 표기, [센트리] 태그 제외)
         if all_sentry_events:
             total_sentry_clips = sum(len(clips) for _, clips in all_sentry_events)
-            sentry_header = create_big_group_item("센트리 클립", "#FF3333", f"{len(all_sentry_events)}개 세션 ({total_sentry_clips}개 클립)", "sentry")
+            sentry_header = create_big_group_item(
+                tr("tree_sentry_title"),
+                "#FF3333",
+                tr("tree_sentry_summary", sessions=len(all_sentry_events), clips=total_sentry_clips),
+                "sentry",
+                (len(all_sentry_events), total_sentry_clips)
+            )
 
             for ev_name, clips in all_sentry_events:
-                ev_item = QTreeWidgetItem(sentry_header, [f"📂 {ev_name}", f"{len(clips)}개 영상 통합"])
+                ev_item = QTreeWidgetItem(sentry_header, [f"📂 {ev_name}", tr("tree_n_merged", clips=len(clips))])
                 ev_item.setForeground(0, brush_white)
                 ev_item.setForeground(1, brush_white)
                 ev_item.setData(0, Qt.ItemDataRole.UserRole, {
@@ -2326,11 +2537,11 @@ class CTDashcamStudio(QMainWindow):
         if self.end_point:
             if is_group:
                 if curr_f >= self.end_point["frame"]:
-                    QMessageBox.warning(self, "경고", "시작점이 끝점보다 뒤이거나 같습니다.\n시간 순서가 역순이므로 지정할 수 없습니다.")
+                    QMessageBox.warning(self, tr("warning_title"), tr("order_warn_start"))
                     return
             else:
                 if curr_dt >= self.end_point["dt"]:
-                    QMessageBox.warning(self, "경고", "시작점이 끝점보다 뒤이거나 같습니다.\n시간 순서가 역순이므로 지정할 수 없습니다.")
+                    QMessageBox.warning(self, tr("warning_title"), tr("order_warn_start"))
                     return
 
             dur_sec = (self.end_point["dt"] - curr_dt).total_seconds()
@@ -2360,11 +2571,11 @@ class CTDashcamStudio(QMainWindow):
         if self.start_point:
             if is_group:
                 if curr_f <= self.start_point["frame"]:
-                    QMessageBox.warning(self, "경고", "끝점이 시작점보다 앞서거나 같습니다.\n시간 순서가 역순이므로 지정할 수 없습니다.")
+                    QMessageBox.warning(self, tr("warning_title"), tr("order_warn_end"))
                     return
             else:
                 if curr_dt <= self.start_point["dt"]:
-                    QMessageBox.warning(self, "경고", "끝점이 시작점보다 앞서거나 같습니다.\n시간 순서가 역순이므로 지정할 수 없습니다.")
+                    QMessageBox.warning(self, tr("warning_title"), tr("order_warn_end"))
                     return
 
             dur_sec = (curr_dt - self.start_point["dt"]).total_seconds()
@@ -2796,14 +3007,14 @@ class CTDashcamStudio(QMainWindow):
 
         # 완료 다이얼로그 (폴더 열기 / QR 전송 / 확인 선택 가능)
         msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("내보내기 완료")
-        msg_box.setText(f"비디오 렌더링이 성공적으로 완료되었습니다!\n\n저장 경로:\n{output_path}")
+        msg_box.setWindowTitle(tr("export_success_title"))
+        msg_box.setText(tr("export_success_msg", path=output_path))
         msg_box.setIcon(QMessageBox.Icon.Information)
 
-        btn_open = msg_box.addButton("📁 저장 폴더 열기", QMessageBox.ButtonRole.ActionRole)
-        btn_qr = msg_box.addButton("📱 스마트폰 QR 전송", QMessageBox.ButtonRole.ActionRole)
+        btn_open = msg_box.addButton(tr("qr_open_folder"), QMessageBox.ButtonRole.ActionRole)
+        btn_qr = msg_box.addButton(f"📱 {tr('chk_qr_share')}", QMessageBox.ButtonRole.ActionRole)
         btn_qr.setStyleSheet("background-color: #0078D7; color: white; font-weight: bold; padding: 4px 10px;")
-        btn_ok = msg_box.addButton("확인", QMessageBox.ButtonRole.AcceptRole)
+        btn_ok = msg_box.addButton(tr("btn_confirm"), QMessageBox.ButtonRole.AcceptRole)
 
         msg_box.exec()
 
@@ -2823,7 +3034,7 @@ class CTDashcamStudio(QMainWindow):
 
     def on_export_error(self, err_msg):
         self.cleanup_export_ui()
-        QMessageBox.critical(self, "내보내기 오류", f"영상 저장 중 오류가 발생했습니다:\n{err_msg}")
+        QMessageBox.critical(self, tr("export_fail_title"), err_msg)
 
     def on_export_cancelled(self):
         self.cleanup_export_ui()

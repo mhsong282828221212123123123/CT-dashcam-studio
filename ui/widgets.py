@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QRect, QRectF, QPoint, QPointF, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QPainter, QColor, QPen, QLinearGradient, QPolygonF
+from core.i18n import tr
 
 
 class ClickableLabel(QLabel):
@@ -233,19 +234,20 @@ class SingleCameraPopup(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
         self.setObjectName("SingleCameraPopup")
 
-        # 6개 카메라 설정: (표시명, 카메라 키, 그리드 행, 그리드 열)
+        # 6개 카메라 설정: (카메라 키, 그리드 행, 그리드 열)
         self.cam_configs = [
-            ("📷 전방 (FRONT)", "front", 0, 0),
-            ("🚗 후방 (REAR)", "back", 0, 1),
-            ("◀ 좌측 리피터 (LEFT)", "left_repeater", 1, 0),
-            ("우측 리피터 (RIGHT) ▶", "right_repeater", 1, 1),
-            ("◀ 좌측 필러 (L-PILLAR)", "left_pillar", 2, 0),
-            ("우측 필러 (R-PILLAR) ▶", "right_pillar", 2, 1),
+            ("front", 0, 0),
+            ("back", 0, 1),
+            ("left_repeater", 1, 0),
+            ("right_repeater", 1, 1),
+            ("left_pillar", 2, 0),
+            ("right_pillar", 2, 1),
         ]
         self.cam_buttons = {}
         self.current_cam = "front"
 
         self._init_ui()
+        self.retranslate_ui()
 
     def _init_ui(self):
         self.setStyleSheet("""
@@ -264,9 +266,9 @@ class SingleCameraPopup(QWidget):
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(0, 0, 0, 0)
 
-        lbl_title = QLabel("📷 단일 카메라 뷰 선택")
-        lbl_title.setStyleSheet("color: #00E6FF; font-size: 12px; font-weight: bold;")
-        header_layout.addWidget(lbl_title)
+        self.lbl_title = QLabel(f"📷 {tr('cam_popup_title')}")
+        self.lbl_title.setStyleSheet("color: #00E6FF; font-size: 12px; font-weight: bold;")
+        header_layout.addWidget(self.lbl_title)
 
         header_layout.addStretch()
         main_layout.addLayout(header_layout)
@@ -282,8 +284,8 @@ class SingleCameraPopup(QWidget):
         grid = QGridLayout()
         grid.setSpacing(6)
 
-        for label, key, row, col in self.cam_configs:
-            btn = QPushButton(label)
+        for key, row, col in self.cam_configs:
+            btn = QPushButton()
             btn.setFixedHeight(34)
             btn.setMinimumWidth(138)
             btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -292,6 +294,22 @@ class SingleCameraPopup(QWidget):
             grid.addWidget(btn, row, col)
 
         main_layout.addLayout(grid)
+
+    def retranslate_ui(self):
+        """다국어 변경 시 단일 카메라 팝업 텍스트 갱신"""
+        if hasattr(self, 'lbl_title'):
+            self.lbl_title.setText(f"📷 {tr('cam_popup_title')}")
+        cam_labels = {
+            "front": f"📷 {tr('cam_front')}",
+            "back": f"🚗 {tr('cam_back')}",
+            "left_repeater": f"◀ {tr('cam_left_repeater')}",
+            "right_repeater": f"{tr('cam_right_repeater')} ▶",
+            "left_pillar": f"◀ {tr('cam_left_pillar')}",
+            "right_pillar": f"{tr('cam_right_pillar')} ▶",
+        }
+        for k, btn in self.cam_buttons.items():
+            if k in cam_labels:
+                btn.setText(cam_labels[k])
 
     def _on_btn_clicked(self, cam_key):
         self.current_cam = cam_key

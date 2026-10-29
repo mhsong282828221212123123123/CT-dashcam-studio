@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButt
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPixmap
 from network.server import LocalVideoShareServer
+from core.i18n import tr
 
 
 class QRShareDialog(QDialog):
@@ -14,7 +15,7 @@ class QRShareDialog(QDialog):
         self.video_filename = os.path.basename(video_path)
         self.server = LocalVideoShareServer(video_path)
         
-        self.setWindowTitle("📱 스마트폰 무선 전송 (QR 공유)")
+        self.setWindowTitle(f"📱 {tr('qr_dialog_title')}")
         self.setMinimumSize(460, 600)
         self.resize(480, 620)
         self.setStyleSheet("""
@@ -107,7 +108,7 @@ class QRShareDialog(QDialog):
         self.url_lbl.setMinimumHeight(36)
         url_layout.addWidget(self.url_lbl, stretch=1)
 
-        btn_copy = QPushButton("📋 복사")
+        btn_copy = QPushButton(tr("qr_copy_btn"))
         btn_copy.setObjectName("btnCopy")
         btn_copy.setMinimumWidth(80)
         btn_copy.setMinimumHeight(36)
@@ -122,15 +123,11 @@ class QRShareDialog(QDialog):
         g_layout.setContentsMargins(12, 10, 12, 10)
         g_layout.setSpacing(5)
 
-        g_title = QLabel("💡 스마트폰 전송 방법")
+        g_title = QLabel(tr("qr_guide_title"))
         g_title.setStyleSheet("font-size: 12px; font-weight: bold; color: #FFA726;")
         g_layout.addWidget(g_title)
 
-        g_desc = QLabel(
-            "1. 스마트폰과 PC가 <b>동일한 Wi-Fi(공유기)</b>에 연결되어 있어야 합니다.<br>"
-            "2. 스마트폰 기본 <b>카메라 앱</b>을 켜고 위 QR 코드를 비추세요.<br>"
-            "3. 화면에 뜨는 링크를 누르면 <b>갤러리에 즉시 저장</b>됩니다."
-        )
+        g_desc = QLabel(tr("qr_guide_desc"))
         g_desc.setStyleSheet("font-size: 11px; color: #A0A6B5; line-height: 1.45;")
         g_desc.setWordWrap(True)
         g_layout.addWidget(g_desc)
@@ -140,12 +137,12 @@ class QRShareDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(10)
 
-        btn_open_folder = QPushButton("📁 저장 폴더 열기")
+        btn_open_folder = QPushButton(tr("qr_open_folder"))
         btn_open_folder.setMinimumHeight(38)
         btn_open_folder.clicked.connect(self.open_containing_folder)
         btn_layout.addWidget(btn_open_folder, stretch=1)
 
-        btn_close = QPushButton("닫기")
+        btn_close = QPushButton(tr("btn_cancel"))
         btn_close.setObjectName("btnPrimary")
         btn_close.setMinimumHeight(38)
         btn_close.clicked.connect(self.accept)
@@ -169,7 +166,7 @@ class QRShareDialog(QDialog):
     def copy_url(self):
         cb = QApplication.clipboard()
         cb.setText(self.server.share_url)
-        QMessageBox.information(self, "복사 완료", f"공유 링크가 클립보드에 복사되었습니다.\n\n{self.server.share_url}")
+        QMessageBox.information(self, tr("qr_copied_title"), tr("qr_copied_msg", url=self.server.share_url))
 
     def open_containing_folder(self):
         if os.path.exists(self.video_path):
@@ -183,7 +180,7 @@ class QRShareDialog(QDialog):
 class HotkeyGuideDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("⌨ 단축키 및 화면 조작 안내")
+        self.setWindowTitle(f"⌨ {tr('hotkeys_dialog_title')}")
         self.setFixedSize(560, 620)
         self.setStyleSheet("""
             QDialog {
@@ -262,18 +259,18 @@ class HotkeyGuideDialog(QDialog):
         main_layout.setSpacing(10)
 
         # 1. Header Title
-        title_lbl = QLabel("⌨ 단축키 및 마우스 조작 가이드")
+        title_lbl = QLabel(f"⌨ {tr('hotkeys_dialog_title')}")
         title_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #00E6FF;")
         title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(title_lbl)
 
-        sub_lbl = QLabel("키보드 단축키와 마우스 직관 조작으로 빠르고 편리하게 탐색·편집할 수 있습니다.")
+        sub_lbl = QLabel(tr("hk_subtitle"))
         sub_lbl.setStyleSheet("font-size: 11px; color: #8E95A5; margin-bottom: 2px;")
         sub_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(sub_lbl)
 
         # 2. Keyboard Shortcuts Card
-        kb_sec_lbl = QLabel("⌨ 키보드 단축키")
+        kb_sec_lbl = QLabel(tr("hk_section_kb"))
         kb_sec_lbl.setObjectName("sectionTitle")
         main_layout.addWidget(kb_sec_lbl)
 
@@ -285,13 +282,13 @@ class HotkeyGuideDialog(QDialog):
         kb_layout.setVerticalSpacing(8)
 
         shortcuts = [
-            ("Space", "재생 / 일시정지 토글"),
-            ("←  /  →", "1초 뒤로 / 앞으로 이동"),
-            ("Shift + ←  /  →", "5초 고속 뒤로 / 앞으로 이동"),
-            ("I  /  O", "내보내기 구간 시작점(In) / 종료점(Out) 설정"),
-            ("[  /  ]", "이전 클립 / 다음 클립 전환"),
-            ("Home", "영상 첫 프레임(0초)으로 이동"),
-            ("F1  또는  ?", "단축키 및 조작 안내 창 열기"),
+            ("Space", tr("hk_space")),
+            ("←  /  →", tr("hk_arrow_1s")),
+            ("Shift + ←  /  →", tr("hk_arrow_5s")),
+            ("I  /  O", tr("hk_io")),
+            ("[  /  ]", tr("hk_brackets")),
+            ("Home", tr("hk_home")),
+            ("F1  또는  ?", tr("hk_f1")),
         ]
 
         for row_idx, (key_text, desc_text) in enumerate(shortcuts):
@@ -308,7 +305,7 @@ class HotkeyGuideDialog(QDialog):
         main_layout.addWidget(kb_card)
 
         # 3. Mouse & UI Interaction Card
-        mouse_sec_lbl = QLabel("🖱 마우스 화면 조작 팁")
+        mouse_sec_lbl = QLabel(tr("hk_section_mouse"))
         mouse_sec_lbl.setObjectName("sectionTitle")
         main_layout.addWidget(mouse_sec_lbl)
 
@@ -320,10 +317,10 @@ class HotkeyGuideDialog(QDialog):
         mouse_layout.setVerticalSpacing(8)
 
         mouse_tips = [
-            ("카메라 화면 더블클릭", "해당 카메라 단독 풀스크린 전환 / 분할 화면 복귀"),
-            ("하단 텔레메트리 드래그", "항목(TIME·SPEED 등)을 좌우로 끌어 표시 순서 변경"),
-            ("하단 텔레메트리 더블클릭", "텔레메트리 표시 순서를 기본 배치로 초기화"),
-            ("배속·밝기·대비 더블클릭", "슬라이더 또는 라벨 더블클릭 시 기본값 즉시 복원"),
+            (tr("hk_mouse_doubleclick"), tr("hk_mouse_doubleclick_desc")),
+            (tr("hk_mouse_drag"), tr("hk_mouse_drag_desc")),
+            (tr("hk_mouse_tele_reset"), tr("hk_mouse_tele_reset_desc")),
+            (tr("hk_mouse_slider_reset"), tr("hk_mouse_slider_reset_desc")),
         ]
 
         for row_idx, (act_text, desc_text) in enumerate(mouse_tips):
@@ -340,7 +337,7 @@ class HotkeyGuideDialog(QDialog):
         main_layout.addWidget(mouse_card)
 
         # 4. Bottom Close Button
-        btn_close = QPushButton("확인")
+        btn_close = QPushButton(tr("btn_confirm"))
         btn_close.setObjectName("btnClose")
         btn_close.clicked.connect(self.accept)
         main_layout.addWidget(btn_close, alignment=Qt.AlignmentFlag.AlignCenter)

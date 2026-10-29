@@ -1,3 +1,13 @@
+<div align="center">
+
+[![한국어](https://img.shields.io/badge/Language-한국어-0078D7?style=for-the-badge)](#)
+[![English](https://img.shields.io/badge/Language-English-gray?style=for-the-badge)](README_EN.md)
+[![日本語](https://img.shields.io/badge/Language-日本語-gray?style=for-the-badge)](README_JA.md)
+[![简体中文](https://img.shields.io/badge/Language-简体中文-gray?style=for-the-badge)](README_ZH_CN.md)
+[![繁體中文](https://img.shields.io/badge/Language-繁體中文-gray?style=for-the-badge)](README_ZH_TW.md)
+
+</div>
+
 # ⚡ 테슬라 블랙박스 뷰어 - CT Dashcam Studio
 
 <div align="center">
