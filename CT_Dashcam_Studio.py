@@ -30,6 +30,8 @@ cv2.ocl.setUseOpenCL(True)
 
 
 def main():
+    from core.typography import configure_font_backend
+    configure_font_backend()
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create("Fusion"))
 

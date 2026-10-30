@@ -1,9 +1,21 @@
 """Bundled desktop typeface and shared point sizes."""
+import os
+import sys
 from PyQt6.QtGui import QFontDatabase
 from core.utils import resource_path
 
 SIZES = {"body": 10, "small": 9, "title": 12, "symbol": 15}
 _family = None
+
+
+def configure_font_backend():
+    """Use the same smooth font rasterizer for Windows desktop and font previews.
+
+    Must run before QApplication is created. Explicit platform settings supplied
+    by tests or by the user are preserved.
+    """
+    if sys.platform == "win32":
+        os.environ.setdefault("QT_QPA_PLATFORM", "windows:fontengine=freetype")
 
 
 def font_family():

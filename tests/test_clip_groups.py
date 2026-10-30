@@ -50,3 +50,17 @@ class ClipGroupingTests(unittest.TestCase):
 
 
 if __name__=='__main__': unittest.main()
+
+
+class FontBackendConfigurationTests(unittest.TestCase):
+    def test_windows_uses_freetype_and_preserves_explicit_platform(self):
+        import os
+        from unittest.mock import patch
+        from core.typography import configure_font_backend
+        with patch("core.typography.sys.platform", "win32"):
+            with patch.dict(os.environ, {}, clear=True):
+                configure_font_backend()
+                self.assertEqual(os.environ["QT_QPA_PLATFORM"], "windows:fontengine=freetype")
+            with patch.dict(os.environ, {"QT_QPA_PLATFORM": "offscreen"}, clear=True):
+                configure_font_backend()
+                self.assertEqual(os.environ["QT_QPA_PLATFORM"], "offscreen")
