@@ -291,6 +291,7 @@ class CTDashcamStudio(QMainWindow):
 
         # 비디오 프리뷰 화면 (화면의 대부분을 꽉 채우도록 Expanding 설정)
         self.preview_lbl = QLabel(tr("preview_empty"))
+        self.preview_lbl.setWordWrap(True)
         self.preview_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         set_theme_style(self.preview_lbl, "background-color:@ct-bg-app; border:1px solid @ct-control-border; border-radius:4px;")
         self.preview_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)

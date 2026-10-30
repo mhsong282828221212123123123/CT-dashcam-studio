@@ -894,19 +894,19 @@ TRANSLATIONS = {
 
 
 # Desktop appearance and clip explorer labels.
-TRANSLATIONS['ko']["preview_empty"] = '폴더를 열고 클립을 선택하세요'
+TRANSLATIONS['ko']["preview_empty"] = '미리 볼 클립을 선택하세요\n\nTeslaCam 폴더를 열고 클립을 선택하면 영상을 확인할 수 있습니다.'
 TRANSLATIONS['ko']["tree_recent_tag"] = '{channels}채널'
 TRANSLATIONS['ko'].update({'lbl_language': '언어', 'lbl_theme': '테마', 'clip_start_range': '첫·마지막 클립의 시작 시각'})
-TRANSLATIONS['en']["preview_empty"] = 'Open a folder and select a clip'
+TRANSLATIONS['en']["preview_empty"] = 'Select a clip to preview\n\nOpen a TeslaCam folder, then select a clip to view your footage.'
 TRANSLATIONS['en']["tree_recent_tag"] = '{channels} channels'
 TRANSLATIONS['en'].update({'lbl_language': 'Language', 'lbl_theme': 'Theme', 'clip_start_range': 'Start times of the first and last clips'})
-TRANSLATIONS['ja']["preview_empty"] = 'フォルダーを開いてクリップを選択してください'
+TRANSLATIONS['ja']["preview_empty"] = 'プレビューするクリップを選択\n\nTeslaCamフォルダーを開き、クリップを選択すると映像を確認できます。'
 TRANSLATIONS['ja']["tree_recent_tag"] = '{channels}チャンネル'
 TRANSLATIONS['ja'].update({'lbl_language': '言語', 'lbl_theme': 'テーマ', 'clip_start_range': '最初と最後のクリップの開始時刻'})
-TRANSLATIONS['zh-Hans']["preview_empty"] = '打开文件夹并选择片段'
+TRANSLATIONS['zh-Hans']["preview_empty"] = '选择片段以预览\n\n打开 TeslaCam 文件夹并选择片段，即可查看视频。'
 TRANSLATIONS['zh-Hans']["tree_recent_tag"] = '{channels}路画面'
 TRANSLATIONS['zh-Hans'].update({'lbl_language': '语言', 'lbl_theme': '主题', 'clip_start_range': '首尾片段的开始时间'})
-TRANSLATIONS['zh-Hant']["preview_empty"] = '開啟資料夾並選擇片段'
+TRANSLATIONS['zh-Hant']["preview_empty"] = '選取片段以預覽\n\n開啟 TeslaCam 資料夾並選取片段，即可查看影片。'
 TRANSLATIONS['zh-Hant']["tree_recent_tag"] = '{channels}路畫面'
 TRANSLATIONS['zh-Hant'].update({'lbl_language': '語言', 'lbl_theme': '主題', 'clip_start_range': '首尾片段的開始時間'})
 
