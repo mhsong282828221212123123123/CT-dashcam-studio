@@ -33,3 +33,16 @@ actual Pretendard font matching, six themes, resource files, both OpenCV models,
 FFmpeg encoding/OpenCV decoding, and application clip-loader/export QThreads and
 their completion signals. It also writes two small test MP4s beside the JSON.
 It does not validate face/plate recognition accuracy on real dashcam recordings.
+
+## Single executable release
+
+For the same installation style as the existing GitHub releases:
+
+```powershell
+./tools/build_windows.ps1 -Mode onefile
+```
+
+This creates `build/nuitka/CT_Dashcam_Studio.exe`. It bundles the standalone
+runtime and resource files, extracting them privately when launched. Distribute
+this executable in the release ZIP together with the font license notice.
+The same `--build-check` command can verify the onefile executable.

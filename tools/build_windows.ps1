@@ -1,11 +1,14 @@
-param([string]$OutputDir = "build/nuitka")
+param(
+    [string]$OutputDir = "build/nuitka",
+    [ValidateSet("standalone", "onefile")][string]$Mode = "standalone"
+)
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 Push-Location $repoRoot
 try {
     New-Item -ItemType Directory -Force $OutputDir | Out-Null
     $arguments = @(
-        '-m', 'nuitka', '--mode=standalone', '--enable-plugin=pyqt6',
+        '-m', 'nuitka', "--mode=$Mode", '--enable-plugin=pyqt6',
         '--mingw64', '--assume-yes-for-downloads', '--windows-console-mode=disable',
         '--windows-icon-from-ico=icon.ico', '--output-filename=CT_Dashcam_Studio.exe',
         "--output-dir=$OutputDir", "--report=$OutputDir/compilation-report.xml",
