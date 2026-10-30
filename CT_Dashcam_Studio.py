@@ -33,6 +33,13 @@ def main():
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create("Fusion"))
 
+    if "--build-check" in sys.argv:
+        from core.build_check import run
+        index = sys.argv.index("--build-check")
+        if index + 1 >= len(sys.argv):
+            raise SystemExit("--build-check requires a report path")
+        raise SystemExit(run(app, sys.argv[index + 1]))
+
     window = CTDashcamStudio()
     window.show()
 

@@ -1,3 +1,4 @@
+from core.themes import set_theme_style
 from datetime import timedelta
 from PyQt6.QtWidgets import (
     QLabel, QSlider, QStyleOptionSlider, QStyle, QWidget,
@@ -5,7 +6,8 @@ from PyQt6.QtWidgets import (
     QGraphicsOpacityEffect
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QRect, QRectF, QPoint, QPointF, QTimer, QPropertyAnimation, QEasingCurve
-from PyQt6.QtGui import QPainter, QColor, QPen, QLinearGradient, QPolygonF
+from PyQt6.QtGui import QPainter, QColor, QPen, QPolygonF
+from core.themes import color
 from core.i18n import tr
 
 
@@ -117,14 +119,14 @@ class HighlightSlider(QSlider):
         for i in range(0, 41):
             tx = gx + (gw * i) / 40.0
             is_major = (i % 5 == 0)
-            painter.setPen(QPen(QColor(160, 175, 200, 55 if is_major else 24), 1.0))
+            painter.setPen(QPen(QColor(color("control-border")), 1.0))
             tick_top = 5.0 if is_major else 7.5
             painter.drawLine(QPointF(tx, tick_top), QPointF(tx, 10.5))
 
         # 2. 베이스 트랙 그루브 (다크 슬레이트 캡슐)
         track_rect = QRectF(gx, t_top, gw, th)
-        painter.setPen(QPen(QColor("#283040"), 1.0))
-        painter.setBrush(QColor("#0F131B"))
+        painter.setPen(QPen(QColor(color("control-border")), 1.0))
+        painter.setBrush(QColor(color("track-bg")))
         painter.drawRoundedRect(track_rect, 4.0, 4.0)
 
         if val_range <= 0:
@@ -143,7 +145,7 @@ class HighlightSlider(QSlider):
             r_top = t_top - 3.0
             r_bot = t_bot + 3.0
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor(255, 183, 0, 38))
+            painter.setBrush(QColor(color("warning-bg")))
             painter.drawRoundedRect(QRectF(rx1, r_top, rw, r_bot - r_top), 2.0, 2.0)
 
         # 4. 현재 재생 진행 바 (시안-블루 그라데이션)
@@ -151,17 +153,14 @@ class HighlightSlider(QSlider):
         curr_x = gx + curr_pct * gw
         prog_w = max(0.0, curr_x - gx)
         if prog_w > 1.0:
-            grad = QLinearGradient(gx, 0, curr_x, 0)
-            grad.setColorAt(0.0, QColor("#0062AD"))
-            grad.setColorAt(1.0, QColor("#00D8FF"))
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(grad)
+            painter.setBrush(QColor(color("border-active")))
             painter.drawRoundedRect(QRectF(gx, t_top + 1, prog_w, th - 2), 3.0, 3.0)
 
         # 5. 센트리 모션 감지 이벤트 블록 (코랄 레드 하이라이트 필)
         if self.event_blocks:
-            painter.setPen(QPen(QColor(255, 140, 155, 225), 0.8))
-            painter.setBrush(QColor(255, 52, 84, 235))
+            painter.setPen(QPen(QColor(color("danger-border")), 0.8))
+            painter.setBrush(QColor(color("danger-text")))
             for start_f, end_f in self.event_blocks:
                 x1 = gx + ((start_f - min_val) / float(val_range)) * gw
                 x2 = gx + ((end_f - min_val) / float(val_range)) * gw
@@ -170,10 +169,10 @@ class HighlightSlider(QSlider):
 
         # 6. In / Out 선택 구간 하단 골드 라인 & 좌우 브래킷 핸들 [ ]
         if has_range:
-            painter.setPen(QPen(QColor(255, 193, 7, 220), 1.8))
+            painter.setPen(QPen(QColor(color("range-color")), 1.8))
             painter.drawLine(QPointF(rx1, r_bot), QPointF(rx2, r_bot))
 
-            bracket_pen = QPen(QColor("#FFC107"), 2.4)
+            bracket_pen = QPen(QColor(color("range-color")), 2.4)
             bracket_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(bracket_pen)
             arm = 5.0
@@ -188,13 +187,13 @@ class HighlightSlider(QSlider):
 
         # 6. 마우스 호버 가이드 라인
         if self._hover_x is not None and gx <= self._hover_x <= gx + gw:
-            painter.setPen(QPen(QColor(0, 230, 255, 100), 1.0, Qt.PenStyle.DashLine))
+            painter.setPen(QPen(QColor(color("border-active")), 1.0, Qt.PenStyle.DashLine))
             painter.drawLine(QPointF(self._hover_x, 4.0), QPointF(self._hover_x, t_bot + 4.0))
 
         # 7. 플레이헤드 (Playhead Handle: 룰러 영역 오각형 캡 + 수직 니들)
         is_active = self._is_dragging or (self._hover_x is not None and abs(self._hover_x - curr_x) <= 10)
-        head_color = QColor("#FFFFFF") if is_active else QColor("#00E6FF")
-        border_color = QColor("#00E6FF") if is_active else QColor("#0B0E14")
+        head_color = QColor(color("text-main")) if is_active else QColor(color("border-active"))
+        border_color = QColor(color("border-active")) if is_active else QColor(color("bg-app"))
 
         # 플레이헤드 수직 니들
         painter.setPen(QPen(head_color, 2.2))
@@ -250,11 +249,11 @@ class SingleCameraPopup(QWidget):
         self.retranslate_ui()
 
     def _init_ui(self):
-        self.setStyleSheet("""
+        set_theme_style(self, """
             QWidget#SingleCameraPopup {
-                background-color: #14171E;
-                border: 1.5px solid #00E6FF;
-                border-radius: 8px;
+                background-color:@ct-control-bg;
+                border:1.5px solid @ct-border-active;
+                border-radius:8px;
             }
         """)
 
@@ -266,8 +265,8 @@ class SingleCameraPopup(QWidget):
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.lbl_title = QLabel(f"📷 {tr('cam_popup_title')}")
-        self.lbl_title.setStyleSheet("color: #00E6FF; font-size: 12px; font-weight: bold;")
+        self.lbl_title = QLabel(f"{tr('cam_popup_title')}")
+        set_theme_style(self.lbl_title, "color:@ct-text-main; font-size:@font-body; font-weight:400;")
         header_layout.addWidget(self.lbl_title)
 
         header_layout.addStretch()
@@ -277,7 +276,7 @@ class SingleCameraPopup(QWidget):
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
         line.setFrameShadow(QFrame.Shadow.Sunken)
-        line.setStyleSheet("background-color: #262E3B; border: none; max-height: 1px;")
+        set_theme_style(line, "background-color:@ct-control-bg; border:none; max-height:1px;")
         main_layout.addWidget(line)
 
         # 2열 3행 카메라 버튼 그리드
@@ -298,10 +297,10 @@ class SingleCameraPopup(QWidget):
     def retranslate_ui(self):
         """다국어 변경 시 단일 카메라 팝업 텍스트 갱신"""
         if hasattr(self, 'lbl_title'):
-            self.lbl_title.setText(f"📷 {tr('cam_popup_title')}")
+            self.lbl_title.setText(f"{tr('cam_popup_title')}")
         cam_labels = {
-            "front": f"📷 {tr('cam_front')}",
-            "back": f"🚗 {tr('cam_back')}",
+            "front": f"{tr('cam_front')}",
+            "back": f"{tr('cam_back')}",
             "left_repeater": f"◀ {tr('cam_left_repeater')}",
             "right_repeater": f"{tr('cam_right_repeater')} ▶",
             "left_pillar": f"◀ {tr('cam_left_pillar')}",
@@ -325,42 +324,42 @@ class SingleCameraPopup(QWidget):
 
         active_style = """
             QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0066AA, stop:1 #008CE3);
-                color: #FFFFFF;
-                border: 1.5px solid #00E6FF;
-                border-radius: 5px;
-                font-size: 11px;
-                font-weight: bold;
-                padding: 4px 6px;
+                background:@ct-selected-bg;
+                color:@ct-text-main;
+                border:1.5px solid @ct-border-active;
+                border-radius:5px;
+                font-size:@font-body;
+                font-weight:400;
+                padding:4px 6px;
             }
         """
         enabled_style = """
             QPushButton {
-                background-color: #1A1F29;
-                color: #D2D9E5;
-                border: 1px solid #333D4F;
-                border-radius: 5px;
-                font-size: 11px;
-                font-weight: bold;
-                padding: 4px 6px;
+                background-color:@ct-control-bg;
+                color:@ct-text-main;
+                border:1px solid @ct-control-border;
+                border-radius:5px;
+                font-size:@font-body;
+                font-weight:400;
+                padding:4px 6px;
             }
             QPushButton:hover {
-                background-color: #262E3E;
-                border: 1px solid #00B4D8;
-                color: #FFFFFF;
+                background-color:@ct-control-bg;
+                border:1px solid @ct-border-active;
+                color:@ct-text-main;
             }
             QPushButton:pressed {
-                background-color: #005F9E;
+                background-color:@ct-selected-bg;
             }
         """
         disabled_style = """
             QPushButton {
-                background-color: #121419;
-                color: #4E5666;
-                border: 1px solid #1D212A;
-                border-radius: 5px;
-                font-size: 11px;
-                padding: 4px 6px;
+                background-color:@ct-bg-app;
+                color:@ct-text-muted;
+                border:1px solid @ct-control-border;
+                border-radius:5px;
+                font-size:@font-body;
+                padding:4px 6px;
             }
         """
 
@@ -374,13 +373,13 @@ class SingleCameraPopup(QWidget):
             btn.setEnabled(is_available)
 
             if not is_available:
-                btn.setStyleSheet(disabled_style)
+                set_theme_style(btn, disabled_style)
                 btn.setToolTip(tr("tt_cam_missing"))
             elif key == active_cam:
-                btn.setStyleSheet(active_style)
+                set_theme_style(btn, active_style)
                 btn.setToolTip(tr("tt_cam_active"))
             else:
-                btn.setStyleSheet(enabled_style)
+                set_theme_style(btn, enabled_style)
                 btn.setToolTip(tr("tt_cam_click"))
 
     def keyPressEvent(self, event):
@@ -399,32 +398,32 @@ class ToastNotification(QFrame):
         super().__init__(parent)
         self.setObjectName("ToastNotificationFrame")
         self.setFixedWidth(540)
-        self.setStyleSheet("""
+        set_theme_style(self, """
             QFrame#ToastNotificationFrame {
-                background-color: rgba(24, 28, 36, 0.96);
-                border: 1.5px solid #F59E0B;
-                border-radius: 8px;
+                background-color:@ct-selected-bg;
+                border:1.5px solid @ct-border-active;
+                border-radius:8px;
             }
             QLabel#ToastIcon {
-                font-size: 20px;
-                padding-left: 2px;
+                font-size:@font-symbol;
+                padding-left:2px;
             }
             QLabel#ToastMsg {
-                color: #F3F4F6;
-                font-size: 12px;
-                font-weight: 500;
-                line-height: 1.4;
+                color:@ct-text-main;
+                font-size:@font-body;
+                font-weight:400;
+                line-height:1.4;
             }
             QPushButton#ToastClose {
-                background: transparent;
-                color: #9CA3AF;
-                border: none;
-                font-size: 15px;
-                font-weight: bold;
-                padding: 0px 4px;
+                background:transparent;
+                color:@ct-text-muted;
+                border:none;
+                font-size:@font-title;
+                font-weight:400;
+                padding:0px 4px;
             }
             QPushButton#ToastClose:hover {
-                color: #FFFFFF;
+                color:@ct-text-main;
             }
         """)
 
@@ -432,7 +431,7 @@ class ToastNotification(QFrame):
         layout.setContentsMargins(14, 10, 12, 10)
         layout.setSpacing(12)
 
-        self.icon_label = QLabel("🔒", self)
+        self.icon_label = QLabel("", self)
         self.icon_label.setObjectName("ToastIcon")
         layout.addWidget(self.icon_label)
 
@@ -457,7 +456,7 @@ class ToastNotification(QFrame):
 
         self.hide()
 
-    def show_message(self, message: str, duration_ms: int = 5500, icon: str = "🔒"):
+    def show_message(self, message: str, duration_ms: int = 5500, icon: str = ""):
         self.msg_label.setText(message)
         self.icon_label.setText(icon)
         self.adjustSize()
