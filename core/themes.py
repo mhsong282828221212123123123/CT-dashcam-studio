@@ -1,4 +1,4 @@
-"""Shared Qt geometry and the six palettes used by the web application.
+"""Shared Qt geometry and the ten palettes used by the web application.
 
 Component templates share sizing and use semantic color tokens.
 New components should use color(role) or @ct-role in style templates.
@@ -255,6 +255,110 @@ PALETTES = {'graphite': {'bg-app': '#171817',
            'switch-bg': '#c7cbc0',
            'switch-active': '#788b6a',
            'drop-bg': '#fafaf7'}}
+# Light variants share Paper Green geometry and surfaces. Accent values match the web palettes.
+_PAPER_ACCENTS = {'paper-blue': {'text-main': '#242d3b',
+                'text-muted': '#4d5d72',
+                'text-dim': '#63728a',
+                'primary-bg': '#315b8d',
+                'selected-bg': '#dce7f5',
+                'selected-border': '#7496bd',
+                'selected-text': '#25496f',
+                'control-bg': '#e9eef5',
+                'control-border': '#c4cedd',
+                'header-bg': '#edf1f7',
+                'track-bg': '#dfe7f2',
+                'bg-card': '#e9eef5',
+                'bg-card-hover': '#dce7f5',
+                'border-subtle': '#c4cedd',
+                'border-active': '#7496bd',
+                'accent-blue': '#7496bd',
+                'accent-cyan': '#242d3b',
+                'accent-green': '#7496bd',
+                'focus-color': '#315b8d',
+                'folder-bg': '#edf1f7',
+                'folder-border': '#7496bd',
+                'hover-bg': '#dce7f5',
+                'badge-bg': '#edf1f7',
+                'switch-bg': '#c4cedd',
+                'switch-active': '#4f78a8'},
+ 'paper-violet': {'text-main': '#302939',
+                  'text-muted': '#60536e',
+                  'text-dim': '#766781',
+                  'primary-bg': '#65458a',
+                  'selected-bg': '#e9e0f3',
+                  'selected-border': '#9980b5',
+                  'selected-text': '#503568',
+                  'control-bg': '#eee9f4',
+                  'control-border': '#d0c6dd',
+                  'header-bg': '#f1edf6',
+                  'track-bg': '#e7dfee',
+                  'bg-card': '#eee9f4',
+                  'bg-card-hover': '#e9e0f3',
+                  'border-subtle': '#d0c6dd',
+                  'border-active': '#9980b5',
+                  'accent-blue': '#9980b5',
+                  'accent-cyan': '#302939',
+                  'accent-green': '#9980b5',
+                  'focus-color': '#65458a',
+                  'folder-bg': '#f1edf6',
+                  'folder-border': '#9980b5',
+                  'hover-bg': '#e9e0f3',
+                  'badge-bg': '#f1edf6',
+                  'switch-bg': '#d0c6dd',
+                  'switch-active': '#8765a5'},
+ 'paper-rose': {'text-main': '#39282f',
+                'text-muted': '#70525f',
+                'text-dim': '#826977',
+                'primary-bg': '#914d63',
+                'selected-bg': '#f1dfe6',
+                'selected-border': '#ad7b8d',
+                'selected-text': '#723b50',
+                'control-bg': '#f3e9ed',
+                'control-border': '#dcc6ce',
+                'header-bg': '#f7edf1',
+                'track-bg': '#eedfe5',
+                'bg-card': '#f3e9ed',
+                'bg-card-hover': '#f1dfe6',
+                'border-subtle': '#dcc6ce',
+                'border-active': '#ad7b8d',
+                'accent-blue': '#ad7b8d',
+                'accent-cyan': '#39282f',
+                'accent-green': '#ad7b8d',
+                'focus-color': '#914d63',
+                'folder-bg': '#f7edf1',
+                'folder-border': '#ad7b8d',
+                'hover-bg': '#f1dfe6',
+                'badge-bg': '#f7edf1',
+                'switch-bg': '#dcc6ce',
+                'switch-active': '#a8677f'},
+ 'paper-sand': {'text-main': '#342d22',
+                'text-muted': '#695c46',
+                'text-dim': '#7b6d55',
+                'primary-bg': '#785b2f',
+                'selected-bg': '#eee5d1',
+                'selected-border': '#aa8b54',
+                'selected-text': '#674b23',
+                'control-bg': '#f0ebe0',
+                'control-border': '#d6cbb7',
+                'header-bg': '#f5f0e5',
+                'track-bg': '#eae1d0',
+                'bg-card': '#f0ebe0',
+                'bg-card-hover': '#eee5d1',
+                'border-subtle': '#d6cbb7',
+                'border-active': '#aa8b54',
+                'accent-blue': '#aa8b54',
+                'accent-cyan': '#342d22',
+                'accent-green': '#aa8b54',
+                'focus-color': '#785b2f',
+                'folder-bg': '#f5f0e5',
+                'folder-border': '#aa8b54',
+                'hover-bg': '#eee5d1',
+                'badge-bg': '#f5f0e5',
+                'switch-bg': '#d6cbb7',
+                'switch-active': '#92743f'}}
+for _name, _overrides in _PAPER_ACCENTS.items():
+    PALETTES[_name] = {**PALETTES["paper"], **_overrides}
+
 def _SETTINGS():
     return QSettings("CompanionTurret", "CT_Dashcam_Studio")
 
@@ -272,7 +376,7 @@ def current_theme():
 for _name, _palette in PALETTES.items():
     _palette.update(dict(zip(
         ("clip-recent", "clip-saved", "clip-sentry"),
-        ("#39734e", "#346fa1", "#b14b44") if _name == "paper" else
+        ("#356a46", "#2b6090", "#a9433b") if _name == "paper" or _name.startswith("paper-") else
         ("#93c5a4", "#9dc2e2", "#e0a39c"),
     )))
 
@@ -281,13 +385,20 @@ def color(role):
     return PALETTES[_current][role]
 
 def theme_names(language):
-    names = {
-        "ko": ("그라파이트", "미드나이트", "포레스트", "버건디", "앰버", "페이퍼"),
-        "en": ("Graphite", "Midnight", "Forest", "Burgundy", "Amber", "Paper"),
-        "ja": ("グラファイト", "ミッドナイト", "フォレスト", "バーガンディ", "アンバー", "ペーパー"),
-        "zh-Hans": ("石墨", "午夜", "森林", "酒红", "琥珀", "纸白"),
-        "zh-Hant": ("石墨", "午夜", "森林", "酒紅", "琥珀", "紙白"),
-    }
+    names = {'ko': ('그라파이트', '미드나이트', '포레스트', '버건디', '앰버', '페이퍼 그린', '페이퍼 블루', '페이퍼 바이올렛', '페이퍼 로즈', '페이퍼 샌드'),
+     'en': ('Graphite',
+            'Midnight',
+            'Forest',
+            'Burgundy',
+            'Amber',
+            'Paper Green',
+            'Paper Blue',
+            'Paper Violet',
+            'Paper Rose',
+            'Paper Sand'),
+     'ja': ('グラファイト', 'ミッドナイト', 'フォレスト', 'バーガンディ', 'アンバー', 'ペーパー・グリーン', 'ペーパー・ブルー', 'ペーパー・バイオレット', 'ペーパー・ローズ', 'ペーパー・サンド'),
+     'zh-Hans': ('石墨', '午夜', '森林', '酒红', '琥珀', '纸白·绿', '纸白·蓝', '纸白·紫', '纸白·玫瑰', '纸白·沙金'),
+     'zh-Hant': ('石墨', '午夜', '森林', '酒紅', '琥珀', '紙白·綠', '紙白·藍', '紙白·紫', '紙白·玫瑰', '紙白·沙金')}
     return dict(zip(PALETTES, names.get(language, names["en"])))
 
 def render_style(template):

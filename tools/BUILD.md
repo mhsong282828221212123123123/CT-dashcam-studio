@@ -29,7 +29,7 @@ if ($process.ExitCode -ne 0) { throw 'Packaging check failed' }
 ```
 
 The check creates no visible app window and skips the update request. It verifies
-actual Pretendard font matching, six themes, resource files, both OpenCV models,
+actual Pretendard font matching, ten themes, resource files, both OpenCV models,
 FFmpeg encoding/OpenCV decoding, and application clip-loader/export QThreads and
 their completion signals. It also writes two small test MP4s beside the JSON.
 It does not validate face/plate recognition accuracy on real dashcam recordings.

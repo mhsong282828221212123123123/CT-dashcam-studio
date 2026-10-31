@@ -164,4 +164,35 @@ class DesktopUiTests(unittest.TestCase):
         self.assertIn(themes.color('bg-app'),dialog.styleSheet());self.assertIn(themes.color('control-bg'),popup.styleSheet())
         self.assertNotIn('@ct-',dialog.styleSheet());dialog.close();popup.close()
 
+    def test_paper_names_survive_language_changes(self):
+        w = self.window
+        w.combo_theme.setCurrentIndex(w.combo_theme.findData('paper-blue'))
+        for lang in i18n.LANGUAGES:
+            with self.subTest(language=lang):
+                w.combo_lang.setCurrentIndex(w.combo_lang.findData(lang))
+                self.app.processEvents()
+                names = themes.theme_names(lang)
+                self.assertEqual(list(names), list(themes.PALETTES))
+                self.assertEqual(w.combo_theme.count(), 10)
+                self.assertEqual([w.combo_theme.itemText(i) for i in range(10)], list(names.values()))
+                self.assertEqual(w.combo_theme.currentData(), 'paper-blue')
+        self.assertEqual(themes.theme_names('ko')['paper'], '페이퍼 그린')
+        self.assertEqual(themes.theme_names('en')['paper'], 'Paper Green')
+
+    def test_paper_text_and_clip_colors_remain_readable(self):
+        def luminance(value):
+            q = themes.QColor(value)
+            linear = [v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4
+                      for v in (q.redF(), q.greenF(), q.blueF())]
+            return .2126 * linear[0] + .7152 * linear[1] + .0722 * linear[2]
+        for name, palette in themes.PALETTES.items():
+            if not name.startswith('paper'):
+                continue
+            for text, background in [('text-main', 'bg-app'), ('text-muted', 'bg-sidebar'),
+                                     ('primary-text', 'primary-bg'), ('selected-text', 'selected-bg'),
+                                     ('clip-recent', 'header-bg'), ('clip-saved', 'header-bg'), ('clip-sentry', 'header-bg')]:
+                with self.subTest(theme=name, text=text):
+                    a, b = luminance(palette[text]), luminance(palette[background])
+                    self.assertGreaterEqual((max(a, b) + .05) / (min(a, b) + .05), 4.5)
+
 if __name__=='__main__':unittest.main()
