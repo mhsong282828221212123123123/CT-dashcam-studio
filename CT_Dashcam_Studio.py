@@ -8,6 +8,7 @@ if current_dir not in sys.path:
 
 import cv2
 from PyQt6.QtWidgets import QApplication, QStyleFactory
+from PyQt6.QtGui import QIcon
 
 # 하위 호환성을 위한 Re-export
 from core.constants import APP_VERSION, GITHUB_REPO, RESOLUTIONS, SENSITIVITY_LEVELS
@@ -33,6 +34,7 @@ def main():
     from core.typography import configure_font_backend
     configure_font_backend()
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(resource_path("icon.ico")))
     app.setStyle(QStyleFactory.create("Fusion"))
 
     if "--build-check" in sys.argv:
