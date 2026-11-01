@@ -59,6 +59,8 @@ Frustrated by existing viewers stamping watermarks or downgrading quality? CT Da
 - 🔒 **EncryptedClips Guidance**: Immediately notifies via toast banner when Tesla's encrypted drive folder is detected
 - ☀️ **Night Enhancement & Speed Control**: Brightness and contrast adjustments tailored for dark or tinted footage, plus variable playback speeds (0.5x – 5.0x)
 
+Export renders the composed frames and re-encodes them as H.264 for high-quality MP4 output. It is not lossless stream copying; output resolution follows the selected setting.
+
 ---
 
 ## 🚀 How to Use
@@ -100,7 +102,7 @@ python CT_Dashcam_Studio.py
 
 ## 📄 License
 
-This project is licensed under the [MIT LICENSE](LICENSE).
+Original project code is licensed under [GPL-3.0-only](LICENSE), to the extent the owner holds the necessary rights. Third-party components retain their own licenses.
 
 
 ## Privacy & Licenses / GPL-3.0-only
