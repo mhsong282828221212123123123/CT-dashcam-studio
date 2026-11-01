@@ -1646,6 +1646,7 @@ class CTDashcamStudio(QMainWindow):
         self.progress_dialog.canceled.connect(on_user_cancel)
 
         self.loader_worker = ClipLoaderWorker(self.active_clip_list, self)
+        self.loader_worker.error.connect(self._on_clips_load_error)
         self.loader_worker.progress.connect(self._on_clips_load_progress)
         self.loader_worker.finished.connect(lambda decs, offs, tot, fps, itm_d=item_data: self._on_clips_loaded_callback(decs, offs, tot, fps, itm_d))
         self.loader_worker.start()
@@ -1692,6 +1693,21 @@ class CTDashcamStudio(QMainWindow):
         if hasattr(self, 'progress_dialog') and self.progress_dialog and not getattr(self, 'is_load_canceled', False):
             self.progress_dialog.setValue(val)
             self.progress_dialog.setLabelText(msg)
+
+    def _on_clips_load_error(self, message):
+        if getattr(self, 'is_load_canceled', False):
+            return
+        if getattr(self, 'progress_dialog', None):
+            self.progress_dialog.hide()
+        self.was_playing_before_load = False
+        self.active_clip_list = []
+        self.active_decoders = []
+        self.clip_frame_offsets = []
+        self.total_frames = 0
+        self.current_active_clip_idx = -1
+        self.current_item = None
+        self._refresh_playing_item()
+        QMessageBox.warning(self, tr("warning_title"), tr("load_failed", error=message))
 
     def _on_clips_loaded_callback(self, decoders, offsets, total_f, detected_fps, item_data):
         try:
@@ -1816,6 +1832,7 @@ class CTDashcamStudio(QMainWindow):
             import traceback
             print("Exception in _on_clips_loaded_callback:")
             traceback.print_exc()
+            self._on_clips_load_error(str(e))
 
     def switch_to_clip_index(self, clip_idx):
         if self.current_active_clip_idx == clip_idx:
@@ -1895,8 +1912,14 @@ class CTDashcamStudio(QMainWindow):
 
         sensitivity_preset = self.combo_sensitivity.currentData() or "보통"
         self.scanner = LightMotionScanner(clip_list, fps=self.fps, sensitivity_preset=sensitivity_preset, target_scan_fps=6.0)
+        self.scanner.error.connect(self.on_motion_scan_error)
         self.scanner.events_found.connect(self.on_motion_events_found)
         self.scanner.start()
+
+    def on_motion_scan_error(self, message):
+        self._set_motion_badge_style("idle")
+        self.lbl_motion_status.setText(tr("motion_failed"))
+        self.show_toast(tr("motion_failed") + "\n" + message)
 
     def on_motion_events_found(self, event_blocks):
         if not self.is_current_sentry:
@@ -2011,6 +2034,8 @@ class CTDashcamStudio(QMainWindow):
         self.render_and_display(frames, idx)
 
     def read_frames_with_cache(self, global_idx, is_seeking=False, skip_count=0, reuse_same_frame=False):
+        if not self.active_clip_list or len(self.clip_frame_offsets) != len(self.active_clip_list) + 1:
+            return {}
         if not hasattr(self, 'last_preview_cam_frame_idx'):
             self.last_preview_cam_frame_idx = {}
         if not hasattr(self, 'last_raw_preview_frames'):

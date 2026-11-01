@@ -33,6 +33,8 @@ class ExportWorker(QThread):
 
     def run(self):
         ffmpeg_proc = None
+        privacy_executor = None
+        cams = {}
         try:
             try:
                 ffmpeg_exe_path = imageio_ffmpeg.get_ffmpeg_exe()
@@ -95,7 +97,6 @@ class ExportWorker(QThread):
             privacy_enabled = blur_face or blur_plate or enhance_plate
             privacy_filters = {}
             camera_buffers = {}
-            privacy_executor = None
             if privacy_enabled:
                 from concurrent.futures import ThreadPoolExecutor
                 privacy_executor = ThreadPoolExecutor(max_workers=min(4, os.cpu_count() or 4))
@@ -113,7 +114,10 @@ class ExportWorker(QThread):
                 camera_buffers.clear()
                 render_queue.clear()
 
-                cams = {k: cv2.VideoCapture(v) for k, v in clip_info["cams"].items() if os.path.exists(v)}
+                cams = {}
+                for key, path in clip_info["cams"].items():
+                    if os.path.exists(path):
+                        cams[key] = cv2.VideoCapture(path)
                 
                 # 기존 디코더가 있으면 재사용, 없으면 새로 파싱
                 if clip_idx < len(self.active_decoders) and self.active_decoders[clip_idx] is not None:
@@ -259,8 +263,7 @@ class ExportWorker(QThread):
                         try:
                             ffmpeg_proc.stdin.write(grid.tobytes())
                         except Exception as e:
-                            self.error.emit(f"FFmpeg 파이프 쓰기 오류: {str(e)}")
-                            return
+                            raise RuntimeError(f"FFmpeg 파이프 쓰기 오류: {str(e)}") from e
                         processed_frames += 1
 
                     curr_f += frame_step
@@ -282,8 +285,7 @@ class ExportWorker(QThread):
                     try:
                         ffmpeg_proc.stdin.write(grid.tobytes())
                     except Exception as e:
-                        self.error.emit(f"FFmpeg 파이프 쓰기 오류: {str(e)}")
-                        return
+                        raise RuntimeError(f"FFmpeg 파이프 쓰기 오류: {str(e)}") from e
                     processed_frames += 1
                     if total_output_frames > 0:
                         pct = int((processed_frames / total_output_frames) * 100)
@@ -293,11 +295,16 @@ class ExportWorker(QThread):
 
                 for cap in cams.values():
                     cap.release()
+                cams = {}
 
             if self.is_stopped:
                 if ffmpeg_proc:
-                    ffmpeg_proc.stdin.close()
+                    try:
+                        ffmpeg_proc.stdin.close()
+                    except OSError:
+                        pass
                     ffmpeg_proc.terminate()
+                    ffmpeg_proc.wait()
                 if os.path.exists(self.out_path):
                     try:
                         os.remove(self.out_path)
@@ -307,7 +314,9 @@ class ExportWorker(QThread):
             else:
                 if ffmpeg_proc:
                     ffmpeg_proc.stdin.close()
-                    ffmpeg_proc.wait()
+                    return_code = ffmpeg_proc.wait()
+                    if return_code != 0:
+                        raise RuntimeError(f"FFmpeg exited with code {return_code}")
                 self.progress.emit(100)
                 self.finished.emit(self.out_path)
 
@@ -315,9 +324,17 @@ class ExportWorker(QThread):
             if ffmpeg_proc:
                 try:
                     ffmpeg_proc.kill()
+                    ffmpeg_proc.wait()
                 except Exception:
                     pass
             self.error.emit(f"영상 렌더링 중 오류 발생: {str(e)}")
         finally:
+            for cap in cams.values():
+                cap.release()
+            if ffmpeg_proc and ffmpeg_proc.stdin and not ffmpeg_proc.stdin.closed:
+                try:
+                    ffmpeg_proc.stdin.close()
+                except OSError:
+                    pass
             if privacy_executor is not None:
                 privacy_executor.shutdown(wait=False)

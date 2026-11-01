@@ -363,7 +363,7 @@ class SingleCameraPopup(QWidget):
             }
         """
 
-        for _, key, _, _ in self.cam_configs:
+        for key, _, _ in self.cam_configs:
             btn = self.cam_buttons.get(key)
             if not btn:
                 continue

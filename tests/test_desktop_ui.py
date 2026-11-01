@@ -164,6 +164,64 @@ class DesktopUiTests(unittest.TestCase):
         self.assertIn(themes.color('bg-app'),dialog.styleSheet());self.assertIn(themes.color('control-bg'),popup.styleSheet())
         self.assertNotIn('@ct-',dialog.styleSheet());dialog.close();popup.close()
 
+    def test_single_button_opens_and_selects_available_camera(self):
+        import sys
+        errors = []
+        # Capture slot failures instead of allowing PyQt to terminate the test process.
+        with patch.object(sys, 'excepthook', lambda *exc: errors.append(exc)):
+            self.window.btn_layout_single.click()
+            self.app.processEvents()
+            self.assertEqual(errors, [])
+            popup = self.window.single_cam_popup
+            self.assertTrue(popup.isVisible())
+            self.assertTrue(popup.cam_buttons['back'].isEnabled())
+            self.assertFalse(popup.cam_buttons['left_pillar'].isEnabled())
+            popup.cam_buttons['back'].click()
+            self.app.processEvents()
+            self.assertEqual(errors, [])
+            self.assertEqual(self.window.get_current_single_cam(), 'back')
+            self.assertFalse(popup.isVisible())
+            self.window.btn_layout_2x2.click()
+            self.window.btn_layout_single.click()
+            self.assertTrue(popup.isVisible())
+
+    def test_single_popup_updates_when_available_cameras_change(self):
+        popup = SingleCameraPopup(self.window)
+        for cameras, active in [({'front', 'back'}, 'back'), ({'left_pillar'}, 'left_pillar'), (set(), 'front')]:
+            popup.update_states(cameras, active)
+            for key, button in popup.cam_buttons.items():
+                self.assertEqual(button.isEnabled(), key in cameras)
+            self.assertEqual(popup.current_cam, active)
+
+    def test_load_failure_closes_progress_and_allows_retry(self):
+        from PyQt6.QtWidgets import QProgressDialog
+        w = self.window
+        w.progress_dialog = QProgressDialog(w)
+        w.progress_dialog.show()
+        w.active_clip_list = [{'cams': {}}]
+        w.was_playing_before_load = True
+        with patch('ui.main_window.QMessageBox.warning') as warning:
+            w._on_clips_load_error('device disconnected')
+        self.assertFalse(w.progress_dialog.isVisible())
+        self.assertEqual(w.active_clip_list, [])
+        self.assertEqual(w.read_frames_with_cache(0), {})
+        self.assertFalse(w.was_playing_before_load)
+        warning.assert_called_once()
+        item = self.recent().child(0).child(0)
+        with patch('ui.main_window.ClipLoaderWorker') as loader:
+            w.on_tree_item_clicked(item, 0)
+            loader.return_value.error.connect.assert_called_once()
+            loader.return_value.start.assert_called_once()
+        w.loader_worker = None
+        w.progress_dialog.hide()
+
+    def test_motion_failure_is_reported_without_caching_success(self):
+        with patch.object(self.window, 'show_toast') as toast:
+            self.window.on_motion_scan_error('read failed')
+        self.assertEqual(self.window.lbl_motion_status.text(), i18n.tr('motion_failed'))
+        toast.assert_called_once()
+        self.assertFalse(self.window.motion_cache)
+
     def test_paper_names_survive_language_changes(self):
         w = self.window
         w.combo_theme.setCurrentIndex(w.combo_theme.findData('paper-blue'))

@@ -5,6 +5,7 @@ from core.decoder import RealTeslaSEIDecoder
 
 
 class ClipLoaderWorker(QThread):
+    error = pyqtSignal(str)
     progress = pyqtSignal(int, str)
     finished = pyqtSignal(list, list, int, object)
 
@@ -35,14 +36,17 @@ class ClipLoaderWorker(QThread):
                         dec = None
                     decoders.append(dec)
 
+                    cap = None
                     try:
                         cap = cv2.VideoCapture(front_cam)
                         fc = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 2160
                         v_fps = cap.get(cv2.CAP_PROP_FPS)
-                        cap.release()
                     except Exception:
                         fc = 2160
                         v_fps = None
+                    finally:
+                        if cap is not None:
+                            cap.release()
 
                     if detected_fps is None and v_fps and 10.0 <= v_fps <= 120.0:
                         detected_fps = round(v_fps, 2)
@@ -56,8 +60,9 @@ class ClipLoaderWorker(QThread):
             if not self.is_stopped:
                 self.progress.emit(100, "로딩 완료")
                 self.finished.emit(decoders, offsets, total_f, detected_fps)
-        except Exception:
-            pass
+        except Exception as exc:
+            if not self.is_stopped:
+                self.error.emit(str(exc))
 
     def stop(self):
         self.is_stopped = True

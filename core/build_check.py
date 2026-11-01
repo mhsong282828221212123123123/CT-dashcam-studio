@@ -37,6 +37,13 @@ def run(app, report_path):
             window._retranslate_tree()
             app.processEvents()
         report["themes"] = list(PALETTES)
+        from ui.widgets import SingleCameraPopup
+        popup = SingleCameraPopup(window)
+        popup.update_states({"front", "back"}, "back")
+        assert popup.cam_buttons["back"].isEnabled()
+        assert not popup.cam_buttons["left_pillar"].isEnabled()
+        popup.close()
+        report["single_camera_popup"] = True
         resources = ["icon.ico", "assets/fonts/OFL.txt", "assets/fonts/Pretendard-Regular.otf",
                      "assets/fonts/Pretendard-SemiBold.otf", "assets/fonts/Pretendard-Bold.otf",
                      "models/steering_hud.png", "models/face_detection_yunet.onnx", "models/yolov8n.onnx"]
