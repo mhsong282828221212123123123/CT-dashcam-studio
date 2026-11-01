@@ -14,7 +14,7 @@
 
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D7?style=for-the-badge&logo=windows&logoColor=white)
 ![Release](https://img.shields.io/badge/Release-v1.3.1-00E6FF?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-39FF14?style=for-the-badge)
+![License](https://img.shields.io/badge/License-GPL--3.0--only-39FF14?style=for-the-badge)
 
 **专为特斯拉原厂行车记录仪和哨兵模式视频打造的完全免费多机位播放器与车辆数据分析工作台**
 
@@ -101,3 +101,14 @@ python CT_Dashcam_Studio.py
 ## 📄 开源许可证
 
 本项目基于 [MIT LICENSE](LICENSE) 协议发布。
+
+
+## Privacy & Licenses / GPL-3.0-only
+
+Original project code is offered under **GPL-3.0-only**, to the extent the owner holds the necessary rights. Previously distributed MIT source retains its original MIT permissions; the prior notice is preserved in `licenses/project-before-gpl-MIT.txt`. Third-party libraries, fonts and models keep their own terms. In particular, the bundled YOLO model declares AGPL-3.0 and is not relicensed GPL-only. No warranty is provided.
+
+- [Project license](LICENSE) · [Privacy Policy](PRIVACY.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+- [License audit and unresolved issues](LICENSE_AUDIT.md) · [Redistribution report](REDISTRIBUTION_REPORT.md) · [QR security findings](SECURITY_FINDINGS.md)
+- [Discovery](COMPLIANCE_DISCOVERY.md) · [Validation](COMPLIANCE_VERIFICATION.md) · [Dependency snapshot](DEPENDENCY_AUDIT.json) · [Native binary inventory](BINARY_AUDIT.json)
+
+The footer's localized Privacy & Licenses button reads bundled legal documents offline in source, standalone and onefile builds. No first-run consent gate or analytics is added. Maps, updates and optional LAN sharing retain their existing behavior, documented in the policy. Packaging includes `legal/`; keep its readable companion documents with any future ZIP. **Model/source/notice and other redistribution issues listed in the audit remain unresolved.** Adding a GPL text is not complete clearance. The owner explicitly authorized updated stable publication after reviewing these findings; release status is not a claim that all obligations have been satisfied.

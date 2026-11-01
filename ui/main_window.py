@@ -734,6 +734,15 @@ class CTDashcamStudio(QMainWindow):
             QPushButton:hover { color:@ct-text-main; }
         """)
         footer_layout.addWidget(self.btn_feedback)
+        self.btn_legal = QPushButton(tr("legal_title"))
+        self.btn_legal.setFlat(True)
+        self.btn_legal.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_legal.clicked.connect(self.show_legal_information)
+        set_theme_style(self.btn_legal, """
+            QPushButton { color:@ct-text-muted; background:transparent; border:none; padding:0 4px; font-size:@font-small; }
+            QPushButton:hover { color:@ct-text-main; }
+        """)
+        footer_layout.addWidget(self.btn_legal)
         self.lbl_footer = QLabel(f"♥ Companion Turret  ·  v{APP_VERSION}")
         set_theme_style(self.lbl_footer, "color:@ct-text-muted; font-size:@font-small; font-weight:normal;")
         footer_layout.addWidget(self.lbl_footer)
@@ -1168,6 +1177,7 @@ class CTDashcamStudio(QMainWindow):
                         sub.setToolTip(0, tr("clip_start_range") + "\n" + c_list[0].get("dirpath", ""))
 
     def retranslate_ui(self):
+        self.btn_legal.setText(tr("legal_title"))
         self.btn_feedback.setText(tr("feedback_link"))
         self.btn_feedback.setToolTip(tr("feedback_login_note"))
         """다국어 변경 시 프로그램 전체 UI 텍스트를 실시간 일괄 갱신"""
@@ -3212,6 +3222,10 @@ class CTDashcamStudio(QMainWindow):
     def open_feedback_form(self):
         if not QDesktopServices.openUrl(QUrl(FEEDBACK_FORM_URL)):
             self.show_toast(tr("feedback_open_failed"))
+
+    def show_legal_information(self):
+        from ui.legal_info import LegalInfoDialog
+        LegalInfoDialog(self).exec()
 
     def on_update_found(self, tag_name, url):
         reply = QMessageBox.question(

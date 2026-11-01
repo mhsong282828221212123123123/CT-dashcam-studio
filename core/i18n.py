@@ -56,6 +56,19 @@ CAMERA_POPUP_ITEMS = [
 
 TRANSLATIONS = {
     "ko": {
+        "legal_title": "개인정보 및 라이선스",
+        "legal_privacy": "개인정보 처리방침",
+        "legal_project": "프로젝트 라이선스",
+        "legal_third_party": "제3자 라이선스",
+        "legal_audit": "라이선스 검토",
+        "legal_document": "문서 선택",
+        "legal_close": "닫기",
+        "legal_missing": "동봉된 문서를 읽지 못했습니다.",
+        "legal_english_note": "법적 문서는 영어 원문으로 제공됩니다. 라이선스는 구성요소별 원문을 따릅니다.",
+        "legal_scope": "원본 프로젝트 코드: GPL-3.0-only. 저작권: Companion Turret 및 각 권리자. 보증 없이 제공되며 GPL 조건에 따라 재배포할 수 있습니다. 제3자·모델 조건과 미해결 배포 항목은 별도 문서에 명시되어 있습니다.",
+        "legal_redistribution": "배포 검토 (영어)",
+        "legal_security": "QR 보안 검토 (영어)",
+
         "app_title": "CT Dashcam Studio - 테슬라 멀티캠 뷰어 & 텔레메트리 스튜디오",
         "btn_load": "TeslaCam 폴더 지정",
         "tree_col_explorer": "클립 탐색기",
@@ -229,6 +242,19 @@ TRANSLATIONS = {
         "btn_confirm": "확인"
     },
     "en": {
+        "legal_title": "Privacy & Licenses",
+        "legal_privacy": "Privacy Policy",
+        "legal_project": "Project License",
+        "legal_third_party": "Third-party Licenses",
+        "legal_audit": "License Audit",
+        "legal_document": "Choose document",
+        "legal_close": "Close",
+        "legal_missing": "The bundled document could not be read.",
+        "legal_english_note": "Legal documents are provided in canonical English. Each component retains its original license terms.",
+        "legal_scope": "Original project code: GPL-3.0-only. Copyright: Companion Turret and respective holders. Provided without warranty; redistribution is permitted under the GPL conditions. Third-party/model terms and unresolved distribution items are documented separately.",
+        "legal_redistribution": "Redistribution review (English)",
+        "legal_security": "QR security review (English)",
+
         "app_title": "CT Dashcam Studio - Tesla Multi-Cam Viewer & Telemetry Studio",
         "btn_load": "Select TeslaCam Folder",
         "tree_col_explorer": "Clip Explorer",
@@ -402,6 +428,19 @@ TRANSLATIONS = {
         "btn_confirm": "OK"
     },
     "ja": {
+        "legal_title": "プライバシーとライセンス",
+        "legal_privacy": "プライバシーポリシー",
+        "legal_project": "プロジェクトライセンス",
+        "legal_third_party": "第三者ライセンス",
+        "legal_audit": "ライセンス監査",
+        "legal_document": "文書を選択",
+        "legal_close": "閉じる",
+        "legal_missing": "同梱文書を読み込めませんでした。",
+        "legal_english_note": "法的文書は英語の原文で提供します。各構成要素の元のライセンスが適用されます。",
+        "legal_scope": "プロジェクトの独自コード: GPL-3.0-only。著作権: Companion Turret および各権利者。無保証で提供し、GPL の条件に従って再配布できます。第三者・モデルの条件と未解決の配布事項は別文書に記載しています。",
+        "legal_redistribution": "配布の検討（英語）",
+        "legal_security": "QR セキュリティの検討（英語）",
+
         "app_title": "CT Dashcam Studio - テスラ マルチカムビューア & テレメトリスタジオ",
         "btn_load": "TeslaCam フォルダ選択",
         "tree_col_explorer": "クリップエクスプローラー",
@@ -575,6 +614,19 @@ TRANSLATIONS = {
         "btn_confirm": "確認"
     },
     "zh-Hans": {
+        "legal_title": "隐私与许可证",
+        "legal_privacy": "隐私政策",
+        "legal_project": "项目许可证",
+        "legal_third_party": "第三方许可证",
+        "legal_audit": "许可证审查",
+        "legal_document": "选择文档",
+        "legal_close": "关闭",
+        "legal_missing": "无法读取随附文档。",
+        "legal_english_note": "法律文档以英文原文提供。各组件保留其原始许可条款。",
+        "legal_scope": "项目原创代码：GPL-3.0-only。版权归 Companion Turret 及各权利人所有。不提供担保，可依 GPL 条件再分发。第三方和模型条款以及未解决的分发事项另有说明。",
+        "legal_redistribution": "分发审查（英文）",
+        "legal_security": "QR 安全审查（英文）",
+
         "app_title": "CT Dashcam Studio - 特斯拉多路行车记录仪播放器与遥测演播室",
         "btn_load": "选择 TeslaCam 文件夹",
         "tree_col_explorer": "片段浏览器",
@@ -748,6 +800,19 @@ TRANSLATIONS = {
         "btn_confirm": "确定"
     },
     "zh-Hant": {
+        "legal_title": "隱私權與授權",
+        "legal_privacy": "隱私權政策",
+        "legal_project": "專案授權",
+        "legal_third_party": "第三方授權",
+        "legal_audit": "授權審查",
+        "legal_document": "選擇文件",
+        "legal_close": "關閉",
+        "legal_missing": "無法讀取隨附文件。",
+        "legal_english_note": "法律文件以英文原文提供。各元件保留原始授權條款。",
+        "legal_scope": "專案原創程式碼：GPL-3.0-only。著作權屬於 Companion Turret 及各權利人。不提供擔保，可依 GPL 條件再散布。第三方與模型條款及未解決的散布事項另有說明。",
+        "legal_redistribution": "散布審查（英文）",
+        "legal_security": "QR 安全審查（英文）",
+
         "app_title": "CT Dashcam Studio - 特斯拉多路行車記錄器播放器與遙測演播室",
         "btn_load": "選擇 TeslaCam 資料夾",
         "tree_col_explorer": "片段瀏覽器",

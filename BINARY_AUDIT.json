@@ -1,0 +1,1274 @@
+{
+  "reviewed": "2026-11-01",
+  "scope": "Existing Nuitka standalone payload retained by the pre-change 1.3.1 onefile build; paths are relative to that payload.",
+  "files": [
+    {
+      "path": "_bz2.pyd",
+      "bytes": 83368,
+      "sha256": "f178e29921c04fb68cc08b1e5d1181e5df8ce1de38a968778e27990f4a69973c",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "_ctypes.pyd",
+      "bytes": 122792,
+      "sha256": "92d7954d9099762d81c1ae2836c11b6ba58c1883fde8eeefe387cc93f2f6afb4",
+      "imports": [
+        "KERNEL32.dll",
+        "OLEAUT32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "libffi-7.dll",
+        "ole32.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "_decimal.pyd",
+      "bytes": 250280,
+      "sha256": "6314c99a3efa15307e7bdbe18c0b49bc841c734f42923a0b44aab42ed7d4a62d",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-locale-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "_hashlib.pyd",
+      "bytes": 61864,
+      "sha256": "1be5cfd06a782b2ae8e4629d9d035cbc487074e8f63b9773c85e317be29c0430",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "libcrypto-1_1.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "_lzma.pyd",
+      "bytes": 158120,
+      "sha256": "80a6ebe46f43ffa93bbdbfc83e67d6f44a44055de1439b06e4dd2983cb243df6",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "_multiprocessing.pyd",
+      "bytes": 33192,
+      "sha256": "be8269c83666eaa342788e62085a3db28f81512d2cfa6156bf137b13ebebe9e0",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "WS2_32.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "_queue.pyd",
+      "bytes": 30632,
+      "sha256": "09c5faf270fd63bde6c45cc53b05160262c7ca47d4c37825ed3e15d479daee66",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "_socket.pyd",
+      "bytes": 77736,
+      "sha256": "8046bf64e463d5aa38d13525891156131cf997c2e6cdf47527bc352f00f5c90a",
+      "imports": [
+        "IPHLPAPI.DLL",
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "WS2_32.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "_ssl.pyd",
+      "bytes": 159144,
+      "sha256": "58b772b53bfe898513c0eb264ae4fa47ed3d8f256bc8f70202356d20f9ecb6dc",
+      "imports": [
+        "CRYPT32.dll",
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "WS2_32.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "libcrypto-1_1.dll",
+        "libssl-1_1.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "CT_Dashcam_Studio.dll",
+      "bytes": 29654528,
+      "sha256": "9ad549cc589d3d6007e565f7474c0ea89c94b4d3f106f1bd3e0b813c61c1c1ca",
+      "imports": [
+        "KERNEL32.dll",
+        "SHELL32.dll",
+        "USER32.dll",
+        "msvcrt.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "1.3.1.0"
+    },
+    {
+      "path": "cv2/cv2.pyd",
+      "bytes": 86293504,
+      "sha256": "f1e76ab01cf4d33af780adf8ada1a26c5eaeecc55d2cbe8a5e288195e8f9b0dd",
+      "imports": [
+        "ADVAPI32.dll",
+        "COMDLG32.dll",
+        "GDI32.dll",
+        "KERNEL32.dll",
+        "MF.dll",
+        "MFPlat.DLL",
+        "MFReadWrite.dll",
+        "OLEAUT32.dll",
+        "SHLWAPI.dll",
+        "USER32.dll",
+        "d3d11.dll",
+        "dxgi.dll",
+        "ole32.dll",
+        "python3.dll"
+      ]
+    },
+    {
+      "path": "cv2/opencv_videoio_ffmpeg500_64.dll",
+      "bytes": 30876160,
+      "sha256": "7aabff029d1fa47cf56ede4dbbe05dc62da3208f07cd16471d4c966a33f9aa31",
+      "imports": [
+        "KERNEL32.dll",
+        "Secur32.dll",
+        "USER32.dll",
+        "WS2_32.dll",
+        "bcrypt.dll",
+        "msvcrt.dll",
+        "ole32.dll"
+      ],
+      "fileVersion": "2024.11.0.0"
+    },
+    {
+      "path": "imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe",
+      "bytes": 87638016,
+      "sha256": "2ce797a0f88d7f067180338fb227f7b1928ea727bd9a4d7a1d022f7c52af71a3",
+      "imports": [
+        "ADVAPI32.dll",
+        "AVICAP32.dll",
+        "CRYPT32.dll",
+        "GDI32.dll",
+        "IMM32.dll",
+        "IPHLPAPI.DLL",
+        "KERNEL32.dll",
+        "OLEAUT32.dll",
+        "SETUPAPI.dll",
+        "SHELL32.dll",
+        "SHLWAPI.dll",
+        "USER32.dll",
+        "VERSION.dll",
+        "WINMM.dll",
+        "WS2_32.dll",
+        "bcrypt.dll",
+        "msvcrt.dll",
+        "ncrypt.dll",
+        "ole32.dll"
+      ]
+    },
+    {
+      "path": "libcrypto-1_1.dll",
+      "bytes": 3439512,
+      "sha256": "9c0a0a11629cced6a064932e95a0158ee936739d75a56338702fed97cb0bad55",
+      "imports": [
+        "ADVAPI32.dll",
+        "KERNEL32.dll",
+        "USER32.dll",
+        "VCRUNTIME140.dll",
+        "WS2_32.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "bcrypt.dll"
+      ],
+      "fileVersion": "1.1.1.14"
+    },
+    {
+      "path": "libffi-7.dll",
+      "bytes": 32792,
+      "sha256": "f60dd9f2fcbd495674dfc1555effb710eb081fc7d4cae5fa58c438ab50405081",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll"
+      ]
+    },
+    {
+      "path": "libssl-1_1.dll",
+      "bytes": 698784,
+      "sha256": "ed1c8769f5096afd000fc730a37b11177fcf90890345071ab7fbceac684d571f",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "libcrypto-1_1.dll"
+      ],
+      "fileVersion": "1.1.1.14"
+    },
+    {
+      "path": "msvcp140.dll",
+      "bytes": 557728,
+      "sha256": "0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-locale-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll"
+      ],
+      "fileVersion": "14.44.35211.0"
+    },
+    {
+      "path": "msvcp140_1.dll",
+      "bytes": 35952,
+      "sha256": "bfad5aef4c63a669e3c140655cdfdf395b6c979b400a447bd5dcb65ed8826c3d",
+      "imports": [
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll"
+      ],
+      "fileVersion": "14.44.35211.0"
+    },
+    {
+      "path": "msvcp140_2.dll",
+      "bytes": 280200,
+      "sha256": "3ea06f0ee098b4823cb79599df3780e7f23cce52c19aac31d2a0d47efe33a5e9",
+      "imports": [
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-locale-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll"
+      ],
+      "fileVersion": "14.44.35211.0"
+    },
+    {
+      "path": "numpy/_core/_multiarray_tests.pyd",
+      "bytes": 62976,
+      "sha256": "98c097b892d271a983a3fd7882b6678af1596e3eec83a95b8b858d51872dfd07",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/_core/_multiarray_umath.pyd",
+      "bytes": 4170752,
+      "sha256": "483f5a560d2a12185dc9cf232c7c234dd68359bd6322282e501007964cd1cab6",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-locale-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "libscipy_openblas64_-13e2df515630b4a41f92893938845698.dll",
+        "msvcp140-263139962577ecda4cd9469ca360a746.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/fft/_pocketfft_umath.pyd",
+      "bytes": 279040,
+      "sha256": "ea2928ce8515cf79a3528c61e808417367f4b5863d9ae14c85349452ea0e90d6",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "msvcp140-263139962577ecda4cd9469ca360a746.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/linalg/_umath_linalg.pyd",
+      "bytes": 108032,
+      "sha256": "16c72b5b018f84efbdd2c1d4469faeb643efd513fa7ed2c0dd4bd4cbf6c66f37",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "libscipy_openblas64_-13e2df515630b4a41f92893938845698.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/random/_bounded_integers.pyd",
+      "bytes": 230912,
+      "sha256": "a49b9934184b430fc0d28349ca1e334fe4399b32186276708af2f7f993b067f3",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/random/_common.pyd",
+      "bytes": 155648,
+      "sha256": "53316e831a32ec3f824c7f4c6fdfcef45180d7878a71d3581f642b217de0683d",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/random/_generator.pyd",
+      "bytes": 714240,
+      "sha256": "d16e40973d57dda880218e262bafa68bb54c96abd360caaa9844e6ede8902266",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/random/_mt19937.pyd",
+      "bytes": 83456,
+      "sha256": "dccbde9f33e2376174f50f253a829766466ba4211006afb653ce5629e33a3427",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/random/_pcg64.pyd",
+      "bytes": 93696,
+      "sha256": "034199c62a540b8d4d7277bb9cfa3318b7a5e0f9be49109c3e00b39ba7cc3005",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/random/_philox.pyd",
+      "bytes": 77824,
+      "sha256": "38772c797373ea8385b085c8b78ae9fba6b0f9aace90d2b3124e55f5eac897fa",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/random/_sfc64.pyd",
+      "bytes": 59904,
+      "sha256": "7ae5e4bf82eae5bfd775c7bf990eb32597db6d8c316ed60756f13395bf7e13b4",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/random/bit_generator.pyd",
+      "bytes": 164864,
+      "sha256": "5788e8dc719f6696dbd7da364581cf4dacf90b245b55e8a14c2a83bb1cb3b024",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy/random/mtrand.pyd",
+      "bytes": 607744,
+      "sha256": "dff8f1ede212e69ee301329b44134a5aabcc927a1c2ff33412aa8cb0ae9b2b7d",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "numpy.libs/libscipy_openblas64_-13e2df515630b4a41f92893938845698.dll",
+      "bytes": 20390912,
+      "sha256": "6547e9fb966e9773caee2755e91a8bf4d6f3a2f0eebf9646b0158f8675ea4ab5",
+      "imports": [
+        "KERNEL32.dll",
+        "api-ms-win-crt-conio-l1-1-0.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-locale-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-private-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll"
+      ]
+    },
+    {
+      "path": "numpy.libs/msvcp140-263139962577ecda4cd9469ca360a746.dll",
+      "bytes": 575056,
+      "sha256": "a4c2229bdc2a2a630acdc095b4d86008e5c3e3bc7773174354f3da4f5beb9cde",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-locale-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll"
+      ],
+      "fileVersion": "14.40.33810.0"
+    },
+    {
+      "path": "PIL/_avif.pyd",
+      "bytes": 7893504,
+      "sha256": "df0c617422668f1b1b5eece35a0689183942402a16632689d60c3d6488679bc8",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "PIL/_imaging.pyd",
+      "bytes": 2632192,
+      "sha256": "16a7c881fd3624c8428078ce24460861e91fc5cc43de1b3614dc2531fe327e2e",
+      "imports": [
+        "GDI32.dll",
+        "KERNEL32.dll",
+        "USER32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "PIL/_imagingcms.pyd",
+      "bytes": 273408,
+      "sha256": "c92c55b43a774b8787a040afdd70c1c086daad5780c73efb35b029c219a03d5f",
+      "imports": [
+        "GDI32.dll",
+        "KERNEL32.dll",
+        "USER32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "PIL/_imagingft.pyd",
+      "bytes": 2173952,
+      "sha256": "2c5951d8d3d6f2640545afcdd059f21f65e8571e24789f76790c18d501bf505c",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "PIL/_imagingmath.pyd",
+      "bytes": 21504,
+      "sha256": "91dbb83922daaa0a601b8a8282be60ebf7633a5b743565c3b579fcafda9b9094",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "PIL/_webp.pyd",
+      "bytes": 416256,
+      "sha256": "b2b263bd00abe0c1c120efca36f8050c161ce6dbbdb20bf940cc874cae01bac2",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "pyexpat.pyd",
+      "bytes": 198568,
+      "sha256": "dbe6e7be3a7418811bd5987b0766d8d660190d867cd42f8ed79e70d868e8aa43",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/iconengines/qsvgicon.dll",
+      "bytes": 72504,
+      "sha256": "dcfe12e028e1fd694a99fbc18f6aebf08d36223f5fd99c1bc1e7bc85eee11281",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "Qt6Svg.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/imageformats/qgif.dll",
+      "bytes": 47928,
+      "sha256": "1ac71f48e08ee0aa405d55041f8340d56ed827fb94260bceda46ac0a50dfb7a5",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/imageformats/qicns.dll",
+      "bytes": 55608,
+      "sha256": "c20ad45b3c2891d9f7a501d7e9f6354e1734244bc455d185ffd45ec08fb3e43d",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/imageformats/qico.dll",
+      "bytes": 45880,
+      "sha256": "0eb08bc9d8f6c1ab05f3a837629eb10e41eb6aa72240d23e291056b801894794",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/imageformats/qjpeg.dll",
+      "bytes": 577848,
+      "sha256": "bc3815c58443a01f43417ecac74bbf182c245d433ea82af0b3dc669c2cb064ab",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/imageformats/qpdf.dll",
+      "bytes": 42296,
+      "sha256": "eb90a13badf9bbc3fc2f8331ff1cda8ea45ee5626e2f7f7e8b35bfc96a46995b",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "Qt6Pdf.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/imageformats/qsvg.dll",
+      "bytes": 39224,
+      "sha256": "8a4db91d1cb7689554794e93a9b0811fdffecfa43fc8c703049092ca27097ab7",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "Qt6Svg.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/imageformats/qtga.dll",
+      "bytes": 38200,
+      "sha256": "307ba8cb4aff7626d081d8f1a9ddd0581069e4fba845735ed236ec386e19a20c",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/imageformats/qtiff.dll",
+      "bytes": 441656,
+      "sha256": "88cff8f7084ee2b02657922cbbcb17a24c58c9fdcf30ec4a20196fc28e2a7973",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/imageformats/qwbmp.dll",
+      "bytes": 36664,
+      "sha256": "a4a6f28f2be50a9698c44d39db865124c143ac8260a32925ef0f99ad542326d8",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/imageformats/qwebp.dll",
+      "bytes": 562488,
+      "sha256": "5b3412d4df198847fa8953d7af857bbddc46e58d0cab53725821d245b65d802c",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/platforms/qminimal.dll",
+      "bytes": 61752,
+      "sha256": "c4f03a873f96edd8ab9c3016883f1705669743ba48d1ecbc5132704db48319c7",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/platforms/qoffscreen.dll",
+      "bytes": 113976,
+      "sha256": "7a3f14ab1f373e96e706db6f3f2d88a4eb7132f3d03e139fdc84a303ca974e22",
+      "imports": [
+        "KERNEL32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/platforms/qwindows.dll",
+      "bytes": 1006904,
+      "sha256": "dd126e2a47f7f3d4a855981e9d4012076058b1440f6900b9a07aa950e4e4f20a",
+      "imports": [
+        "ADVAPI32.dll",
+        "COMDLG32.dll",
+        "GDI32.dll",
+        "IMM32.dll",
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "OLEAUT32.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "SETUPAPI.dll",
+        "SHELL32.dll",
+        "SHLWAPI.dll",
+        "UIAutomationCore.DLL",
+        "USER32.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "WINMM.dll",
+        "WTSAPI32.dll",
+        "api-ms-win-core-winrt-l1-1-0.dll",
+        "api-ms-win-core-winrt-string-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-shcore-scaling-l1-1-1.dll",
+        "d3d9.dll",
+        "dwmapi.dll",
+        "ole32.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/styles/qmodernwindowsstyle.dll",
+      "bytes": 230712,
+      "sha256": "093e3ac68dfdac52a2667a2f7ba00b336392f9d6bde08430494ef54dbd120541",
+      "imports": [
+        "GDI32.dll",
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "Qt6Widgets.dll",
+        "USER32.dll",
+        "UxTheme.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "dwmapi.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/tls/qcertonlybackend.dll",
+      "bytes": 103736,
+      "sha256": "c1fa08ef8f0ea33370ad8e1239d9147262b08d002edab4bc4e9812827381dbba",
+      "imports": [
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "Qt6Core.dll",
+        "Qt6Network.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/tls/qopensslbackend.dll",
+      "bytes": 319288,
+      "sha256": "bd6c98abd328149e7e3cfa651753ab8654f404c9d63aced7006b3863e6f5aa26",
+      "imports": [
+        "CRYPT32.dll",
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "Qt6Core.dll",
+        "Qt6Network.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/Qt6/plugins/tls/qschannelbackend.dll",
+      "bytes": 263992,
+      "sha256": "b263e588f2a93955a3e42b2c0d893d203cbe5a0ac42d1af5840ddd3b9a16b183",
+      "imports": [
+        "CRYPT32.dll",
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "Qt6Core.dll",
+        "Qt6Network.dll",
+        "Secur32.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "bcrypt.dll",
+        "ncrypt.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "PyQt6/QtCore.pyd",
+      "bytes": 2666496,
+      "sha256": "91dd5166110b88a4f4d3acda6fe6c10ed699882dd3602328a59e9f656cc766b1",
+      "imports": [
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "Qt6Core.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "python3.dll"
+      ]
+    },
+    {
+      "path": "PyQt6/QtGui.pyd",
+      "bytes": 2310144,
+      "sha256": "cf5ae37fd119fb29a53f1f2cea1362fdf036d940191be45d83da0f98ce8752b8",
+      "imports": [
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "MSVCP140_2.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "python3.dll"
+      ]
+    },
+    {
+      "path": "PyQt6/QtWidgets.pyd",
+      "bytes": 5072896,
+      "sha256": "4f81361816e94e1ae05f178085b22d5b9b19e417713b1966dd481a4017aa3b21",
+      "imports": [
+        "Qt6Widgets.dll"
+      ]
+    },
+    {
+      "path": "PyQt6/sip.pyd",
+      "bytes": 113152,
+      "sha256": "c8a4b33a733344d1bc128bc046f07656bfe0ef6cba2cff2d774612b4bc4e36a0",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "python310.dll"
+      ]
+    },
+    {
+      "path": "python3.dll",
+      "bytes": 64936,
+      "sha256": "5d78cd1365ea9ae4e95872576cfa4055342f1e80b06f3051cf91d564b6cd09f5",
+      "imports": [],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "python310.dll",
+      "bytes": 4493736,
+      "sha256": "058925e4bbfcb460a3c00ec824b8390583baef0c780a7c7ff01d43d9eec45f20",
+      "imports": [
+        "ADVAPI32.dll",
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "VERSION.dll",
+        "WS2_32.dll",
+        "api-ms-win-core-path-l1-1-0.dll",
+        "api-ms-win-crt-conio-l1-1-0.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-locale-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-process-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "qt6core.dll",
+      "bytes": 10480440,
+      "sha256": "fae4778a42e93adc82b831c879c886a05147e9cc26760808d21116be5547259b",
+      "imports": [
+        "ADVAPI32.dll",
+        "AUTHZ.dll",
+        "KERNEL32.dll",
+        "MPR.dll",
+        "MSVCP140.dll",
+        "MSVCP140_1.dll",
+        "NETAPI32.dll",
+        "OLEAUT32.dll",
+        "SHELL32.dll",
+        "USER32.dll",
+        "USERENV.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "VERSION.dll",
+        "WINMM.dll",
+        "WS2_32.dll",
+        "api-ms-win-core-synch-l1-2-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "icuuc.dll",
+        "ntdll.dll",
+        "ole32.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "qt6gui.dll",
+      "bytes": 9589560,
+      "sha256": "8fceee959a670372aaa5763287c2ef7924cd9ecdbe2c29cf4b6c12a63079c503",
+      "imports": [
+        "DWrite.dll",
+        "GDI32.dll",
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "MSVCP140_1.dll",
+        "MSVCP140_2.dll",
+        "Qt6Core.dll",
+        "SHELL32.dll",
+        "USER32.dll",
+        "UxTheme.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "d3d11.dll",
+        "d3d12.dll",
+        "dxgi.dll",
+        "ole32.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "qt6network.dll",
+      "bytes": 1771320,
+      "sha256": "0232076731e386b6cc353bdf743d5fb17e95a3493c2d02afac984db87ed47b96",
+      "imports": [
+        "ADVAPI32.dll",
+        "DNSAPI.dll",
+        "IPHLPAPI.DLL",
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "MSVCP140_1.dll",
+        "Qt6Core.dll",
+        "Secur32.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "WINHTTP.dll",
+        "WS2_32.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "qt6pdf.dll",
+      "bytes": 4611384,
+      "sha256": "3a378ef81ada2658ca9e6dd1f269bafe3a96787934752b8bb4ca91a5c6e21e9c",
+      "imports": [
+        "ADVAPI32.dll",
+        "GDI32.dll",
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "Qt6Network.dll",
+        "USER32.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "qt6svg.dll",
+      "bytes": 642360,
+      "sha256": "a5866fa80cca10dd58e31f277b62f1a1060d3a495fabcea72e2f9ade0f9e45fe",
+      "imports": [
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "qt6widgets.dll",
+      "bytes": 6594360,
+      "sha256": "4d603bff620ae0830d15c25a787f9f10ed3f972d998f1f17c9c4f83937280399",
+      "imports": [
+        "GDI32.dll",
+        "KERNEL32.dll",
+        "MSVCP140.dll",
+        "MSVCP140_1.dll",
+        "Qt6Core.dll",
+        "Qt6Gui.dll",
+        "USER32.dll",
+        "UxTheme.dll",
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "dwmapi.dll"
+      ],
+      "fileVersion": "6.11.1.0"
+    },
+    {
+      "path": "select.pyd",
+      "bytes": 29096,
+      "sha256": "68b80009ab656ffe811d680585fac3d4f9c1b45f29d48c67ea2b3580ec4d86a1",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "WS2_32.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "unicodedata.pyd",
+      "bytes": 1121192,
+      "sha256": "2cf6c5dea30bb0584991b2065c052c22d258b6e15384447dcea193fdcac5f758",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "python310.dll"
+      ],
+      "fileVersion": "3.10.6150.1013"
+    },
+    {
+      "path": "vcruntime140.dll",
+      "bytes": 98736,
+      "sha256": "d66c3b47091ceb3f8d3cc165a43d285ae919211a0c0fcb74491ee574d8d464f8",
+      "imports": [
+        "KERNEL32.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll"
+      ],
+      "fileVersion": "14.32.31332.0"
+    },
+    {
+      "path": "vcruntime140_1.dll",
+      "bytes": 38304,
+      "sha256": "1758085a61527b427c4380f0c976d29a8bee889f2ac480c356a3f166433bf70e",
+      "imports": [
+        "KERNEL32.dll",
+        "VCRUNTIME140.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll"
+      ],
+      "fileVersion": "14.32.31332.0"
+    }
+  ]
+}

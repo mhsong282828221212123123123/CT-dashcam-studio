@@ -1,0 +1,19 @@
+# Desktop compliance discovery — 2026-11-01
+
+Baseline: af986a84ec1d67789f9444845700a4b0be1cbde7, Python/Windows v1.3.1. Desktop repository is distinct from Web. Investigation preceded application changes. This document and the audit are technical evidence, not legal certification.
+
+- Entry: CT_Dashcam_Studio.py; window ui/main_window.py; media logic core/decoder.py, renderer.py, exporter.py, scanner.py, privacy_filter.py, plate_enhancer.py. AI runs through local OpenCV DNN/FaceDetectorYN.
+- No package manifest/lockfile or About menu was present. Dependencies were documented as unpinned pip commands. tools/build_windows.ps1 builds Nuitka standalone/onefile; no GitHub release automation/workflow was found.
+- Localization: core/i18n.py, five languages ko/en/ja/zh-Hans/zh-Hant. Themes and bundled Pretendard typography are shared helpers. Footer already contains feedback and version information and can hold an unobtrusive legal button.
+- Original LICENSE: MIT, copyright 2026 Companion Turret. Nine visible commits use the owner's account/name aliases. This supports the owner's migration request but is not proof of ownership of all copied code/assets. Historical MIT permissions remain effective; retain the old notice.
+- Runtime: PyQt6 6.11.0 / Qt 6.11.1 / sip 13.12.0; OpenCV wheel 5.0.0.93, NumPy 2.2.6, Pillow 12.3.0, qrcode 8.2, imageio-ffmpeg 0.6.0. Audit active transitive requirements separately from build tools; exact records are in DEPENDENCY_AUDIT.json.
+- Existing local ZIP matching the previously uploaded v1.3.1 archive was inspected without redownloading: SHA-256 e65f70788e33aff407edaf5411a67fb475bce19a7c87090b23f2b51f8cdcf54c. It contains only CT_Dashcam_Studio.exe, LICENSE.txt (MIT) and OFL.txt. It lacks comprehensive binary notices/privacy/source materials. The retained standalone payload contains 75 native binaries; BINARY_AUDIT.json records hashes/imports/versions where available.
+- imageio FFmpeg executable identifies 7.1 Gyan essentials, --enable-gpl --enable-version3 --enable-static; -L says GPLv3-or-later. This is distinct from OpenCV's LGPL FFmpeg backend DLL.
+- yolov8n.onnx has embedded author Ultralytics, exporter 8.4.139 and AGPL-3.0 metadata. Do not relicense it GPL-3.0-only. YuNet's SHA matches the OpenCV Zoo LFS pointer for the MIT model. Icon/steering artwork provenance remains unresolved.
+- Network: automatic GitHub releases/latest check on startup; HTTPS OSM tile fetches and route prefetch; optional Google Form browser link. No Google Analytics, diagnostics uploader or cloud inference code found. get_local_ip uses UDP connect to 8.8.8.8:80 as a routing lookup; no payload send in that helper.
+- QR: ui/dialogs.py starts LocalVideoShareServer when QRShareDialog is constructed, before showing it. HTTP binds 0.0.0.0 on ports 8765 through 8814; no authentication/TLS/session token; three readable routes serve one export. closeEvent stops the server, but accept/reject bypass that event in the current Qt runtime. Existing global handler class shares mutable file attributes across server instances. See SECURITY_FINDINGS.md; do not change network behavior in this task.
+- Storage: QSettings app language/theme, memory caches/decoded frames/models, export files, Clipboard QR URL; temporary generated checkbox icons via QTemporaryDir and onefile extraction. No persistent analytics database found. No application log rotation/retention policy exists; stdout and FFmpeg stderr diagnostics can contain paths/errors.
+
+## Safe scope
+
+Adopt GPL-3.0-only for original project code under the owner's authorization, retaining MIT history and third-party notices. Add offline readable legal UI and bundle legal documents/manifest in both build modes. Preserve every media/model/network implementation and library version. Record model/source-distribution, OSM and QR issues for owner review. No new analytics, no mandatory first-run dialog, no new public release, no automatic model/library replacement.

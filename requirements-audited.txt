@@ -1,0 +1,10 @@
+# Snapshot of the audited Python 3.10 Windows environment; not a hash/source lock.
+PyQt6==6.11.0
+opencv-python==5.0.0.93
+numpy==2.2.6
+pillow==12.3.0
+qrcode==8.2
+imageio-ffmpeg==0.6.0
+PyQt6_sip==13.12.0
+PyQt6-Qt6==6.11.1
+colorama==0.4.6

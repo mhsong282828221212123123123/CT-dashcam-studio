@@ -14,7 +14,7 @@
 
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D7?style=for-the-badge&logo=windows&logoColor=white)
 ![Release](https://img.shields.io/badge/Release-v1.3.1-00E6FF?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-39FF14?style=for-the-badge)
+![License](https://img.shields.io/badge/License-GPL--3.0--only-39FF14?style=for-the-badge)
 
 **테슬라(Tesla) 순정 블랙박스 및 센트리 모드 영상을 위한 완전 무료 멀티캠 뷰어 & 텔레메트리 스튜디오**
 
@@ -122,3 +122,14 @@ UI는 앱에 포함된 Pretendard Regular·SemiBold·Bold를 사용합니다. �
 웹 버전과 같은 10개 테마를 제공합니다. 밝은 테마는 페이퍼 그린·블루·바이올렛·로즈·샌드이며,
 기존 `paper` 설정은 페이퍼 그린으로 유지됩니다. 테마를 바꿔도 UI 크기와 영상 출력 색상은 바뀌지 않습니다.
 테마 이름은 앱에서 지원하는 5개 언어에 맞춰 표시됩니다.
+
+
+## Privacy & Licenses / GPL-3.0-only
+
+Original project code is offered under **GPL-3.0-only**, to the extent the owner holds the necessary rights. Previously distributed MIT source retains its original MIT permissions; the prior notice is preserved in `licenses/project-before-gpl-MIT.txt`. Third-party libraries, fonts and models keep their own terms. In particular, the bundled YOLO model declares AGPL-3.0 and is not relicensed GPL-only. No warranty is provided.
+
+- [Project license](LICENSE) · [Privacy Policy](PRIVACY.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+- [License audit and unresolved issues](LICENSE_AUDIT.md) · [Redistribution report](REDISTRIBUTION_REPORT.md) · [QR security findings](SECURITY_FINDINGS.md)
+- [Discovery](COMPLIANCE_DISCOVERY.md) · [Validation](COMPLIANCE_VERIFICATION.md) · [Dependency snapshot](DEPENDENCY_AUDIT.json) · [Native binary inventory](BINARY_AUDIT.json)
+
+The footer's localized Privacy & Licenses button reads bundled legal documents offline in source, standalone and onefile builds. No first-run consent gate or analytics is added. Maps, updates and optional LAN sharing retain their existing behavior, documented in the policy. Packaging includes `legal/`; keep its readable companion documents with any future ZIP. **Model/source/notice and other redistribution issues listed in the audit remain unresolved.** Adding a GPL text is not complete clearance. The owner explicitly authorized updated stable publication after reviewing these findings; release status is not a claim that all obligations have been satisfied.

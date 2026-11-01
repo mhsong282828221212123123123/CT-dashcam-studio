@@ -46,6 +46,16 @@ def run(app, report_path):
         report["single_camera_popup"] = True
         from core.constants import APP_VERSION, FEEDBACK_FORM_URL
         report["version"] = APP_VERSION
+        from core.constants import APP_LICENSE
+        from ui.legal_info import LegalInfoDialog, read_legal_document
+        assert APP_LICENSE == 'GPL-3.0-only'
+        legal_dialog = LegalInfoDialog(window)
+        assert not legal_dialog.load_errors, legal_dialog.load_errors
+        assert 'GNU GENERAL PUBLIC LICENSE' in read_legal_document('LICENSE')
+        assert 'Privacy Policy' in read_legal_document('PRIVACY.md')
+        assert 'Nuitka Runtime Library Exception' in read_legal_document('licenses/packages/nuitka/nuitka-4.1.3.dist-info/licenses/LICENSE-RUNTIME.txt')
+        legal_dialog.close()
+        report['legal_documents'] = {'license': APP_LICENSE, 'offline_viewer': True, 'tabs': 3}
         assert FEEDBACK_FORM_URL == "https://forms.gle/Lh1doyRZNAZ6cqRk9"
         report["feedback_link"] = FEEDBACK_FORM_URL
         window.is_exporting = True

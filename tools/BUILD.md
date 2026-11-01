@@ -46,3 +46,14 @@ This creates `build/nuitka/CT_Dashcam_Studio.exe`. It bundles the standalone
 runtime and resource files, extracting them privately when launched. Distribute
 this executable in the release ZIP together with the font license notice.
 The same `--build-check` command can verify the onefile executable.
+
+
+## Legal resources and release review
+
+The build now stages reviewed documents and all `licenses/` originals through `tools/prepare_legal_bundle.py`, bundles them as `legal/`, and writes `build-info.json` with original-code SPDX `GPL-3.0-only`, version, source revision/dirty status and source/legal hashes. The existing root LICENSE remains included. The footer's Privacy & Licenses dialog reads these files offline in source, standalone and extracted onefile modes. A readable `portable-legal/legal/` companion is also staged next to the output; include it with a future ZIP, rather than requiring users to execute a binary to read its terms.
+
+The old instructions' suggestion to ship only the executable and font notice is superseded: include project, privacy and full third-party legal material, exact matching source/build information, and the required corresponding sources for distributed copyleft components. See `REDISTRIBUTION_REPORT.md` before publishing. No new public release is created by this build script.
+
+Use `requirements-audited.txt` and `requirements-build-audited.txt` to identify the tested installed versions; these are snapshots, not a wheel-hash or corresponding-source lock. Re-run `python tools/audit_distribution.py --archive PATH` when auditing an existing local ZIP. This reads local binaries and copies supplier notices, never downloads a release or changes a model/library.
+
+`yolov8n.onnx` embeds AGPL-3.0; the original-code GPL label does not relicense it. The exact-source/Qt-native notice/asset-provenance and QR/OSM issues remain release-review items. Internal build/check success does not waive those obligations.

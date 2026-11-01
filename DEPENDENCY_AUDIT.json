@@ -1,0 +1,624 @@
+{
+  "reviewed": "2026-11-01",
+  "python": "3.10.6",
+  "pyqt": "6.11.0",
+  "qtRuntime": "6.11.1",
+  "packages": [
+    {
+      "name": "PyQt6",
+      "version": "6.11.0",
+      "scope": "runtime",
+      "licenseDeclaration": "GPL-3.0-only",
+      "licenseClassifiers": [],
+      "projectUrls": [
+        "homepage, https://www.riverbankcomputing.com/software/pyqt/"
+      ],
+      "requires": [
+        {
+          "requirement": "PyQt6-sip (>=13.8, <14)",
+          "activeWithoutExtras": true
+        },
+        {
+          "requirement": "PyQt6-Qt6 (>=6.11.0, <6.12.0)",
+          "activeWithoutExtras": true
+        }
+      ],
+      "notices": [
+        {
+          "file": "licenses/packages/pyqt6/pyqt6-6.11.0.dist-info/licenses/LICENSE",
+          "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+        }
+      ]
+    },
+    {
+      "name": "opencv-python",
+      "version": "5.0.0.93",
+      "scope": "runtime",
+      "licenseDeclaration": "Apache 2.0",
+      "licenseClassifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "projectUrls": [],
+      "requires": [
+        {
+          "requirement": "numpy<2.0; python_version < \"3.9\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "numpy>=2; python_version >= \"3.9\"",
+          "activeWithoutExtras": true
+        }
+      ],
+      "notices": [
+        {
+          "file": "licenses/packages/opencv-python/cv2/LICENSE-3RD-PARTY.txt",
+          "sha256": "c1d60169b55cee56452b227c2fd2a7b9ddda3dd3741065f1c6201072be73fadb"
+        },
+        {
+          "file": "licenses/packages/opencv-python/cv2/LICENSE.txt",
+          "sha256": "edef0fac1eb08d29d34563f724742e078da2513e196133a12c6ad9ff01e26107"
+        },
+        {
+          "file": "licenses/packages/opencv-python/opencv_python-5.0.0.93.dist-info/LICENSE-3RD-PARTY.txt",
+          "sha256": "c1d60169b55cee56452b227c2fd2a7b9ddda3dd3741065f1c6201072be73fadb"
+        },
+        {
+          "file": "licenses/packages/opencv-python/opencv_python-5.0.0.93.dist-info/LICENSE.txt",
+          "sha256": "edef0fac1eb08d29d34563f724742e078da2513e196133a12c6ad9ff01e26107"
+        }
+      ]
+    },
+    {
+      "name": "numpy",
+      "version": "2.2.6",
+      "scope": "runtime",
+      "licenseDeclaration": "Copyright (c) 2005-2024, NumPy Developers.",
+      "licenseClassifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "projectUrls": [
+        "homepage, https://numpy.org",
+        "documentation, https://numpy.org/doc/",
+        "source, https://github.com/numpy/numpy",
+        "download, https://pypi.org/project/numpy/#files",
+        "tracker, https://github.com/numpy/numpy/issues",
+        "release notes, https://numpy.org/doc/stable/release"
+      ],
+      "requires": [],
+      "notices": [
+        {
+          "file": "licenses/packages/numpy/numpy-2.2.6.dist-info/LICENSE.txt",
+          "sha256": "14256cc3a2c9d32ac284da96b937feb44f72dd90bee2317ac3020166846ad99d"
+        },
+        {
+          "file": "licenses/packages/numpy/numpy/_core/include/numpy/random/LICENSE.txt",
+          "sha256": "d544761558b510866c21f7e8a2d5716fca76e0b98117e3b6b86314db7244d150"
+        },
+        {
+          "file": "licenses/packages/numpy/numpy/ma/LICENSE",
+          "sha256": "d78dbb208b80d92b4d333e41a4baae50d12444f46e53199fa7726a91de6e2da7"
+        },
+        {
+          "file": "licenses/packages/numpy/numpy/random/LICENSE.md",
+          "sha256": "b4bc2f4fa1c95778f1ed3dd8f14706bece399475b978f9f34b5d3cd72521b48a"
+        }
+      ]
+    },
+    {
+      "name": "pillow",
+      "version": "12.3.0",
+      "scope": "runtime",
+      "licenseDeclaration": "MIT-CMU",
+      "licenseClassifiers": [],
+      "projectUrls": [
+        "Release notes, https://pillow.readthedocs.io/en/stable/releasenotes/index.html",
+        "Changelog, https://github.com/python-pillow/Pillow/releases",
+        "Documentation, https://pillow.readthedocs.io",
+        "Funding, https://tidelift.com/subscription/pkg/pypi-pillow?utm_source=pypi-pillow&utm_medium=pypi",
+        "Homepage, https://python-pillow.github.io",
+        "Mastodon, https://fosstodon.org/@pillow",
+        "Source, https://github.com/python-pillow/Pillow"
+      ],
+      "requires": [
+        {
+          "requirement": "furo; extra == \"docs\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "olefile; extra == \"docs\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "sphinx>=8.2; extra == \"docs\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "sphinx-autobuild; extra == \"docs\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "sphinx-copybutton; extra == \"docs\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "sphinx-inline-tabs; extra == \"docs\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "sphinxext-opengraph; extra == \"docs\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "olefile; extra == \"fpx\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "olefile; extra == \"mic\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "arro3-compute; extra == \"test-arrow\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "arro3-core; extra == \"test-arrow\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "nanoarrow; extra == \"test-arrow\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "pyarrow; extra == \"test-arrow\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "coverage>=7.4.2; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "defusedxml; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "markdown2; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "olefile; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "packaging; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "pytest; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "pytest-cov; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "pytest-timeout; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "pytest-xdist; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "setuptools; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "trove-classifiers>=2024.10.12; extra == \"tests\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "defusedxml; extra == \"xmp\"",
+          "activeWithoutExtras": false
+        }
+      ],
+      "notices": [
+        {
+          "file": "licenses/packages/pillow/pillow-12.3.0.dist-info/licenses/LICENSE",
+          "sha256": "4f7866a74802c6326f81faff59a56546b6aec2b10b91973e0e9308de95e79857"
+        }
+      ]
+    },
+    {
+      "name": "qrcode",
+      "version": "8.2",
+      "scope": "runtime",
+      "licenseDeclaration": "BSD",
+      "licenseClassifiers": [
+        "License :: OSI Approved :: BSD License",
+        "License :: Other/Proprietary License"
+      ],
+      "projectUrls": [],
+      "requires": [
+        {
+          "requirement": "colorama ; sys_platform == \"win32\"",
+          "activeWithoutExtras": true
+        },
+        {
+          "requirement": "pillow (>=9.1.0) ; extra == \"pil\" or extra == \"all\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "pypng ; extra == \"png\" or extra == \"all\"",
+          "activeWithoutExtras": false
+        }
+      ],
+      "notices": [
+        {
+          "file": "licenses/packages/qrcode/qrcode-8.2.dist-info/LICENSE",
+          "sha256": "40dfb903c94ee3f789500131311186548ecba5cefd3557623d7700e2522ab994"
+        }
+      ]
+    },
+    {
+      "name": "imageio-ffmpeg",
+      "version": "0.6.0",
+      "scope": "runtime",
+      "licenseDeclaration": "BSD-2-Clause",
+      "licenseClassifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "projectUrls": [],
+      "requires": [],
+      "notices": [
+        {
+          "file": "licenses/packages/imageio-ffmpeg/imageio_ffmpeg-0.6.0.dist-info/LICENSE",
+          "sha256": "eca73421d0c905a92e952a553d4d58919c5a507c2c2c76e3c0cf9ba408c299e4"
+        }
+      ]
+    },
+    {
+      "name": "Nuitka",
+      "version": "4.1.3",
+      "scope": "build",
+      "licenseDeclaration": "GNU Affero General Public License v3",
+      "licenseClassifiers": [
+        "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)"
+      ],
+      "projectUrls": [
+        "Commercial, https://nuitka.net/doc/commercial.html",
+        "Support, https://nuitka.net/pages/support.html",
+        "Documentation, https://nuitka.net/doc/user-manual.html",
+        "Donations, https://nuitka.net/pages/donations.html",
+        "Mastodon, https://fosstodon.org/@kayhayen",
+        "Twitter, https://twitter.com/KayHayen",
+        "Source, https://github.com/Nuitka/Nuitka"
+      ],
+      "requires": [
+        {
+          "requirement": "setuptools>=42; extra == \"build-wheel\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "toml; extra == \"build-wheel\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "wheel; extra == \"build-wheel\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "zstandard>=0.15; extra == \"onefile\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "zstandard>=0.15; extra == \"app\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "imageio; extra == \"icon-conversion\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "setuptools>=42; extra == \"all\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "toml; extra == \"all\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "zstandard>=0.15; extra == \"all\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "imageio; extra == \"all\"",
+          "activeWithoutExtras": false
+        }
+      ],
+      "notices": [
+        {
+          "file": "licenses/packages/nuitka/nuitka-4.1.3.dist-info/licenses/LICENSE-RUNTIME.txt",
+          "sha256": "20ff0ae581adf436a7b06e50e67a6c8913aec1ea4e60dba138d0a0bee7ee520c"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka-4.1.3.dist-info/licenses/LICENSE.txt",
+          "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka-4.1.3.dist-info/licenses/NOTICE.txt",
+          "sha256": "b6ba5212864ec9f98842220e01b2485a2ebeb8eafa192b016b36032355c8a98d"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/appdirs/LICENSE.txt",
+          "sha256": "36ddb4d0a745a93ab203203d7190814b1b89727d254caff48c7a7afbbd47000b"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/atomicwrites/LICENSE",
+          "sha256": "878329f0bd878ad015129ce8bda82f481e86ec2e80831e909c0d67171d922e73"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/clcache/clcache/LICENSE",
+          "sha256": "bbed76f953b9b9f03d9cc85dd32938af873eafb48a58f02a1018e0f7a0828496"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/colorama/LICENSE.txt",
+          "sha256": "cac35c02686e5d04a5a7140bfb3b36e73aed496656e891102e428886d7930318"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/jinja2/LICENSE.rst",
+          "sha256": "4c9523d519ddac94bbae62fa8498d42c60f29019b15485bebd88052688f25b09"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/markupsafe/LICENSE.rst",
+          "sha256": "3c07d607f4c182ece78b76df78e75bcf8eee1cb7df47cd4e2e621abe5198d65d"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/pefile/LICENSE.txt",
+          "sha256": "76005779572ac88d54133249186a125c309c6728ddb20ac2817622e34aa73038"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/python_hacl/LICENSE.txt",
+          "sha256": "c5accbbd8546e94c34aed24afe689a617627d18eed5a6c48277e48db57c23851"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/yaml/LICENSE",
+          "sha256": "8d3928f9dc4490fd635707cb88eb26bd764102a7282954307d3e5167a577e8a4"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/zlib/LICENSE",
+          "sha256": "845efc77857d485d91fb3e0b884aaa929368c717ae8186b66fe1ed2495753243"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/build/inline_copy/zstd/LICENSE.txt",
+          "sha256": "2c1a7fa704df8f3a606f6fc010b8b5aaebf403f3aeec339a12048f1ba7331a0b"
+        },
+        {
+          "file": "licenses/packages/nuitka/nuitka/reports/LicenseReport.rst.j2",
+          "sha256": "cb0c419ac52244af8bbcf70e20c83f61cc60c782523831d877df77a55c9622be"
+        }
+      ]
+    },
+    {
+      "name": "ordered-set",
+      "version": "4.1.0",
+      "scope": "build",
+      "licenseDeclaration": null,
+      "licenseClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "projectUrls": [
+        "Home, https://github.com/rspeer/ordered-set"
+      ],
+      "requires": [
+        {
+          "requirement": "pytest ; extra == \"dev\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "black ; extra == \"dev\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "mypy ; extra == \"dev\"",
+          "activeWithoutExtras": false
+        }
+      ],
+      "notices": []
+    },
+    {
+      "name": "zstandard",
+      "version": "0.25.0",
+      "scope": "build",
+      "licenseDeclaration": "BSD-3-Clause",
+      "licenseClassifiers": [],
+      "projectUrls": [
+        "Homepage, https://github.com/indygreg/python-zstandard",
+        "Documentation, https://python-zstandard.readthedocs.io/en/latest/"
+      ],
+      "requires": [
+        {
+          "requirement": "cffi~=1.17; (platform_python_implementation != \"PyPy\" and python_version < \"3.14\") and extra == \"cffi\"",
+          "activeWithoutExtras": false
+        },
+        {
+          "requirement": "cffi>=2.0.0b; (platform_python_implementation != \"PyPy\" and python_version >= \"3.14\") and extra == \"cffi\"",
+          "activeWithoutExtras": false
+        }
+      ],
+      "notices": [
+        {
+          "file": "licenses/packages/zstandard/zstandard-0.25.0.dist-info/licenses/LICENSE",
+          "sha256": "c15b28f8866500bd3d607c739e87710aa5c47627aa30a0573948414564ff1da2"
+        }
+      ]
+    },
+    {
+      "name": "PyQt6_sip",
+      "version": "13.12.0",
+      "scope": "runtime",
+      "licenseDeclaration": "BSD-2-Clause",
+      "licenseClassifiers": [],
+      "projectUrls": [],
+      "requires": [],
+      "notices": [
+        {
+          "file": "licenses/packages/pyqt6-sip/pyqt6_sip-13.12.0.dist-info/licenses/LICENSE",
+          "sha256": "3e6f5b427c36f94ecf86bc01698af7030a1ed6eb3748110d5dbb8d142d804611"
+        }
+      ]
+    },
+    {
+      "name": "PyQt6-Qt6",
+      "version": "6.11.1",
+      "scope": "runtime",
+      "licenseDeclaration": "LGPL v3",
+      "licenseClassifiers": [],
+      "projectUrls": [],
+      "requires": [],
+      "notices": [
+        {
+          "file": "licenses/packages/pyqt6-qt6/pyqt6_qt6-6.11.1.dist-info/LICENSE",
+          "sha256": "6c671e2912ec69c0832f32066c0313cee5fdc3bbcbce237822e89f3da58edd4e"
+        }
+      ]
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "scope": "runtime",
+      "licenseDeclaration": null,
+      "licenseClassifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "projectUrls": [
+        "Homepage, https://github.com/tartley/colorama"
+      ],
+      "requires": [],
+      "notices": [
+        {
+          "file": "licenses/packages/colorama/colorama-0.4.6.dist-info/licenses/LICENSE.txt",
+          "sha256": "cac35c02686e5d04a5a7140bfb3b36e73aed496656e891102e428886d7930318"
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "path": "models/face_detection_yunet.onnx",
+      "bytes": 232589,
+      "sha256": "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4",
+      "onnxMetadata": {
+        "producerName": "pytorch",
+        "producerVersion": "1.7"
+      }
+    },
+    {
+      "path": "models/steering_hud.png",
+      "bytes": 204477,
+      "sha256": "595bfc1d7ef7f05a3214f9f271c0ed610a98ba4e9a76162a2ba9b71d86a46d7f"
+    },
+    {
+      "path": "models/yolov8n.onnx",
+      "bytes": 12725024,
+      "sha256": "d1062b1827f1e8f2319cfcee5a55278d477d0d875d14628ead9686d276cc61b8",
+      "onnxMetadata": {
+        "producerName": "pytorch",
+        "producerVersion": "2.5.1",
+        "description": "Ultralytics YOLOv8n model trained on coco.yaml",
+        "author": "Ultralytics",
+        "date": "2026-09-05T18:40:11.513800+09:00",
+        "version": "8.4.139",
+        "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+        "docs": "https://docs.ultralytics.com",
+        "stride": "32",
+        "task": "detect",
+        "head": "Detect",
+        "batch": "1",
+        "imgsz": "[320, 320]",
+        "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': False, 'simplify': True, 'opset': None, 'nms': False}",
+        "channels": "3",
+        "end2end": "False"
+      }
+    },
+    {
+      "path": "assets/fonts/OFL.txt",
+      "bytes": 4816,
+      "sha256": "82e9c8a4b203261f10ddba1296422d64914ff3d4b7bd8a12896d03f0f088d70a"
+    },
+    {
+      "path": "assets/fonts/Pretendard-Bold.otf",
+      "bytes": 1576660,
+      "sha256": "2e91915fab54df71cc9598ebf608b2bdb54c6fe3c066ac61dff0bc44fca71cc7"
+    },
+    {
+      "path": "assets/fonts/Pretendard-Regular.otf",
+      "bytes": 1574352,
+      "sha256": "3ffbacde6ab8411f1d2db54bb9b1f0b3ee2a738932033722cf0388c06aed1c93"
+    },
+    {
+      "path": "assets/fonts/Pretendard-SemiBold.otf",
+      "bytes": 1583704,
+      "sha256": "c89bc43027dc7cde5726e96223376f8eec09302b2fc1f8147fd5b57cfc376118"
+    },
+    {
+      "path": "assets/fonts/README.md",
+      "bytes": 820,
+      "sha256": "849d232ce04ef3834146093f5f4e21bb164e4733f41692067e88b163620135e6"
+    },
+    {
+      "path": "icon.ico",
+      "bytes": 85604,
+      "sha256": "d98d19a79aadfb874c8f3e463e4fef09510e2c774cd62cc077b4618f1009fd8b"
+    },
+    {
+      "path": "screenshot1.png",
+      "bytes": 1358418,
+      "sha256": "25dfb36c055b55a6f8b18718d75a8f4f4fbdc34a9faab9f3cf98e37316a1fa25"
+    },
+    {
+      "path": "screenshot2.png",
+      "bytes": 902636,
+      "sha256": "7e320701f63f041356d47d3d5a0f1b67e190f0795097339da7d2d47670923d6b"
+    },
+    {
+      "path": "screenshot3.png",
+      "bytes": 1311985,
+      "sha256": "92b86a38c8a40b68c6a9c3e7740a43b9eca8d25b6f5719b9a33e640ecbb0b78c"
+    },
+    {
+      "path": "screenshot4.png",
+      "bytes": 787506,
+      "sha256": "e468f92c49ed06283bb6ed266815bad2eb9a80ab2260de25e533b1a3e408f740"
+    },
+    {
+      "path": "screenshot5.png",
+      "bytes": 24060,
+      "sha256": "da92336f79074226ac921479aed2bac60e6110a5078f2f9951743b4ec0c4e9e6"
+    },
+    {
+      "path": "screenshot_privacy.png",
+      "bytes": 1497188,
+      "sha256": "eb1cd383dc848162749e8e43e8989f0e9593f9005bf31dacf1ef141f0ab4273f"
+    }
+  ],
+  "ffmpeg": {
+    "filename": "ffmpeg-win-x86_64-v7.1.exe",
+    "sha256": "2ce797a0f88d7f067180338fb227f7b1928ea727bd9a4d7a1d022f7c52af71a3",
+    "versionAndConfiguration": "ffmpeg version 7.1-essentials_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers\nbuilt with gcc 14.2.0 (Rev1, Built by MSYS2 project)\nconfiguration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-sdl2 --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-mediafoundation --enable-libass --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libgme --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libtheora --enable-libvo-amrwbenc --enable-libgsm --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-librubberband\nlibavutil      59. 39.100 / 59. 39.100\nlibavcodec     61. 19.100 / 61. 19.100\nlibavformat    61.  7.100 / 61.  7.100\nlibavdevice    61.  3.100 / 61.  3.100\nlibavfilter    10.  4.100 / 10.  4.100\nlibswscale      8.  3.100 /  8.  3.100\nlibswresample   5.  3.100 /  5.  3.100\nlibpostproc    58.  3.100 / 58.  3.100\n",
+    "licenseOutput": "ffmpeg is free software; you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation; either version 3 of the License, or\n(at your option) any later version.\n\nffmpeg is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with ffmpeg.  If not, see <http://www.gnu.org/licenses/>.\nffmpeg version 7.1-essentials_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers\n  built with gcc 14.2.0 (Rev1, Built by MSYS2 project)\n  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-sdl2 --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-mediafoundation --enable-libass --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libgme --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libtheora --enable-libvo-amrwbenc --enable-libgsm --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-librubberband\n  libavutil      59. 39.100 / 59. 39.100\n  libavcodec     61. 19.100 / 61. 19.100\n  libavformat    61.  7.100 / 61.  7.100\n  libavdevice    61.  3.100 / 61.  3.100\n  libavfilter    10.  4.100 / 10.  4.100\n  libswscale      8.  3.100 /  8.  3.100\n  libswresample   5.  3.100 /  5.  3.100\n  libpostproc    58.  3.100 / 58.  3.100\n"
+  },
+  "opencvBuildInformation": "\nGeneral configuration for OpenCV 5.0.0 =====================================\n  Version control:               5.0.0\n\n  Platform:\n    Timestamp:                   2026-07-01T09:07:32Z\n    Host:                        Windows 10.0.20348 AMD64\n    CMake:                       4.3.2\n    CMake generator:             Visual Studio 17 2022\n    CMake build tool:            C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin/amd64/MSBuild.exe\n    MSVC:                        1944\n    Configuration:               Debug Release\n    Algorithm Hint:              ALGO_HINT_ACCURATE\n\n  CPU/HW features:\n    Baseline:                    SSE SSE2 SSE3\n      requested:                 SSE3\n    Dispatched code generation:  SSE4_1 SSE4_2 AVX FP16 AVX2 AVX512_SKX\n      SSE4_1 (18 files):         + SSSE3 SSE4_1\n      SSE4_2 (1 files):          + SSSE3 SSE4_1 POPCNT SSE4_2\n      AVX (17 files):            + SSSE3 SSE4_1 POPCNT SSE4_2 AVX\n      FP16 (0 files):            + SSSE3 SSE4_1 POPCNT SSE4_2 AVX FP16\n      AVX2 (49 files):           + SSSE3 SSE4_1 POPCNT SSE4_2 AVX FP16 AVX2 FMA3\n      AVX512_SKX (9 files):      + SSSE3 SSE4_1 POPCNT SSE4_2 AVX FP16 AVX2 FMA3 AVX_512F AVX512_COMMON AVX512_SKX\n\n  C/C++:\n    Built as dynamic libs?:      NO\n    C++ standard:                17\n    C++ Compiler:                C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe  (ver 19.44.35228.0)\n    C++ flags (Release):         /DWIN32 /D_WINDOWS /W4 /GR  /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _SCL_SECURE_NO_WARNINGS /Gy /bigobj /Oi  /fp:precise    /EHa /wd4127 /wd4251 /wd4324 /wd4275 /wd4512 /wd4589 /wd4819 /MP  /O2 /Ob2 /DNDEBUG \n    C++ flags (Debug):           /DWIN32 /D_WINDOWS /W4 /GR  /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _SCL_SECURE_NO_WARNINGS /Gy /bigobj /Oi  /fp:precise    /EHa /wd4127 /wd4251 /wd4324 /wd4275 /wd4512 /wd4589 /wd4819 /MP  /Zi /Ob0 /Od /RTC1 \n    C Compiler:                  C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe\n    C flags (Release):           /DWIN32 /D_WINDOWS /W3  /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _SCL_SECURE_NO_WARNINGS /Gy /bigobj /Oi  /fp:precise    /MP   /O2 /Ob2 /DNDEBUG \n    C flags (Debug):             /DWIN32 /D_WINDOWS /W3  /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _SCL_SECURE_NO_WARNINGS /Gy /bigobj /Oi  /fp:precise    /MP /Zi /Ob0 /Od /RTC1 \n    Linker flags (Release):      /machine:x64  /NODEFAULTLIB:atlthunk.lib /INCREMENTAL:NO  /NODEFAULTLIB:libcmtd.lib /NODEFAULTLIB:libcpmtd.lib /NODEFAULTLIB:msvcrtd.lib\n    Linker flags (Debug):        /machine:x64  /NODEFAULTLIB:atlthunk.lib /debug /INCREMENTAL  /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib /NODEFAULTLIB:msvcrt.lib\n    ccache:                      NO\n    Precompiled headers:         YES\n    Extra dependencies:          comctl32 gdi32 ole32 setupapi ws2_32\n    3rdparty dependencies:       ittnotify libprotobuf libjpeg-turbo libwebp libpng libtiff libopenjp2 zlib libclapack ipphal ippiw ippicv\n\n  OpenCV modules:\n    To be built:                 calib core dnn features flann geometry highgui imgcodecs imgproc objdetect photo ptcloud python3 stereo stitching video videoio\n    Disabled:                    java world\n    Disabled by dependency:      -\n    Unavailable:                 ts\n    Applications:                -\n    Documentation:               NO\n    Non-free algorithms:         NO\n\n  Windows RT support:            NO\n\n  GUI:                           WIN32UI\n    Win32 UI:                    YES\n    VTK support:                 NO\n    Built-in Unicode font:       YES\n\n  Media I/O: \n    ZLib:                        build (ver 1.3.2)\n    JPEG:                        build-libjpeg-turbo (ver 3.1.2-70)\n      SIMD Support Request:      YES\n      SIMD Support:              YES\n    WEBP:                        build (ver decoder: 0x0210, encoder: 0x0210, demux: 0x0107)\n    AVIF:                        NO\n    PNG:                         build (ver 1.6.57)\n      SIMD Support Request:      YES\n      SIMD Support:              YES (Intel SSE)\n      Metadata Support:          EXIF XMP ICC cICP\n    TIFF:                        build (ver 42 - 4.7.1)\n    JPEG 2000:                   build (ver 2.5.3)\n    OpenEXR:                     NO\n    GIF:                         YES\n    HDR:                         YES\n    SUNRASTER:                   YES\n    PXM:                         YES\n    PFM:                         YES\n\n  Video I/O:\n    FFMPEG:                      YES (prebuilt binaries)\n      avcodec:                   YES (61.19.100)\n      avformat:                  YES (61.7.100)\n      avutil:                    YES (59.39.100)\n      swscale:                   YES (8.3.100)\n      avdevice:                  NO\n    GStreamer:                   NO\n    DirectShow:                  YES\n    Media Foundation:            YES\n      DXVA:                      YES\n    Orbbec:                      YES\n\n  Parallel framework:            Concurrency\n\n  Trace:                         YES (with Intel ITT(3.25.4))\n\n  Other third-party libraries:\n    Intel IPP:                   2026.0.0 [2026.0.0]\n           at:                   D:/a/opencv-python/opencv-python/_skbuild/win-amd64-3.9/cmake-build/3rdparty/ippicv/ippicv_win/icv\n    Intel IPP IW:                sources (2026.0.0)\n              at:                D:/a/opencv-python/opencv-python/_skbuild/win-amd64-3.9/cmake-build/3rdparty/ippicv/ippicv_win/iw\n    Lapack:                      YES (Built-In libclapack)\n    DNN MLAS:                    NO (no ASM compiler available for AMD64)\n    Eigen:                       NO\n    Custom HAL:                  YES (ipp (ver 0.0.1))\n    Protobuf:                    build (3.19.1)\n    Flatbuffers:                 builtin/3rdparty (25.9.23)\n\n  OpenCL:                        YES (NVD3D11)\n    Include path:                D:/a/opencv-python/opencv-python/opencv/3rdparty/include/opencl/1.2\n    Link libraries:              Dynamic load\n\n  ONNX Runtime:                  NO\n\n  Python 3:\n    Interpreter:                 C:/hostedtoolcache/windows/Python/3.9.13/x64/python.exe (ver 3.9.13)\n    Libraries:                   C:/hostedtoolcache/windows/Python/3.9.13/x64/libs/python39.lib (ver 3.9.13)\n    Limited API:                 YES (ver 0x03060000)\n    numpy:                       C:/hostedtoolcache/windows/Python/3.9.13/x64/lib/site-packages/numpy/_core/include (ver 2.0.2)\n    install path:                python/cv2/python-3\n\n  Python (for build):            C:\\hostedtoolcache\\windows\\Python\\3.9.13\\x64\\python.exe\n\n  Java:                          \n    ant:                         NO\n    Java:                        YES (ver 1.8.0.492)\n    JNI:                         C:/hostedtoolcache/windows/Java_Temurin-Hotspot_jdk/8.0.492-9/x64/include C:/hostedtoolcache/windows/Java_Temurin-Hotspot_jdk/8.0.492-9/x64/include/win32 C:/hostedtoolcache/windows/Java_Temurin-Hotspot_jdk/8.0.492-9/x64/include\n    Java wrappers:               NO\n    Java tests:                  NO\n\n  Install to:                    D:/a/opencv-python/opencv-python/_skbuild/win-amd64-3.9/cmake-install\n-----------------------------------------------------------------\n\n",
+  "existingArchive": {
+    "filename": "CT_Dashcam_Studio_v1.3.1_Portable.zip",
+    "sha256": "e65f70788e33aff407edaf5411a67fb475bce19a7c87090b23f2b51f8cdcf54c",
+    "files": [
+      "CT_Dashcam_Studio.exe",
+      "LICENSE.txt",
+      "OFL.txt"
+    ],
+    "noticeText": {
+      "LICENSE.txt": "MIT License\r\n\r\nCopyright (c) 2026 Companion Turret\r\n\r\nPermission is hereby granted, free of charge, to any person obtaining a copy\r\nof this software and associated documentation files (the \"Software\"), to deal\r\nin the Software without restriction, including without limitation the rights\r\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\r\ncopies of the Software, and to permit persons to whom the Software is\r\nfurnished to do so, subject to the following conditions:\r\n\r\nThe above copyright notice and this permission notice shall be included in all\r\ncopies or substantial portions of the Software.\r\n\r\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\r\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\r\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\r\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\r\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\r\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\r\nSOFTWARE.\r\n",
+      "OFL.txt": "Copyright (c) 2021, Kil Hyung-jin (https://github.com/orioncactus/pretendard),\nwith Reserved Font Name 'Pretendard'.\n\nCopyright 2014-2021 Adobe (http://www.adobe.com/),\nwith Reserved Font Name 'Source'.\nSource is a trademark of Adobe in the United States and/or other countries.\n\nCopyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter),\nwith Reserved Font Name 'Inter'.\n\nCopyright 2021 The M+ FONTS Project Authors (https://github.com/coz-m/MPLUS_FONTS),\nwith Reserved Font Name 'M PLUS 1'.\n\nThis Font Software is licensed under the SIL Open Font License, Version 1.1.\nThis license is copied below, and is also available with a FAQ at:\nhttps://scripts.sil.org/OFL\n\n\n-----------------------------------------------------------\nSIL OPEN FONT LICENSE Version 1.1 - 26 February 2007\n-----------------------------------------------------------\n\nPREAMBLE\nThe goals of the Open Font License (OFL) are to stimulate worldwide\ndevelopment of collaborative font projects, to support the font creation\nefforts of academic and linguistic communities, and to provide a free and\nopen framework in which fonts may be shared and improved in partnership\nwith others.\n\nThe OFL allows the licensed fonts to be used, studied, modified and\nredistributed freely as long as they are not sold by themselves. The\nfonts, including any derivative works, can be bundled, embedded, \nredistributed and/or sold with any software provided that any reserved\nnames are not used by derivative works. The fonts and derivatives,\nhowever, cannot be released under any other type of license. The\nrequirement for fonts to remain under this license does not apply\nto any document created using the fonts or their derivatives.\n\nDEFINITIONS\n\"Font Software\" refers to the set of files released by the Copyright\nHolder(s) under this license and clearly marked as such. This may\ninclude source files, build scripts and documentation.\n\n\"Reserved Font Name\" refers to any names specified as such after the\ncopyright statement(s).\n\n\"Original Version\" refers to the collection of Font Software components as\ndistributed by the Copyright Holder(s).\n\n\"Modified Version\" refers to any derivative made by adding to, deleting,\nor substituting -- in part or in whole -- any of the components of the\nOriginal Version, by changing formats or by porting the Font Software to a\nnew environment.\n\n\"Author\" refers to any designer, engineer, programmer, technical\nwriter or other person who contributed to the Font Software.\n\nPERMISSION & CONDITIONS\nPermission is hereby granted, free of charge, to any person obtaining\na copy of the Font Software, to use, study, copy, merge, embed, modify,\nredistribute, and sell modified and unmodified copies of the Font\nSoftware, subject to the following conditions:\n\n1) Neither the Font Software nor any of its individual components,\nin Original or Modified Versions, may be sold by itself.\n\n2) Original or Modified Versions of the Font Software may be bundled,\nredistributed and/or sold with any software, provided that each copy\ncontains the above copyright notice and this license. These can be\nincluded either as stand-alone text files, human-readable headers or\nin the appropriate machine-readable metadata fields within text or\nbinary files as long as those fields can be easily viewed by the user.\n\n3) No Modified Version of the Font Software may use the Reserved Font\nName(s) unless explicit written permission is granted by the corresponding\nCopyright Holder. This restriction only applies to the primary font name as\npresented to the users.\n\n4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font\nSoftware shall not be used to promote, endorse or advertise any\nModified Version, except to acknowledge the contribution(s) of the\nCopyright Holder(s) and the Author(s) or with their explicit written\npermission.\n\n5) The Font Software, modified or unmodified, in part or in whole,\nmust be distributed entirely under this license, and must not be\ndistributed under any other license. The requirement for fonts to\nremain under this license does not apply to any document created\nusing the Font Software.\n\nTERMINATION\nThis license becomes null and void if any of the above conditions are\nnot met.\n\nDISCLAIMER\nTHE FONT SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT\nOF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE\nCOPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,\nINCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL\nDAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING\nFROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM\nOTHER DEALINGS IN THE FONT SOFTWARE.\n"
+    }
+  }
+}
