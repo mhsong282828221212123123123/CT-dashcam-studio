@@ -12,16 +12,16 @@ import cv2
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QPushButton, QLabel, QCheckBox, QFileDialog, QGroupBox,
-    QProgressBar, QMessageBox, QComboBox, QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator,
+    QGraphicsBlurEffect, QMessageBox, QComboBox, QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator,
     QSplitter, QStyleFactory, QDialog, QProgressDialog, QApplication,
     QSizePolicy, QSlider, QFrame
 )
-from PyQt6.QtCore import Qt, QTimer, QRect, QPoint, QEvent, QSize
-from PyQt6.QtGui import QImage, QPixmap, QColor, QBrush, QIcon, QKeySequence, QShortcut
+from PyQt6.QtCore import Qt, QTimer, QRect, QPoint, QEvent, QSize, QUrl
+from PyQt6.QtGui import QImage, QPixmap, QColor, QBrush, QIcon, QKeySequence, QShortcut, QDesktopServices
 
 from core.clip_groups import group_recent_clips, clip_datetime, group_title, clip_identity
 from core.themes import color, set_theme_style, apply_theme, current_theme, theme_names
-from core.constants import APP_VERSION, RESOLUTIONS, SENSITIVITY_LEVELS
+from core.constants import APP_VERSION, FEEDBACK_FORM_URL, RESOLUTIONS, SENSITIVITY_LEVELS
 from core.utils import resource_path, get_app_dir
 from core.i18n import (
     tr, set_language, get_current_language, LANGUAGES,
@@ -37,6 +37,7 @@ from network.updater import UpdateCheckWorker
 from ui.widgets import ClickableLabel, HighlightSlider, SingleCameraPopup, ToastNotification
 from ui.dialogs import QRShareDialog, HotkeyGuideDialog
 from ui.loader_worker import ClipLoaderWorker
+from ui.export_progress import ExportProgressDialog
 
 
 class CTDashcamStudio(QMainWindow):
@@ -65,6 +66,7 @@ class CTDashcamStudio(QMainWindow):
         self.clip_frame_offsets = []
 
         self.is_exporting = False
+        self.export_progress_dialog = None
         self.last_exported_video_path = None
         self.last_grid_image = None
         self.last_valid_preview_frames = {}
@@ -267,16 +269,12 @@ class CTDashcamStudio(QMainWindow):
         self.btn_export.clicked.connect(self.on_click_export_button)
         exp_layout.addWidget(self.btn_export, 4, 0, 1, 4)
 
-        self.pbar = QProgressBar()
-        self.pbar.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.pbar.setFixedHeight(12)
-        exp_layout.addWidget(self.pbar, 5, 0, 1, 4)
 
         self.btn_qr_share = QPushButton(f"{tr('chk_qr_share')}")
         self.btn_qr_share.setFixedHeight(28)
         self.btn_qr_share.setEnabled(False)
         self.btn_qr_share.clicked.connect(self.on_click_qr_share)
-        exp_layout.addWidget(self.btn_qr_share, 6, 0, 1, 4)
+        exp_layout.addWidget(self.btn_qr_share, 5, 0, 1, 4)
 
         left_layout.addWidget(self.exp_group)
         splitter.addWidget(left_panel)
@@ -726,6 +724,16 @@ class CTDashcamStudio(QMainWindow):
         footer_layout = QHBoxLayout()
         footer_layout.setContentsMargins(0, 0, 4, 0)
         footer_layout.addStretch()
+        self.btn_feedback = QPushButton(tr("feedback_link"))
+        self.btn_feedback.setFlat(True)
+        self.btn_feedback.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_feedback.setToolTip(tr("feedback_login_note"))
+        self.btn_feedback.clicked.connect(self.open_feedback_form)
+        set_theme_style(self.btn_feedback, """
+            QPushButton { color:@ct-text-muted; background:transparent; border:none; padding:0 4px; font-size:@font-small; }
+            QPushButton:hover { color:@ct-text-main; }
+        """)
+        footer_layout.addWidget(self.btn_feedback)
         self.lbl_footer = QLabel(f"♥ Companion Turret  ·  v{APP_VERSION}")
         set_theme_style(self.lbl_footer, "color:@ct-text-muted; font-size:@font-small; font-weight:normal;")
         footer_layout.addWidget(self.lbl_footer)
@@ -1160,6 +1168,8 @@ class CTDashcamStudio(QMainWindow):
                         sub.setToolTip(0, tr("clip_start_range") + "\n" + c_list[0].get("dirpath", ""))
 
     def retranslate_ui(self):
+        self.btn_feedback.setText(tr("feedback_link"))
+        self.btn_feedback.setToolTip(tr("feedback_login_note"))
         """다국어 변경 시 프로그램 전체 UI 텍스트를 실시간 일괄 갱신"""
         self.setWindowTitle(tr("app_title"))
         self._refresh_theme_names()
@@ -3042,10 +3052,8 @@ class CTDashcamStudio(QMainWindow):
             return
 
         if self.is_exporting:
-            if hasattr(self, 'worker') and self.worker:
-                self.btn_export.setText(tr("btn_export_cancelling"))
-                self.btn_export.setEnabled(False)
-                self.worker.stop()
+            if self.export_progress_dialog:
+                self.export_progress_dialog.request_cancel()
             return
 
         default_dir = get_app_dir()
@@ -3062,53 +3070,77 @@ class CTDashcamStudio(QMainWindow):
         if self.timer.isActive():
             self.toggle_play()
 
-        self.is_exporting = True
-        self.set_controls_enabled(False)
-        self.btn_export.setText(tr("btn_export_cancel"))
-        set_theme_style(self.btn_export, "background-color:@ct-danger-bg; color:@ct-text-main; font-weight:400;")
-        self.on_export_progress(0)
+        try:
+            res_id = self.combo_res.currentData() or "qhd"
+            target_size = RESOLUTIONS.get(res_id, RESOLUTIONS["qhd"])["size"]
 
-        res_id = self.combo_res.currentData() or "qhd"
-        target_size = RESOLUTIONS.get(res_id, RESOLUTIONS["qhd"])["size"]
+            export_speed = self.combo_export_speed.currentData()
+            if export_speed is None:
+                exp_speed_str = self.combo_export_speed.currentText()
+                m = re.search(r'([\d\.]+)x', exp_speed_str)
+                export_speed = float(m.group(1)) if m else 1.0
 
-        export_speed = self.combo_export_speed.currentData()
-        if export_speed is None:
-            exp_speed_str = self.combo_export_speed.currentText()
-            m = re.search(r'([\d\.]+)x', exp_speed_str)
-            export_speed = float(m.group(1)) if m else 1.0
+            source_fps = self.fps or 36.0
+            target_fps = self.combo_fps.currentData() or min(120, int(round(source_fps * export_speed)))
 
-        source_fps = self.fps or 36.0
-        target_fps = self.combo_fps.currentData() or min(120, int(round(source_fps * export_speed)))
+            opts = self.get_current_options()
 
-        opts = self.get_current_options()
+            # target_clips의 각 클립 front 경로와 active_clip_list를 매칭해서
+            # 정확한 decoder를 1:1로 추출 (인덱스 불일치 방지)
+            clip_front_to_decoder = {}
+            for idx, c in enumerate(self.active_clip_list):
+                front_path = c.get("cams", {}).get("front", "")
+                if idx < len(self.active_decoders):
+                    clip_front_to_decoder[front_path] = self.active_decoders[idx]
 
-        # target_clips의 각 클립 front 경로와 active_clip_list를 매칭해서
-        # 정확한 decoder를 1:1로 추출 (인덱스 불일치 방지)
-        clip_front_to_decoder = {}
-        for idx, c in enumerate(self.active_clip_list):
-            front_path = c.get("cams", {}).get("front", "")
-            if idx < len(self.active_decoders):
-                clip_front_to_decoder[front_path] = self.active_decoders[idx]
+            matched_decoders = []
+            for tc in target_clips:
+                front_path = tc.get("cams", {}).get("front", "")
+                matched_decoders.append(clip_front_to_decoder.get(front_path, None))
 
-        matched_decoders = []
-        for tc in target_clips:
-            front_path = tc.get("cams", {}).get("front", "")
-            matched_decoders.append(clip_front_to_decoder.get(front_path, None))
+            self.worker = ExportWorker(
+                target_clips, opts, source_fps, target_fps, export_speed, target_size, out_path, active_decoders=matched_decoders
+            )
+            self.worker.progress.connect(self.on_export_progress)
+            self.worker.finished.connect(self.on_export_finished)
+            self.worker.error.connect(self.on_export_error)
+            self.worker.cancelled.connect(self.on_export_cancelled)
+            self.is_exporting = True
+            self.set_controls_enabled(False)
+            self.btn_export.setEnabled(False)
+            self._show_export_progress()
+            self.worker.start()
+        except Exception as exc:
+            self.on_export_error(str(exc))
 
-        self.worker = ExportWorker(
-            target_clips, opts, source_fps, target_fps, export_speed, target_size, out_path, active_decoders=matched_decoders
-        )
-        self.worker.progress.connect(self.on_export_progress)
-        self.worker.finished.connect(self.on_export_finished)
-        self.worker.error.connect(self.on_export_error)
-        self.worker.cancelled.connect(self.on_export_cancelled)
-        self.worker.start()
+    def _show_export_progress(self):
+        self.export_progress_dialog = ExportProgressDialog(self)
+        self.export_progress_dialog.cancel_requested.connect(self._cancel_export)
+        blur = QGraphicsBlurEffect(self.centralWidget())
+        blur.setBlurRadius(8)
+        self.centralWidget().setGraphicsEffect(blur)
+        self.centralWidget().setEnabled(False)
+        if self.toast_widget:
+            self.toast_widget.hide()
+        self.export_progress_dialog.center_on_parent()
+        self.export_progress_dialog.show()
+
+    def _cancel_export(self):
+        if self.is_exporting and getattr(self, 'worker', None):
+            self.worker.stop()
+
+    def _hide_export_progress(self):
+        dialog = self.export_progress_dialog
+        self.export_progress_dialog = None
+        if dialog is not None:
+            dialog.finish()
+            dialog.deleteLater()
+        self.centralWidget().setGraphicsEffect(None)
+        self.centralWidget().setEnabled(True)
 
     def on_export_progress(self, percent):
-        self.pbar.setValue(percent)
-        if self.last_grid_image is not None and percent < 100:
-            overlaid = OverlayRenderer.apply_rendering_overlay(self.last_grid_image, percent)
-            self._display_grid_image(overlaid)
+        if self.export_progress_dialog:
+            self.export_progress_dialog.set_progress(percent)
 
     def on_export_finished(self, output_path):
         self.cleanup_export_ui()
@@ -3155,16 +3187,17 @@ class CTDashcamStudio(QMainWindow):
         QMessageBox.information(self, tr("export_cancelled_title"), tr("export_cancelled_msg"))
 
     def cleanup_export_ui(self):
+        self._hide_export_progress()
         self.is_exporting = False
         self.set_controls_enabled(True)
         self.btn_export.setEnabled(True)
         self.btn_export.setText(tr("btn_export"))
         set_theme_style(self.btn_export, "background-color:@ct-primary-bg; color:@ct-primary-text; font-weight:600; font-size:@font-body;")
-        self.pbar.setValue(0)
 
-        idx = self.slider.value()
-        frames = self.read_frames_with_cache(idx, is_seeking=True)
-        self.render_and_display(frames, idx)
+        if self.active_clip_list and self.total_frames > 0 and len(self.clip_frame_offsets) == len(self.active_clip_list) + 1:
+            idx = self.slider.value()
+            frames = self.read_frames_with_cache(idx, is_seeking=True)
+            self.render_and_display(frames, idx)
 
     def on_click_qr_share(self):
         if self.last_exported_video_path and os.path.exists(self.last_exported_video_path):
@@ -3175,6 +3208,10 @@ class CTDashcamStudio(QMainWindow):
     def open_qr_share_dialog(self, video_path):
         dlg = QRShareDialog(video_path, self)
         dlg.exec()
+
+    def open_feedback_form(self):
+        if not QDesktopServices.openUrl(QUrl(FEEDBACK_FORM_URL)):
+            self.show_toast(tr("feedback_open_failed"))
 
     def on_update_found(self, tag_name, url):
         reply = QMessageBox.question(
@@ -3187,6 +3224,8 @@ class CTDashcamStudio(QMainWindow):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        if getattr(self, 'export_progress_dialog', None):
+            self.export_progress_dialog.center_on_parent()
         if hasattr(self, 'toast_widget') and self.toast_widget and self.toast_widget.isVisible():
             self.toast_widget.reposition()
         if hasattr(self, 'single_cam_popup') and self.single_cam_popup and self.single_cam_popup.isVisible():
@@ -3196,6 +3235,8 @@ class CTDashcamStudio(QMainWindow):
 
     def moveEvent(self, event):
         super().moveEvent(event)
+        if getattr(self, 'export_progress_dialog', None):
+            self.export_progress_dialog.center_on_parent()
         if hasattr(self, 'single_cam_popup') and self.single_cam_popup and self.single_cam_popup.isVisible():
             self.single_cam_popup.close()
 
@@ -3215,6 +3256,7 @@ class CTDashcamStudio(QMainWindow):
             self._preview_pool.shutdown(wait=False)
         for cap in self.caps.values():
             cap.release()
+        self._hide_export_progress()
         super().closeEvent(event)
 
 

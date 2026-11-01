@@ -222,6 +222,110 @@ class DesktopUiTests(unittest.TestCase):
         toast.assert_called_once()
         self.assertFalse(self.window.motion_cache)
 
+    def start_fake_export(self, start_error=None):
+        w = self.window
+        w.active_clip_list = [{'cams': {}, 'prefix': '2026-10-30_12-00-00'}]
+        with patch('ui.main_window.QFileDialog.getSaveFileName', return_value=(str(Path(self.temp.name)/'export.mp4'), '')), \
+             patch.object(w, 'build_target_clip_chain', return_value=[{'cams': {}, 'start_f': 0, 'end_f': 1}]), \
+             patch('ui.main_window.ExportWorker') as worker, \
+             patch('ui.main_window.QMessageBox.critical'):
+            worker.return_value.start.side_effect = start_error
+            w.on_click_export_button()
+        self.app.processEvents()
+        return worker.return_value
+
+    def test_export_has_one_progress_dialog_and_blurs_whole_workspace(self):
+        from PyQt6.QtWidgets import QGraphicsBlurEffect, QProgressBar
+        worker = self.start_fake_export()
+        w = self.window
+        self.assertTrue(w.is_exporting)
+        self.assertIsInstance(w.centralWidget().graphicsEffect(), QGraphicsBlurEffect)
+        self.assertFalse(w.centralWidget().isEnabled())
+        dialog = w.export_progress_dialog
+        self.assertTrue(dialog.isVisible())
+        self.assertEqual(dialog.windowModality(), Qt.WindowModality.WindowModal)
+        self.assertEqual(len(w.findChildren(QProgressBar)), 1)
+        with patch('ui.main_window.OverlayRenderer.apply_rendering_overlay', side_effect=AssertionError('old preview overlay called')):
+            w.on_export_progress(63)
+        self.assertEqual(dialog.progress_bar.value(), 63)
+        self.assertEqual(dialog.title_label.text(), i18n.tr('export_progress_title'))
+        worker.start.assert_called_once()
+        self.assertLessEqual((dialog.frameGeometry().center()-w.frameGeometry().center()).manhattanLength(), 2)
+        w.cleanup_export_ui()
+        self.assertFalse(w.is_exporting)
+        self.assertIsNone(w.centralWidget().graphicsEffect())
+        self.assertTrue(w.centralWidget().isEnabled())
+        self.assertIsNone(w.export_progress_dialog)
+        self.assertTrue(w.btn_export.isEnabled())
+
+    def test_export_cancel_escape_and_close_do_not_dismiss_pending_job(self):
+        from PyQt6.QtTest import QTest
+        worker = self.start_fake_export()
+        dialog = self.window.export_progress_dialog
+        dialog.cancel_button.click()
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        dialog.close()
+        self.app.processEvents()
+        worker.stop.assert_called_once()
+        self.assertTrue(dialog.isVisible())
+        self.assertFalse(dialog.cancel_button.isEnabled())
+        self.assertEqual(dialog.cancel_button.text(), i18n.tr('btn_export_cancelling'))
+        with patch('ui.main_window.QMessageBox.information'):
+            self.window.on_export_cancelled()
+        self.assertIsNone(self.window.export_progress_dialog)
+        self.assertIsNone(self.window.centralWidget().graphicsEffect())
+        self.assertTrue(self.window.centralWidget().isEnabled())
+
+    def test_export_error_and_start_failure_restore_workspace(self):
+        self.start_fake_export()
+        with patch('ui.main_window.QMessageBox.critical') as error:
+            self.window.on_export_error('disk full')
+        error.assert_called_once()
+        self.assertIsNone(self.window.centralWidget().graphicsEffect())
+        self.assertFalse(self.window.is_exporting)
+        self.start_fake_export(RuntimeError('could not start worker'))
+        self.assertFalse(self.window.is_exporting)
+        self.assertIsNone(self.window.export_progress_dialog)
+        self.assertTrue(self.window.centralWidget().isEnabled())
+
+    def test_export_success_restores_workspace_before_success_message(self):
+        self.start_fake_export()
+        w = self.window
+        def check_restored(*args):
+            self.assertIsNone(w.export_progress_dialog)
+            self.assertIsNone(w.centralWidget().graphicsEffect())
+            self.assertTrue(w.centralWidget().isEnabled())
+        with patch('ui.main_window.QMessageBox.exec', side_effect=check_restored), patch('ui.main_window.QApplication.alert'):
+            w.on_export_finished('completed.mp4')
+        self.assertFalse(w.is_exporting)
+        self.assertEqual(w.last_exported_video_path, 'completed.mp4')
+
+    def test_feedback_opens_exact_url_in_browser_and_translates(self):
+        from core.constants import FEEDBACK_FORM_URL
+        with patch('ui.main_window.QDesktopServices.openUrl', return_value=True) as open_url:
+            self.window.btn_feedback.click()
+        self.assertEqual(open_url.call_args.args[0].toString(), FEEDBACK_FORM_URL)
+        self.assertEqual(FEEDBACK_FORM_URL, 'https://forms.gle/Lh1doyRZNAZ6cqRk9')
+        for language in i18n.LANGUAGES:
+            self.window.combo_lang.setCurrentIndex(self.window.combo_lang.findData(language))
+            self.assertEqual(self.window.btn_feedback.text(), i18n.tr('feedback_link'))
+            self.assertEqual(self.window.btn_feedback.toolTip(), i18n.tr('feedback_login_note'))
+        with patch('ui.main_window.QDesktopServices.openUrl', return_value=False), patch.object(self.window, 'show_toast') as toast:
+            self.window.btn_feedback.click()
+        toast.assert_called_once()
+
+    def test_export_dialog_translations_and_theme(self):
+        from ui.export_progress import ExportProgressDialog
+        for language in i18n.LANGUAGES:
+            i18n.set_language(language)
+            dialog = ExportProgressDialog(self.window)
+            self.assertNotEqual(dialog.title_label.text(), 'export_progress_title')
+            self.assertEqual(dialog.cancel_button.text(), i18n.tr('btn_cancel'))
+            dialog.set_progress(120)
+            self.assertEqual(dialog.progress_bar.value(), 100)
+            dialog.finish()
+            dialog.deleteLater()
+
     def test_paper_names_survive_language_changes(self):
         w = self.window
         w.combo_theme.setCurrentIndex(w.combo_theme.findData('paper-blue'))

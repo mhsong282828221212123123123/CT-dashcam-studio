@@ -13,14 +13,14 @@
 <div align="center">
 
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D7?style=for-the-badge&logo=windows&logoColor=white)
-![Release](https://img.shields.io/badge/Release-v1.3.0-00E6FF?style=for-the-badge)
+![Release](https://img.shields.io/badge/Release-v1.3.1-00E6FF?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-39FF14?style=for-the-badge)
 
 **專為特斯拉原廠行車記錄器與哨兵模式影片打造的完全免費多鏡頭播放器與行車數據分析工作台**
 
 厭倦了現有免費工具強制加註浮水印或壓縮畫質？CT Dashcam Studio 專為車主打造，提供無損畫質與極致流暢的操作體驗。
 
-[📥 下載 (v1.3.0)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [主要功能](#-主要功能) • [軟體截圖](#-軟體截圖) • [使用方法](#-使用方法) • [快捷鍵說明](#-快捷鍵說明)
+[📥 下載 (v1.3.1)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [主要功能](#-主要功能) • [軟體截圖](#-軟體截圖) • [使用方法](#-使用方法) • [快捷鍵說明](#-快捷鍵說明)
 
 </div>
 
@@ -64,7 +64,7 @@
 ## 🚀 使用方法
 
 ### 可攜式免安裝版（推薦）
-1. 至 [Releases](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) 下載 `CT_Dashcam_Studio_v1.3.0_Portable.zip` 並解壓縮。
+1. 至 [Releases](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) 下載 `CT_Dashcam_Studio_v1.3.1_Portable.zip` 並解壓縮。
 2. 點擊執行 `CT_Dashcam_Studio.exe`。
 3. 點選左上角 **[📁 指定 TeslaCam 資料夾]** 按鈕，選擇隨身碟中的 `TeslaCam` 目錄。
 4. *註：因未購買微軟數位簽章憑證，Windows 可能會彈出防護提醒，本專案為完全開源專案。若有疑慮亦可直接透過 Python 原始碼執行。*

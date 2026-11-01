@@ -13,14 +13,14 @@
 <div align="center">
 
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D7?style=for-the-badge&logo=windows&logoColor=white)
-![Release](https://img.shields.io/badge/Release-v1.3.0-00E6FF?style=for-the-badge)
+![Release](https://img.shields.io/badge/Release-v1.3.1-00E6FF?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-39FF14?style=for-the-badge)
 
 **Completely free multi-cam viewer & telemetry studio for Tesla OEM dashcam and Sentry Mode videos**
 
 Frustrated by existing viewers stamping watermarks or downgrading quality? CT Dashcam Studio is built to give you full control.
 
-[📥 Download (v1.3.0)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [Features](#-features) • [Screenshots](#-screenshots) • [How to Use](#-how-to-use) • [Shortcuts](#-shortcuts)
+[📥 Download (v1.3.1)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [Features](#-features) • [Screenshots](#-screenshots) • [How to Use](#-how-to-use) • [Shortcuts](#-shortcuts)
 
 </div>
 
@@ -64,7 +64,7 @@ Frustrated by existing viewers stamping watermarks or downgrading quality? CT Da
 ## 🚀 How to Use
 
 ### Portable Standalone Executable (Recommended)
-1. Download `CT_Dashcam_Studio_v1.3.0_Portable.zip` from [Releases](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) and extract it.
+1. Download `CT_Dashcam_Studio_v1.3.1_Portable.zip` from [Releases](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) and extract it.
 2. Launch `CT_Dashcam_Studio.exe`.
 3. Click the top-left **[📁 Select TeslaCam Folder]** button and choose the `TeslaCam` folder on your USB drive.
 4. *Note: Windows SmartScreen may show an untrusted publisher warning because the binary is not code-signed. This project is 100% open source; you may also run directly from Python if preferred.*

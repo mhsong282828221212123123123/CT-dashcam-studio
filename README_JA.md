@@ -13,14 +13,14 @@
 <div align="center">
 
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D7?style=for-the-badge&logo=windows&logoColor=white)
-![Release](https://img.shields.io/badge/Release-v1.3.0-00E6FF?style=for-the-badge)
+![Release](https://img.shields.io/badge/Release-v1.3.1-00E6FF?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-39FF14?style=for-the-badge)
 
 **テスラ純正ドライブレコーダーおよびセントリーモード映像のための完全無料マルチカムビューア＆テレメトリスタジオ**
 
 既存の無料ビューアやWebサイトの透かし（ウォーターマーク）や画質劣化に不満を感じて開発されたオープンソースソフトです。
 
-[📥 ダウンロード (v1.3.0)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [主な機能](#-主な機能) • [スクリーンショット](#-スクリーンショット) • [使用方法](#-使用方法) • [ショートカット](#-ショートカット)
+[📥 ダウンロード (v1.3.1)](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) • [主な機能](#-主な機能) • [スクリーンショット](#-スクリーンショット) • [使用方法](#-使用方法) • [ショートカット](#-ショートカット)
 
 </div>
 
@@ -64,7 +64,7 @@
 ## 🚀 使用方法
 
 ### ポータブル版の実行（推奨）
-1. [Releases](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) から `CT_Dashcam_Studio_v1.3.0_Portable.zip` をダウンロードして解凍します。
+1. [Releases](https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases) から `CT_Dashcam_Studio_v1.3.1_Portable.zip` をダウンロードして解凍します。
 2. `CT_Dashcam_Studio.exe` を実行します。
 3. 画面左上の **[📁 TeslaCam フォルダ選択]** ボタンをクリックし、USBドライブ内の `TeslaCam` フォルダを選択します。
 4. *※ コード署名証明書がないためWindowsの警告画面が表示される場合がありますが、本ソフトはオープンソースプロジェクトです。不安な場合は下記のPython環境から実行してください。*

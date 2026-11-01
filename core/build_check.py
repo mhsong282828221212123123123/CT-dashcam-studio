@@ -44,6 +44,22 @@ def run(app, report_path):
         assert not popup.cam_buttons["left_pillar"].isEnabled()
         popup.close()
         report["single_camera_popup"] = True
+        from core.constants import APP_VERSION, FEEDBACK_FORM_URL
+        report["version"] = APP_VERSION
+        assert FEEDBACK_FORM_URL == "https://forms.gle/Lh1doyRZNAZ6cqRk9"
+        report["feedback_link"] = FEEDBACK_FORM_URL
+        window.is_exporting = True
+        window._show_export_progress()
+        window.on_export_progress(37)
+        assert window.export_progress_dialog.progress_bar.value() == 37
+        assert window.export_progress_dialog.percent_label.text() == "37%"
+        assert window.centralWidget().graphicsEffect() is not None
+        assert not window.centralWidget().isEnabled()
+        window.cleanup_export_ui()
+        assert window.export_progress_dialog is None
+        assert window.centralWidget().graphicsEffect() is None
+        assert window.centralWidget().isEnabled()
+        report["export_progress_modal"] = True
         resources = ["icon.ico", "assets/fonts/OFL.txt", "assets/fonts/Pretendard-Regular.otf",
                      "assets/fonts/Pretendard-SemiBold.otf", "assets/fonts/Pretendard-Bold.otf",
                      "models/steering_hud.png", "models/face_detection_yunet.onnx", "models/yolov8n.onnx"]
