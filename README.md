@@ -1,6 +1,6 @@
 <div align="center">
 
-[웹버전 (Web Version)]([https://github.com/mhsong282828221212123123123/CT-dashcam-studio/releases](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/)) 
+[웹버전 (Web Version)](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB) 
 
 [![한국어](https://img.shields.io/badge/Language-한국어-0078D7?style=for-the-badge)](#)
 [![English](https://img.shields.io/badge/Language-English-gray?style=for-the-badge)](README_EN.md)
