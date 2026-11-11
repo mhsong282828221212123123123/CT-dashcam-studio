@@ -1,5 +1,5 @@
 # === App Version & Update Settings ===
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.3.2"
 APP_LICENSE = "GPL-3.0-only"  # Original code only; third-party terms remain separate.
 FEEDBACK_FORM_URL = "https://forms.gle/Lh1doyRZNAZ6cqRk9"
 GITHUB_REPO = "mhsong282828221212123123123/CT-dashcam-studio"

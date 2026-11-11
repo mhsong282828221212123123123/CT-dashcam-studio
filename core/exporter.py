@@ -2,6 +2,7 @@ import sys
 import os
 import math
 import subprocess
+import tempfile
 import cv2
 import imageio_ffmpeg
 from PyQt6.QtCore import QThread, pyqtSignal
@@ -35,6 +36,7 @@ class ExportWorker(QThread):
         ffmpeg_proc = None
         privacy_executor = None
         cams = {}
+        temp_path = None
         try:
             try:
                 ffmpeg_exe_path = imageio_ffmpeg.get_ffmpeg_exe()
@@ -59,6 +61,13 @@ class ExportWorker(QThread):
             else:
                 crf_val = "26"   # Compact 모바일용
 
+            # Keep the previous export intact until encoding succeeds. The same
+            # directory allows os.replace to commit without crossing volumes.
+            fd, temp_path = tempfile.mkstemp(
+                prefix=".ct-export-", suffix=".mp4",
+                dir=os.path.dirname(os.path.abspath(self.out_path))
+            )
+            os.close(fd)
             cmd = [
                 ffmpeg_exe_path, "-y",
                 "-f", "rawvideo",
@@ -71,7 +80,7 @@ class ExportWorker(QThread):
                 "-preset", "fast",
                 "-crf", crf_val,
                 "-pix_fmt", "yuv420p",
-                self.out_path
+                temp_path
             ]
             creation_flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             ffmpeg_proc = subprocess.Popen(
@@ -305,11 +314,6 @@ class ExportWorker(QThread):
                         pass
                     ffmpeg_proc.terminate()
                     ffmpeg_proc.wait()
-                if os.path.exists(self.out_path):
-                    try:
-                        os.remove(self.out_path)
-                    except Exception:
-                        pass
                 self.cancelled.emit()
             else:
                 if ffmpeg_proc:
@@ -317,8 +321,14 @@ class ExportWorker(QThread):
                     return_code = ffmpeg_proc.wait()
                     if return_code != 0:
                         raise RuntimeError(f"FFmpeg exited with code {return_code}")
-                self.progress.emit(100)
-                self.finished.emit(self.out_path)
+                # Cancellation can arrive while FFmpeg is finalizing the MP4.
+                if self.is_stopped:
+                    self.cancelled.emit()
+                else:
+                    os.replace(temp_path, self.out_path)
+                    temp_path = None
+                    self.progress.emit(100)
+                    self.finished.emit(self.out_path)
 
         except Exception as e:
             if ffmpeg_proc:
@@ -338,3 +348,8 @@ class ExportWorker(QThread):
                     pass
             if privacy_executor is not None:
                 privacy_executor.shutdown(wait=False)
+            if temp_path is not None:
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass

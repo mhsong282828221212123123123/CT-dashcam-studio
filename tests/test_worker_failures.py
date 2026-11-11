@@ -79,7 +79,7 @@ class WorkerFailureTests(unittest.TestCase):
         worker.cancelled.connect(lambda: cancelled.append(True))
         proc = Mock()
         proc.stdin.close.side_effect = BrokenPipeError('encoder closed')
-        with patch('core.exporter.imageio_ffmpeg.get_ffmpeg_exe', return_value='ffmpeg.exe'), patch('core.exporter.os.path.exists', return_value=True), patch('core.exporter.os.remove'), patch('core.exporter.subprocess.Popen', return_value=proc):
+        with patch('core.exporter.imageio_ffmpeg.get_ffmpeg_exe', return_value='ffmpeg.exe'), patch('core.exporter.os.path.exists', return_value=True), patch('core.exporter.subprocess.Popen', return_value=proc):
             worker.run()
         self.assertEqual(cancelled, [True])
         self.assertFalse(self.errors)

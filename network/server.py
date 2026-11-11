@@ -207,7 +207,11 @@ class VideoShareHTTPHandler(BaseHTTPRequestHandler):
             elif path == "/download":
                 self.send_response(200)
                 self.send_header("Content-Type", "video/mp4")
-                self.send_header("Content-Disposition", f'attachment; filename="{self.video_filename}"')
+                encoded_filename = urllib.parse.quote(self.video_filename, safe="")
+                self.send_header(
+                    "Content-Disposition",
+                    f"attachment; filename=\"Tesla_Dashcam_Clip.mp4\"; filename*=UTF-8''{encoded_filename}"
+                )
                 self.send_header("Content-Length", str(file_size))
                 self.send_header("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
                 self.send_header("Pragma", "no-cache")
