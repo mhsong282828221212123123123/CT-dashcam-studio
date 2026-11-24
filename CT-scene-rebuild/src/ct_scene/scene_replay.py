@@ -92,11 +92,11 @@ def run(scene,assets_root,prototype_config,output):
                   replay_geometry_unchanged=True,replay_style=style,replay_inference_calls=0)
     payloads={'surrounding-world.mp4':video.read_bytes(),'report.json':canonical(report),
               'render-states.jsonl':states_bytes,'replay-review.json':canonical(proof),'display-style.json':canonical(style)}
-    for name in ('actors.json','ego-lane-state.json','actor-lane-state.json','prediction-display-review.json','road-display-review.json'):
+    for name in ('actors.json','ego-lane-state.json','actor-lane-state.json','prediction-display-review.json','road-display-review.json','blindspot-inference-review.json','branch-hints-review.json','local-road-extent-review.json'):
         if (scene/name).is_file():payloads[name]=(scene/name).read_bytes()
     return publish(output,stage='scene_replay',payloads=payloads,
                    inputs=[dict(role='frozen_scene',artifact_id=manifest['artifact_id'])],
                    config=dict(render_style=style,parent_scene_artifact_id=manifest['artifact_id']),
-                   code_revision=digest(b''.join(Path(__file__).with_name(n).read_bytes() for n in ('scene_replay.py','surrounding.py','prototype_front.py','road_geometry.py','road_frame.py','pocket_lane.py','ego_lamps.py'))),
+                   code_revision=digest(b''.join(Path(__file__).with_name(n).read_bytes() for n in ('scene_replay.py','surrounding.py','prototype_front.py','road_geometry.py','road_frame.py','pocket_lane.py','ego_lamps.py','junction_display.py','junction_branches.py'))),
                    model_hashes=sorted({file_hash(Path(p)) for p in [*assets.values(),renderer.ego_visual]}),
                    runtime=dict(av=av.__version__,render_device=renderer.ctx.info['GL_RENDERER'],cuda=False))

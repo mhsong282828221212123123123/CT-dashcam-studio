@@ -1,0 +1,31 @@
+{
+  "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+  "past_local_id": "left_repeater-0002",
+  "future_local_id": "front-0017",
+  "expected_lane": 0,
+  "ghost_interval_s": [
+    11.0,
+    15.6
+  ],
+  "continuity_interval_s": [
+    10.5,
+    16.0
+  ],
+  "source_files": [
+    {
+      "path": "E:/tesla/a3/TeslaCam/SavedClips/2026-10-02_15-06-17/2026-10-02_14-58-03-left_repeater.mp4",
+      "sha256": "303979a546bfc0308f0dc1c797f01d0ae161beb63db7ef25202ad1320c7ab1e7"
+    },
+    {
+      "path": "E:/tesla/a3/TeslaCam/SavedClips/2026-10-02_15-06-17/2026-10-02_14-58-03-front.mp4",
+      "sha256": "0ba14ac3fd0080490ab3df09b88f4ec4f13d79fe75150116174eec6389bcb5b4"
+    }
+  ],
+  "review_basis": "Original front/left-repeater frames: dark Hyundai sedan body, matching wheels, roof/trim, rear shape and chronological passage. No license-plate equality claim.",
+  "review_images": [
+    "runs/blindspot-junction-source-review-001/oct02-pillar-source.jpg",
+    "runs/blindspot-junction-source-review-001/long-gap-candidate.jpg"
+  ],
+  "development_case": true,
+  "scope": "Selected visual same-car support; estimated geometry, not surveyed metric validation"
+}

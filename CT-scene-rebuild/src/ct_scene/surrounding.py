@@ -660,6 +660,7 @@ class SurroundRenderer(Renderer):
         road_color=np.asarray(style.get('road_rgb',[.035,.04,.05]),float)
         lane_color=style.get('lane_rgb',[.78,.80,.83])
         background=np.asarray(style.get('background_rgb',[.13,.14,.16]),float)
+        apron_color=np.asarray(style.get('surrounding_pavement_rgb',(road_color+background)*.5),float)
         self.background_rgb=background*(.55+.45/np.linalg.norm([-.4,-.6,1]))
         self.text_color=tuple(round(c*255) for c in style.get('text_rgb',[.88,.90,.93]))
         self.secondary_text_color=tuple(round(c*255) for c in style.get('secondary_text_rgb',[.65,.69,.74]))
@@ -687,16 +688,16 @@ class SurroundRenderer(Renderer):
         points=surface_mesh.get('vertices_W_xy',[])
         for triangle in surface_mesh.get('triangles_indices',[]):
             for i in triangle:
-                x,y=points[i];vertices.append([x,y,-.025,0,0,1,*road_color])
+                x,y=points[i];vertices.append([x,y,-.025,0,0,1,*apron_color])
         for polygon in road.get('context_surface',{}).get('polygons_W_xy',[]):
             polygon=np.asarray(polygon);centre=polygon.mean(axis=0)
             for a,b in zip(polygon,np.roll(polygon,-1,axis=0)):
-                for x,y in (centre,a,b):vertices.append([x,y,-.027,0,0,1,*road_color])
+                for x,y in (centre,a,b):vertices.append([x,y,-.027,0,0,1,*apron_color])
         for triangle in road.get('display_surface',{}).get('triangles_W_xy',[]):
-            for x,y in triangle:vertices.append([x,y,-.025,0,0,1,*road_color])
+            for x,y in triangle:vertices.append([x,y,-.025,0,0,1,*apron_color])
         for x0,y0,x1,y1 in road.get('display_surface',{}).get('rectangles_W_xy',[]):
             for x,y in [(x0,y0),(x1,y0),(x1,y1),(x0,y0),(x1,y1),(x0,y1)]:
-                vertices.append([x,y,-.025,0,0,1,*road_color])
+                vertices.append([x,y,-.025,0,0,1,*apron_color])
         def quad(x1,x2,lo1,hi1,lo2,hi2,z,color,display_override=False):
             midpoint=(x1+x2)/2
             if not road_supported(road,midpoint):
@@ -815,6 +816,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     revision_names.append('local_road_extents.py')
     revision_names.append('blindspot_continuity.py')
     revision_names.append('junction_display.py')
+    revision_names.append('pillar_bridges.py')
     started_revision=revision()
     package,tracks,base,destination=map(Path,[package,tracks,base,destination])
     if destination.exists():raise FileExistsError(destination)
@@ -1246,8 +1248,22 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                 ray=pos[:2]-ep[:2];distance=np.linalg.norm(ray)
                 if distance>20:
                     active[-1].update(collision_cap_m=2.,collision_axis_W=(ray/distance).tolist())
-        active_ids={a['id'] for a in active}
-        active.extend(a for a in blindspot_coasts_at(blindspot_coasts,t) if a['id'] not in active_ids)
+        for prediction in blindspot_coasts_at(blindspot_coasts,t):
+            old=next((a for a in active if a['id']==prediction['id']),None)
+            override=prediction.pop('override_unobserved',False)
+            allow_visible_tail=prediction.pop('allow_visible_tail',False)
+            if old is not None:
+                if not override:continue
+                if old.get('source_visible') or not old.get('ghost'):
+                    # These rows are the old clipped-edge extrapolation, not
+                    # new ground measurements. Future evidence may revise the
+                    # estimate while retaining actual source visibility.
+                    if not allow_visible_tail or old.get('position_support')!='temporal_geometry_reconstruction':continue
+                    prediction.update(source_visible=old['source_visible'],ghost=old['ghost'],
+                                      position_support='future_supported_camera_edge_reconstruction')
+                active.remove(old)
+            prediction['rear_appearance']=rear_lamp_trace.at(prediction['id'],t,prediction['ghost'])
+            active.append(prediction)
         scene_plan.append(dict(time_s=t,actors=active,ego_position_W=ep,ego_yaw_rad=yaw,visible_ids=visible))
     scene_plan,prediction_display_review=omit_conflicting_predictions(scene_plan,dimensions)
     scene_plan,collision_review=constrain_collisions(scene_plan,road,dimensions,max_iterations=cfg.get('collision_policy',{}).get('max_iterations',16))

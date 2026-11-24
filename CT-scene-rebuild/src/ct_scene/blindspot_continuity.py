@@ -7,6 +7,7 @@ import math
 import numpy as np
 from .road_frame import coordinates, world
 from .road_geometry import supported, lane_at
+from .pillar_bridges import build as build_pillar_bridges
 
 
 def _ego(times,positions,yaws,t):
@@ -68,6 +69,9 @@ def build(actors,road,times,ego,yaws,policy=None):
                                budget_since_observation_s=budget,speed_mps=speed,relative_speed_mps=relative_speed,
                                fit_residual_p90_m=residual,stop_reason=stop_reason,identity_merged=False,
                                observations_modified=False,render_state='ghost'))
+    bridges,bridge_review=build_pillar_bridges(actors,road,times,ego,yaws,policy)
+    if bridges:
+        result.update(bridges);review=[r for r in review if r['global_id'] not in bridges]+bridge_review
     return result,review
 
 
@@ -77,7 +81,8 @@ def at(coasts,t):
         rows=coast['samples'];ts=[r['time_s'] for r in rows]
         if not ts[0]-.025<=t<=ts[-1]+.025:continue
         p=[float(np.interp(t,ts,[r['position_W'][k] for r in rows])) for k in range(3)]
-        result.append(dict(id=key,position_W=np.array(p),yaw_rad=rows[0]['yaw_rad'],model=coast['model'],
-                           ghost=True,source_visible=False,position_support='bounded_pillar_blindspot_prediction',
+        yaw=float(np.interp(t,ts,np.unwrap([r['yaw_rad'] for r in rows])))
+        result.append(dict(id=key,position_W=np.array(p),yaw_rad=yaw,model=coast['model'],
+                           ghost=True,source_visible=False,override_unobserved=coast.get('override_unobserved',False),allow_visible_tail=bool(t>coast.get('visible_tail_after_s',float('inf'))),position_support='bounded_pillar_blindspot_prediction',
                            rear_appearance=dict(brake=None,left=None,right=None,rear_red_visible=None),collision_cap_m=0.))
     return result
