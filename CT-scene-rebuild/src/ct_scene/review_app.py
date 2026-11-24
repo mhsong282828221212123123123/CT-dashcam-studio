@@ -16,6 +16,11 @@ from PyQt6.QtMultimedia import QMediaPlayer,QAudioOutput,QVideoSink
 ROOT=Path(__file__).resolve().parents[2]
 
 
+def model_assets_root():
+    candidates=[ROOT.parent/'fsd-sedan-3d/models', ROOT.parent.parent/'fsd-sedan-3d/models']
+    return next((p for p in candidates if (p/'tesla_fsd_sedan.glb').is_file()), candidates[0])
+
+
 class VideoCanvas(QWidget):
     def __init__(self):
         super().__init__();self.sink=QVideoSink(self);self.image=QImage();self.sink.videoFrameChanged.connect(self.receive)
@@ -149,7 +154,7 @@ class ReviewWindow(QWidget):
             if not {'front','back','left_repeater','right_repeater'}<=cameras.keys():raise ValueError('같은 시각의 원본 4채널이 필요합니다.')
             if Path(self.output.text()).resolve()==ROOT:raise ValueError('runs 아래 별도의 작업 폴더를 선택하세요.')
         except (ValueError,OSError) as error:self.log.appendPlainText(str(error));return
-        python=ROOT/'.venv/Scripts/python.exe';assets=Path('E:/tesla/project/fsd-sedan-3d/models')
+        python=ROOT/'.venv/Scripts/python.exe';assets=model_assets_root()
         args=['-m','ct_scene','analyze','--front',self.source.text(),'--output',self.output.text(),'--detector',str(ROOT.parent/'scene-models/yolo11x.onnx'),'--road-model',str(ROOT.parent/'scene-models/model-review/yolopv2-roads.onnx'),'--lens-config',str(ROOT/'configs/multicam-optical-candidates.json'),'--prototype-config',str(ROOT/'configs/surrounding-prototype.json'),'--assets-root',str(assets)]
         map_path=self.map.text().strip()
         if not map_path and self.auto_map.isChecked():
@@ -202,7 +207,7 @@ class ReviewWindow(QWidget):
         config['render_style']=style
         target=ROOT/'runs'/('scene-replay-'+datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
         config_path=target.with_suffix('.display.json');config_path.write_text(json.dumps(config,indent=2),encoding='utf-8')
-        args=['-m','ct_scene','replay-scene','--scene',str(self.result),'--assets-root','E:/tesla/project/fsd-sedan-3d/models','--prototype-config',str(config_path),'--output',str(target)]
+        args=['-m','ct_scene','replay-scene','--scene',str(self.result),'--assets-root',str(model_assets_root()),'--prototype-config',str(config_path),'--output',str(target)]
         self.process=QProcess(self);env=QProcessEnvironment.systemEnvironment();env.insert('PYTHONPATH',str(ROOT/'src'));env.insert('PYTHONUNBUFFERED','1')
         self.process.setProcessEnvironment(env);self.process.setWorkingDirectory(str(ROOT));self.process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
         self.process.readyReadStandardOutput.connect(self.read_log);self.process.finished.connect(self.finished);self.process.errorOccurred.connect(self.process_error)
@@ -244,7 +249,7 @@ class ReviewWindow(QWidget):
             stamp=datetime.now().strftime('%Y%m%d-%H%M%S-%f');target=ROOT/'runs'/('manual-review-'+stamp);layer_path=target.with_suffix('.corrections.json')
             layer_path.write_text(json.dumps(layer,ensure_ascii=False,indent=2),encoding='utf-8')
         except (ValueError,OSError,KeyError,StopIteration) as error:self.log.appendPlainText('교정 준비 실패: '+str(error));return
-        args=['-m','ct_scene','manual-render','--scene',str(self.result),'--base',str(base),'--corrections',str(layer_path),'--assets-root','E:/tesla/project/fsd-sedan-3d/models','--prototype-config',str(ROOT/'configs/surrounding-prototype.json'),'--output',str(target)]
+        args=['-m','ct_scene','manual-render','--scene',str(self.result),'--base',str(base),'--corrections',str(layer_path),'--assets-root',str(model_assets_root()),'--prototype-config',str(ROOT/'configs/surrounding-prototype.json'),'--output',str(target)]
         self.process=QProcess(self);env=QProcessEnvironment.systemEnvironment();env.insert('PYTHONPATH',str(ROOT/'src'));env.insert('PYTHONUNBUFFERED','1');self.process.setProcessEnvironment(env);self.process.setWorkingDirectory(str(ROOT));self.process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
         self.process.readyReadStandardOutput.connect(self.read_log);self.process.finished.connect(self.finished);self.process.errorOccurred.connect(self.process_error)
         self.pending_result=target;self.start.setEnabled(False);self.manual.setEnabled(False);self.replay.setEnabled(False);self.cancel.setEnabled(True);self.status.setText('수동 교정본 생성 중 · 자동 결과 보존');self.process.start(str(ROOT/'.venv/Scripts/python.exe'),args)
