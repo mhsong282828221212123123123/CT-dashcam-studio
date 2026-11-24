@@ -32,22 +32,28 @@ def build(actors,road,times,ego,yaws,policy=None):
         observed=[r for r in first['samples'] if r.get('support') in ('detector_observation','flow_observation')]
         if len(observed)<8:continue
         anchor=observed[-1];camera=anchor.get('camera_id');box=anchor.get('bbox_xyxy');w=anchor.get('image_width',1280)
-        if camera not in ('left_repeater','right_repeater') or not box:continue
+        if camera not in ('front','left_repeater','right_repeater') or not box:continue
         if camera=='left_repeater' and box[2]<w*.95:continue
         if camera=='right_repeater' and box[0]>w*.05:continue
+        if camera=='front' and min(box[0],w-box[2])>w*.05:continue
         past=_window(first,True,usable)
         if past is None or anchor['time_s']-past['time_s']>.5:continue
         ep=np.array([np.interp(anchor['time_s'],times,ego[:,k]) for k in range(3)]);yaw=float(np.interp(anchor['time_s'],times,yaws));delta=np.asarray(anchor['position_W'])-ep
         rx=math.cos(yaw)*delta[0]+math.sin(yaw)*delta[1];ry=-math.sin(yaw)*delta[0]+math.cos(yaw)*delta[1]
-        if not -7<rx<6 or not 1.4<abs(ry)<8.5:continue
+        if not (-7<rx<6 if camera!='front' else 0<rx<16) or not 1.4<abs(ry)<8.5:continue
         for second in actors:
             if second is first or second.get('frozen_lead') or first['end_s']>=second['start_s']:continue
             entry=second['samples'][0];gap=entry['time_s']-anchor['time_s']
-            if entry.get('camera_id')!='front' or not 3<gap<=maximum:continue
+            entry_camera=entry.get('camera_id')
+            if not 3<gap<=maximum:continue
+            if camera!='front' and entry_camera!='front':continue
+            if camera=='front' and entry_camera not in ('left_repeater','right_repeater'):continue
             box2=entry.get('bbox_xyxy');w2=entry.get('image_width',1280)
             if not box2:continue
             if camera=='left_repeater' and box2[0]>w2*.02:continue
             if camera=='right_repeater' and box2[2]<w2*.98:continue
+            if camera=='front' and entry_camera=='left_repeater' and (box[0]>w*.05 or box2[2]<w2*.98):continue
+            if camera=='front' and entry_camera=='right_repeater' and (box[2]<w*.95 or box2[0]>w2*.02):continue
             if first['model']!=second['model']:continue
             app=appearance_distance(first.get('appearance',[]),second.get('appearance',[]))
             if app>=.65:continue
@@ -74,7 +80,7 @@ def build(actors,road,times,ego,yaws,policy=None):
             edge=dict(from_id=first['global_id'],to_id=second['global_id'],cost=cost)
             edge.update({'from':edge.pop('from_id'),'to':edge.pop('to_id'),'identity_eligible':True})
             edges.append(edge);paths[first['global_id'],second['global_id']]=dict(model=first['model'],samples=samples,override_unobserved=True,visible_tail_after_s=float(anchor['time_s']+.12))
-            review.append(dict(global_id=first['global_id'],future_global_id=second['global_id'],kind='two_sided_pillar_bridge',
+            review.append(dict(global_id=first['global_id'],future_global_id=second['global_id'],kind='two_sided_pillar_bridge',from_camera=camera,to_camera=entry_camera,
                                last_observation_s=anchor['time_s'],future_entry_s=entry['time_s'],start_s=begin,end_s=end,
                                anchor_frame_id=anchor['frame_id'],future_frame_id=entry['frame_id'],appearance_distance=app,
                                max_longitudinal_acceleration_mps2=peak,max_speed_mps=float(max(speed)),lane=la,

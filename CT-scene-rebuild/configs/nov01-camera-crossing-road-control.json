@@ -1,0 +1,15 @@
+{
+  "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+  "source_local_id": "front-0022",
+  "junction_id": "junction-0",
+  "source_interval_s": [
+    29.6,
+    31.5
+  ],
+  "visual_label": "SUV crossing the road in front of the ego right turn; an additional cross-road exists beyond the driven turn.",
+  "metric_width_or_lane_count_gt": false,
+  "source_image_before_prediction": "runs/fresh-nov01-source-selection-001/selection.jpg",
+  "source_path": "E:/tesla/a5/RecentClips/2026-11-01_13-52-02-front.mp4",
+  "source_sha256": "ef1ed36c23ec94156c6bcdf01f9871ce8b3c4d6fb5e24298ec85fba0eade7bb0",
+  "development_case": true
+}

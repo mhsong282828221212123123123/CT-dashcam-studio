@@ -36,3 +36,13 @@ class PillarBridgeTests(unittest.TestCase):
 
     def test_no_future_observation_cannot_create_a_long_bridge(self):
         actors,road,t,ego,yaw=self.fixture();self.assertEqual(build(actors[:1],road,t,ego,yaw)[0],{})
+
+    def test_front_to_side_is_supported_when_ego_passes_the_car(self):
+        actors,road,t,ego,yaw=self.fixture()
+        for index,actor in enumerate(actors):
+            actor['camera_id']='front' if index==0 else 'left_repeater'
+            for i,row in enumerate(actor['samples']):
+                row['camera_id']=actor['camera_id'];row['position_W'][0]=20*row['time_s']+8
+                row['bbox_xyxy']=[30,200,300,500] if index==0 else [1200,200,1280,500] if i<3 else [950,200,1250,500]
+        coasts,review=build(actors,road,t,ego,yaw)
+        self.assertIn('side',coasts);self.assertEqual(review[0]['from_camera'],'front');self.assertEqual(review[0]['to_camera'],'left_repeater')

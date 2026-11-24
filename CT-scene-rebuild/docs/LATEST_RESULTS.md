@@ -1,5 +1,9 @@
 # 최신 검토 영상 · 2026-11-16
 
+2026-11-25 최신 진행본: [40초 바로 확인](https://drive.google.com/file/d/1Im_Z_0QZy8CLWfDStWJv0Zg1eSk3uupY/view) · [신규 교차로 전체](https://drive.google.com/file/d/1GpY1mkfRgO80iboD9-REQuVYAL_bSOmK/view) · [신규 곡선·터널 전체](https://drive.google.com/file/d/1cuKapIhuqtLCxyOiaxzyzKACMOuqA1MK/view). 로컬 runs/blindspot-junction-progress-40s-005.mp4 및 runs/fresh-nov01-city-road-002, runs/fresh-nov01-curve-001/scene.
+
+2026-11-25 이전 진행본: [긴 사각지대 고속 전체](https://drive.google.com/file/d/1Xr01OcGNoGL0Qu7d2xo1m8KKLNm0OCZP/view) · [교차로 1차 전체](https://drive.google.com/file/d/1DQ8DUSn4HEQlmwDFhbep1LzDDiywIEo3/view) · [1차 30초 요약](https://drive.google.com/file/d/1SyygVBMC8cWV0Wz7d8CQYHtMdjd7qNWF/view) · [진행/검사](./BLINDSPOT_JUNCTION_20261125.md). 오전 7시(KST)까지 작업 중. 고속은 5초 사각 구간의 미래 관측 연결 검사 PASS, 전체 겹침 문제는 남는다.
+
 최신 수정본: [전체 약 60초](https://drive.google.com/file/d/1oeX3SK0NJhK1MAHedk1cYj6IyLAdz8bM/view) · [30초 원본 비교](https://drive.google.com/file/d/1JAvwRjPEFqjdS7X15xrYQXYbiTMbdHpQ/view) · [수정 범위/검사](./LOCAL_ROAD_EXTENT_FIX_20261116.md). 이전 실패했던 42초 차로 배치를 수정했고 실제 SUV 오른쪽 변경은 유지했다. 선택 source PASS이며 전체 겹침 합격은 아니다.
 
 최신 검토용 · 차로 배치 미해결: [SUV 강조 30초](https://drive.google.com/file/d/1lU0HgVUzTs8SCN93f8iQmeoUoJblyBoR/view) · [전체](https://drive.google.com/file/d/1DnGyv_7ifIjIaxeceDwc6867W4gKV3jJ/view) · [판정/남은 결함](./OTHER_VEHICLE_CHANGE_REVIEW_20261116.md). 차선 변경 운동은 통과했지만 변경 전 차로 배치가 달라 전체 source FAIL이다.

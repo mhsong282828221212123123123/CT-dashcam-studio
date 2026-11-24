@@ -34,6 +34,7 @@ from .image_heading_refine import refine_actor as refine_image_heading
 from .clear_handoff import fit as fit_clear_handoff,repair as repair_clear_handoff
 from .blindspot_continuity import build as build_blindspot_coasts,at as blindspot_coasts_at
 from .junction_display import display_bounds,corridor_gaps,mouth_edges,branch_edges
+from .camera_junction_roads import supplement as camera_crossing_roads
 from .static_actor_refine import refine_actor as refine_static_actor
 from .left_median_membership import review as left_median_membership_review
 from .lane_prior_geometry import refine as refine_lane_geometry,confirmed_handoff_targets
@@ -817,6 +818,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     revision_names.append('blindspot_continuity.py')
     revision_names.append('junction_display.py')
     revision_names.append('pillar_bridges.py')
+    revision_names.append('camera_junction_roads.py')
     started_revision=revision()
     package,tracks,base,destination=map(Path,[package,tracks,base,destination])
     if destination.exists():raise FileExistsError(destination)
@@ -1203,6 +1205,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         state.update(local_ids=a['local_ids'],scope='estimated surrounding lane state; source review required',evidence=a['lane_motion_evidence_by_camera'])
         actor_lane_audit[a['global_id']]=state
     road['junctions'],branch_review=junction_branch_hints(road,map_records,times,eyaw,observed_end_station=float(road_coordinates(road,ego[-1])[0]))
+    road['junctions'],camera_road_review=camera_crossing_roads(road,global_actors)
     surface=None
     if road_masks and cfg.get('observed_surface_policy',{}).get('enabled',True):
         surface=observed_road_surface(road_masks,frames,observations,times,ego,eyaw,profiles['front'],cfg['cameras']['front'])
@@ -1329,7 +1332,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     if preview_times is not None:report['export_full_source']=False;report['preview_times_s']=preview_times.tolist()
     report['osm_context']={'enabled':bool(map_manifest),'gps_pose_registration':False,'map_lane_count_or_width_used':False,
                            'role':'topology_confirmation_and_camera_anchored_orientation_hints',
-                           'branch_display_arms':sum(len(j.get('branch_display_hints',[])) for j in road['junctions']),
+                           'branch_display_arms':sum(sum(a.get('source','').startswith('osm_') for a in j.get('branch_display_hints',[])) for j in road['junctions']),
+                           'camera_crossing_display_arms':len(camera_road_review),
                            'branch_hints_modify_actor_or_ego_geometry':False}
     report['ego_lamps']={'telemetry_connected':bool(lamp_trace),'visual_asset':str(renderer.ego_visual),'mesh_groups':sorted(renderer.ego_lamps),'flash_phase':'illustrative_not_measured','brake_source':'SEI brake_applied control proxy; not optically verified bulb','other_vehicles':'observed rear red appearance only; brake and indicators unknown; no emissive or invented phase'}
     coverage=observation_coverage(all_observations,global_actors,render_audit,excluded,original_ids,rear_review)
@@ -1348,6 +1352,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     payloads['left-pocket-evidence.json']=canonical(pocket_evidence)
     payloads['curved-road-review.json']=canonical(curve_review)
     payloads['branch-hints-review.json']=canonical(branch_review)
+    payloads['camera-crossing-road-review.json']=canonical(dict(changes=camera_road_review,ego_actor_or_lane_modified=False))
     payloads['image-median-review.json']=canonical(pixel_median_review)
     payloads['image-median-lines.json']=canonical(pixel_median_lines)
     payloads['surrounding-rear-appearance.json']=canonical(rear_lamp_samples)

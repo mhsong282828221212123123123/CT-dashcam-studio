@@ -49,3 +49,30 @@ Oct02 원본에서 좌측 리피터의 검은 Hyundai 세단과 이후 전방의
 - 교차로의 주행 본선과 주변 포장면을 다른 명도의 어두운 회색으로 구분했다. 본선/옆길 경계선은 유지하고 기존 객체 좌표를 바꾸지 않는다. 다른 날짜 Aug26 전체 1199프레임과 Oct22 1188프레임은 새 운동 불연속 없이 디코드했다. Aug26의 기존 겹침 수치는 81쌍·프레임이며 독립 holdout이나 전체 합격으로 세지 않는다.
 
 [긴 사각지대 수정 고속 전체본](https://drive.google.com/file/d/1Xr01OcGNoGL0Qu7d2xo1m8KKLNm0OCZP/view). 004 결과와 검사: runs/blindspot-junction-oct02-004 및 runs/blindspot-junction-review-004. 003 실패와 원본 확대는 별도 보존한다. 실험실 화면 재렌더에서도 사각지대/교차로 검수 payload를 함께 보존하도록 연결했다.
+
+
+## 추가 검증 진행
+
+반대 방향인 전방→리피터 긴 사각지대도 대칭적인 FOV 경계 조건으로 처리하도록 확장했다. 합성 fixture에서는 통과하지만, 이번 여섯 개발 장면에서 해당 방향의 새 긴 양성 사례가 선택되지는 않았다. 이를 실제 원본 양성 검증 완료로 주장하지 않는다. 코드 검사는 383 PASS.
+
+새 날짜 2026-11-01_13-52-02의 주간 교차로를 원본 장면만 보고 선택한 뒤 처음부터 4채널 분석 중이다. 새 후보를 선택할 때 예측 결과는 보지 않았다. 로컬 aug30.osm 캐시가 GPS 영역을 포함해 사용하며 네트워크 조회는 하지 않았다. 결과를 본 뒤에는 개발 사례가 되며 영구 holdout으로 보고하지 않는다. 선택과 진행 기록 runs/fresh-nov01-city-001/selection.json 및 pipeline.json.
+
+실험실 재렌더 결과 runs/blindspot-junction-replay-004: 전체 1194프레임, render-states/actors/road/사각지대 근거 파일 정확히 동일, 모델 추론 0회. 화면 변경이 재현 상태를 바꾸지 않는 검사 PASS.
+
+추가 날짜 Aug28 전체 1187프레임, Oct26 전체 1178프레임 생성·디코드, 새 운동 불연속 0. strict 겹침은 각각 16/137쌍·프레임으로 남는다. 새로 선택된 긴 양단 연결은 없었다. Aug28/Oct26의 기존 관측과 실제 횡단 차량은 원본 화면으로 추가 확인 중이다.
+
+
+## 새 날짜 전체 분석 · 지도 누락 교차로 보완
+
+새 2026-11-01 주간 두 구간을 처음부터 4채널 분석했다. 시내 1181프레임, 곡선·터널 1193프레임이다. 기존 여섯 개발 장면을 합쳐 고유 구간 8편, 9518프레임을 검토했다. 같은 원본의 여러 수정 버전을 별도 표본으로 세지 않는다.
+
+시내 우회전에는 교차로와 실제 횡단 차량이 있었지만 로컬 OSM의 사용 가능한 branch가 없어 횡단 도로가 비었다. 지도 branch가 없고, 자체 회전·횡단 도색·반복된 실제 횡단 차량이 함께 지지하는 경우에만 그 관측 경로를 따라 짧은 포장면을 보완했다. 정밀 폭이나 추가 차로 수를 단정하지 않는다. 주행 차량/자차 좌표와 lane ID, 지도 등록은 바꾸지 않는다.
+
+- 코드 387 PASS. 주차·종방향 주행·흔들린 궤적·짧은 관측·완만한 곡선·기존 지도 branch에서는 새 도로를 만들지 않는 검사 포함.
+- fresh-nov01-city-road-002의 actors.json와 render-states.jsonl은 수정 전과 바이트 동일. 선택한 실제 횡단 10개 관측이 보완 도로에 포함되며 camera provenance 검사 PASS. 이 검사는 topology/fit 일관성이고 실측 좌표 정확도 검사는 아니다.
+- 전체 1181프레임 디코드 및 운동 불연속 이벤트 0. 기존 두 차량 겹침 4쌍·프레임은 그대로 FAIL로 남는다.
+- 실제 MP4의 28/31/35초 전후 화면을 비교했다. 실험실 Qt로 열기·재생·MP4 저장 및 바이트 동일성 검사 5개 PASS.
+- 새 곡선·터널은 junction/추가 camera road가 생기지 않았고 전체 운동·겹침 수치 PASS. 실측 곡률·카메라 투영 정확도까지 합격했다는 뜻은 아니다.
+- 첫 OpenGL 전후 probe는 두 renderer의 current context가 섞여 무효임을 발견했다. 순차 context 해제 후 probe와 실제 저장 MP4 비교로 다시 확인했다. 잘못된 probe를 검증 근거로 쓰지 않는다.
+
+[신규 교차로 전체](https://drive.google.com/file/d/1GpY1mkfRgO80iboD9-REQuVYAL_bSOmK/view) · [신규 곡선·터널 전체](https://drive.google.com/file/d/1cuKapIhuqtLCxyOiaxzyzKACMOuqA1MK/view) · [40초 확인본](https://drive.google.com/file/d/1Im_Z_0QZy8CLWfDStWJv0Zg1eSk3uupY/view). 하단 원본 4채널 유지, H264 yuv420p faststart. Drive 테스트26의 부모 폴더·파일 크기를 다시 조회했다.
