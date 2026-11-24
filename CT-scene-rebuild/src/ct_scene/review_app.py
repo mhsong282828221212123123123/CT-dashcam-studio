@@ -144,6 +144,11 @@ class ReviewWindow(QWidget):
         self.replay.setToolTip('차량·도로 좌표를 유지하고 화면만 다시 렌더합니다.' if self.replay_compatible else '이전 결과에는 필요한 장면 상태가 없습니다. 최신 분석 결과에서 사용할 수 있습니다.')
         self.status.setText(f'v2 결과 · {report["duration_s"]:.1f}초 · {report["global_actors"]}개 전역 ID · 실측 정확도 미평가 · 전체 품질은 원본 대조 필요')
         if report.get('manual_corrections'):self.status.setText('수동 교정본 · 원본 자동 결과 보존 · 자동 성능 평가에서 제외')
+        from .quality_review import source_presence_screen
+        self.presence_screen=source_presence_screen(report,self.states)
+        if self.presence_screen['gate']=='REJECTED':
+            self.status.setText('차량 누락 의심 · 검출량에 비해 재현 차량이 매우 적습니다 · 원본 대조 필요')
+            self.log.appendPlainText('검토 필요: 차량이 검출됐지만 대부분 월드에 반영되지 않았습니다. 정상 결과로 채택하지 마세요.')
         self.log.appendPlainText('결과: '+str(result));return True
 
     def analyze(self):
@@ -276,7 +281,7 @@ class ReviewWindow(QWidget):
             path=Path(target)
             if path.resolve().is_relative_to(self.result.resolve()):raise ValueError('분석 결과 폴더 밖의 저장 위치를 선택하세요.')
             shutil.copy2(self.result/'surrounding-world.mp4',path)
-            path.with_suffix('.export.json').write_text(json.dumps(dict(source_artifact_id=self.manifest['artifact_id'],source_result=str(self.result),quality_gate='SOURCE_REVIEW_REQUIRED',manual_corrections=self.manifest['stage']=='manual_review'),ensure_ascii=False,indent=2),encoding='utf-8')
+            path.with_suffix('.export.json').write_text(json.dumps(dict(source_artifact_id=self.manifest['artifact_id'],source_result=str(self.result),quality_gate='WORLD_COVERAGE_REVIEW_REQUIRED' if getattr(self,'presence_screen',{}).get('gate')=='REJECTED' else 'SOURCE_REVIEW_REQUIRED',source_presence_screen=getattr(self,'presence_screen',{}),manual_corrections=self.manifest['stage']=='manual_review'),ensure_ascii=False,indent=2),encoding='utf-8')
             self.log.appendPlainText('내보내기: '+str(path))
         except (OSError,ValueError) as error:self.log.appendPlainText('내보내기 실패: '+str(error))
 

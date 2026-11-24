@@ -32,6 +32,8 @@ from .unresolved_road import route_display as unresolved_route_display
 from .actor_rear_axis import align_actor as align_actor_rear_axis
 from .image_heading_refine import refine_actor as refine_image_heading
 from .clear_handoff import fit as fit_clear_handoff,repair as repair_clear_handoff
+from .local_solid_corridor import fit as fit_local_solid_corridor,unresolved_side_height_position
+from .source_strip import status as source_strip_status
 from .right_edge_profile import refine as refine_right_edge_profile
 from .blindspot_continuity import build as build_blindspot_coasts,at as blindspot_coasts_at
 from .junction_display import display_bounds,corridor_gaps,mouth_edges,branch_edges
@@ -821,6 +823,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     revision_names.append('pillar_bridges.py')
     revision_names.append('camera_junction_roads.py')
     revision_names.append('right_edge_profile.py')
+    revision_names.append('source_strip.py')
+    revision_names.append('local_solid_corridor.py')
     started_revision=revision()
     package,tracks,base,destination=map(Path,[package,tracks,base,destination])
     if destination.exists():raise FileExistsError(destination)
@@ -849,6 +853,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         if image_heading_manifest['stage']!='vehicle_image_heading' or not {pm['artifact_id'],tm['artifact_id']}<=heading_inputs:raise ValueError('Image heading/source/track mismatch')
         if heading_report.get('optics_sha256')!=digest(canonical(profiles['front'])):raise ValueError('Image heading optics mismatch')
         image_heading_predictions=[json.loads(l) for l in (Path(image_headings)/'predictions.jsonl').read_text().splitlines()]
+    source_coverage=json.loads((package/'camera-coverage.json').read_text()) if (package/'camera-coverage.json').is_file() else {}
+    source_strip_missing=defaultdict(int)
     frames=json.loads((package/'frames.json').read_text());by_frame={f['frame_id']:f for f in frames};observations=defaultdict(list);groups=defaultdict(list)
     for row in map(json.loads,(tracks/'observations.jsonl').read_text().splitlines()):observations[row['frame_id']].append(row);groups[row['local_track_id']].append(row)
     frozen=json.loads((base/'trajectory.json').read_text());base_report=json.loads((base/'report.json').read_text());lead_id=base_report['selected_local_track']
@@ -989,6 +995,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     road['junctions'].extend(straight_openings(times,ego,road,segments,map_records))
     sections,section_review=([],{'status':'lane_geometry_unresolved'}) if road.get('lane_geometry_status')=='unknown_route_display_only' else fit_road_sections(road,segments,actors,ego,width,cfg['max_lanes'])
     curve_review['section_review']=section_review
+    solid_sections,solid_corridor_review=fit_local_solid_corridor(road,segments,actors,ego,width,cfg['max_lanes']) if not sections else ([],dict(status='existing_sections_retained',changes=[]))
+    if solid_sections:sections=solid_sections
     if sections:
         road['lane_sections']=sections;road['lane_count_mode']='section_local';road['topology']='camera_supported_piecewise_lane_sections_with_junction_openings'
     if road.get('reference_line') and road.get('lane_geometry_status')!='unknown_route_display_only':
@@ -1236,7 +1244,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         count=len(preview_times)
     sample_half_step=min(.15,float(np.median(np.diff([f['camera_time_s'] for f in front])))/2)+1e-6
     render_counts=[];render_audit=[]
-    scene_plan=[]
+    scene_plan=[];local_scope_display_review=[]
     for j in range(count):
         t=float(preview_times[j]) if preview_times is not None else times[0]+j/fps
         ep=np.array([np.interp(t,times,ego[:,k]) for k in range(3)]);yaw=float(np.interp(t,times,eyaw));active=[];visible=visible_ids_at(presence,t)
@@ -1251,6 +1259,9 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             pos=trajectory_at(actor,t,restore_maneuver=not maneuver_active);heading=float(np.interp(t,ts,np.unwrap([r['yaw_rad'] if maneuver_active else r.get('yaw_before_ego_maneuver',r['yaw_rad']) for r in samples])))
             source_visible=actor['global_id'] in visible;ghost=not source_visible
             position_support='observed_geometry' if abs(ts[nearest]-t)<=.12 and samples[nearest]['support'] not in ('offline_two_endpoint_gap','offline_future_clear_geometry','offline_bidirectional_clear_geometry','offline_occluded_contact_reconstruction','offline_camera_tail_prediction','offline_camera_edge_prediction') and not samples[nearest].get('static_mesh_weight') and not (maneuver_active and samples[nearest].get('ego_maneuver_correction')) else 'temporal_geometry_reconstruction'
+            if unresolved_side_height_position(road,actor,samples[nearest],pos):
+                local_scope_display_review.append(dict(time_s=t,global_id=actor['global_id'],reason='side_height_prior_conflicts_with_camera_narrow_road; source_visible_but_position_unlocalized',observation_modified=False))
+                continue
             active.append({'id':actor['global_id'],'position_W':pos,'yaw_rad':heading,'model':actor['model'],'ghost':ghost,'source_visible':source_visible,'position_support':position_support,
                            'rear_appearance':rear_lamp_trace.at(actor['global_id'],t,ghost),
                            'collision_cap_m':.75 if not actor.get('frozen_lead') and samples[nearest].get('camera_id') in ('left_repeater','right_repeater') else 0.})
@@ -1299,6 +1310,13 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                     nearest=min(candidates,key=lambda r:r['distance_m'])
                     d.text((18,91),f'OSM junction/merge candidate ~{nearest["distance_m"]:.0f}m | map reference only',font=font,fill=(190,185,130))
             for k,(camera,seq) in enumerate(sequences.items()):
+                availability=source_strip_status(source_coverage,camera,t)
+                if availability in ('recording_ended','recording_not_started'):
+                    source_strip_missing[camera]+=1
+                    tile=Image.new('RGB',(320,240),(15,20,24));td=ImageDraw.Draw(tile)
+                    td.text((8,12),camera,fill='white',font=ImageFont.truetype('C:/Windows/Fonts/arial.ttf',16))
+                    td.text((18,100),'Camera recording ended' if availability=='recording_ended' else 'Camera not started',fill=(215,220,225),font=ImageFont.truetype('C:/Windows/Fonts/arial.ttf',18))
+                    canvas.paste(tile,(k*320,720));continue
                 f=min(seq,key=lambda f:abs(f['camera_time_s']-t))
                 if f['frame_id'] not in cache:cache[f['frame_id']]=Image.open(package/f['image']).convert('RGB').resize((320,240))
                 tile=cache[f['frame_id']].copy();td=ImageDraw.Draw(tile);td.rectangle((0,0,320,24),fill=(15,20,24));td.text((4,2),f'{camera} {f["camera_time_s"]:.3f}s',fill='white',font=ImageFont.truetype('C:/Windows/Fonts/arial.ttf',14));canvas.paste(tile,(k*320,720))
@@ -1351,6 +1369,9 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     payloads['collision-review.json']=canonical(collision_review)
     payloads['local-road-extent-review.json']=canonical(local_extent_review)
     payloads['right-edge-profile-review.json']=canonical(right_edge_profile_review)
+    payloads['local-solid-corridor-review.json']=canonical(solid_corridor_review)
+    payloads['local-scope-display-review.json']=canonical(dict(unlocalized=local_scope_display_review,source_observations_preserved=True,poses_snapped_to_lane=False))
+    payloads['camera-strip-coverage.json']=canonical(dict(coverage=source_coverage,unavailable_render_frames=dict(source_strip_missing),recording_coverage_known=bool(source_coverage),stale_tail_presented_as_current=False if source_coverage else None))
     payloads['blindspot-inference-review.json']=canonical(dict(predictions=blindspot_review,observations_modified=False,identity_merged=False,scope='bounded_pillar_region_display_only'))
     payloads['prediction-display-review.json']=canonical(prediction_display_review)
     payloads['side-paint-geometry.json']=canonical(dict(models=side_paint,actors=side_paint_review))

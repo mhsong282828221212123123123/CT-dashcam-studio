@@ -33,11 +33,13 @@ def fit(road,segments,actors,ego,width,max_lanes=4):
             selected=[r for s,r in zip(local[:,0],rows) if a<=s<b]
             if len(selected)>=3:local_actors.append(dict(actor,samples=selected))
         divider=road['left_boundary_y'] if road.get('left_boundary_role')=='camera_observed_yellow_divider_estimated_geometry' else None
+        preceding_turn=any(abs(j.get('turn_deg',0))>=35 and j['road_station_range_m'][1]<=a+.01 for j in road.get('junctions',[]))
+        if preceding_turn:divider=None  # A different road cannot inherit the approach's divider.
         bounds,review=supported_boundaries(local_paint,road['reference_line'],width,local_actors,max_lanes,ego_positions=ep,inherited_divider=divider)
         if bounds is None:
             bounds,traffic=vehicle_supported_paint_gaps(review,road['reference_line'],width,local_actors,ep,max_lanes)
             review=dict(paint=review,traffic=traffic)
-        reviews.append(dict(station_range_m=[a,b],**review))
+        reviews.append(dict(station_range_m=[a,b],inherited_approach_divider=divider,after_own_turn=preceding_turn,**review))
         if bounds is None:continue
         sections.append(dict(id='road-section-'+str(len(sections)),station_range_m=[float(a),float(b)],
                              boundaries_y=[float(x) for x in bounds],lane_count=len(bounds)-1,supported=True,

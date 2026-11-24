@@ -38,3 +38,16 @@ class RoadSectionTests(unittest.TestCase):
     def test_map_opening_without_camera_lane_paint_cannot_create_sections(self):
         road,_=example();sections,review=fit(road,[],[],np.c_[np.arange(0,175,2),np.zeros((88,2))],3.5)
         self.assertEqual(sections,[]);self.assertEqual(review['status'],'insufficient_two_sided_local_support')
+
+    def test_turning_into_another_road_does_not_reuse_approach_divider(self):
+        for turn,expected in [(0,1),(90,2)]:
+            road=dict(boundaries_y=[1.75,-1.75],left_boundary_y=1.75,left_boundary_role='camera_observed_yellow_divider_estimated_geometry',reference_line=dict(points_W_xy=[[0,0],[240,0]],supported_extent_m=[0,240]),junctions=[dict(turn_deg=turn,road_station_range_m=[80,100])])
+            paint=[]
+            for lo,hi,lines in [(0,80,[('yellow',1.75),('white',-1.75)]),(100,240,[('white',5.25),('white',1.75),('white',-1.75)])]:
+                for i,x in enumerate(np.linspace(lo+5,hi-5,12)):
+                    for kind,d in lines:paint.append(dict(kind=kind,frame_id=f'{lo}-{i}',points_W_xy=[[x,d],[x+3,d]]))
+            ego=np.c_[np.arange(0,240,2),np.zeros((120,2))];sections,review=fit(road,paint,[],ego,3.5)
+            if turn==0:
+                self.assertEqual(sections,[]);self.assertEqual(review['status'],'local_geometry_consistent_with_global')
+            else:
+                self.assertEqual([x['lane_count'] for x in sections],[1,expected]);self.assertEqual(review['regions'][1]['inherited_approach_divider'],None)

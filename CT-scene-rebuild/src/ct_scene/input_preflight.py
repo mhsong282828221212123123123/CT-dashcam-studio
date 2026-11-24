@@ -10,8 +10,8 @@ from .ingest import discover,file_hash
 REQUIRED=('front','back','left_repeater','right_repeater')
 
 
-def check_coverage(cameras,telemetry_rows,tolerance_s=.5,max_gap_s=1.):
-    failures=[]
+def check_coverage(cameras,telemetry_rows,tolerance_s=.5,max_gap_s=1.,short_tail_budget_s=1.):
+    failures=[];warnings=[]
     if not set(REQUIRED)<=cameras.keys():
         return dict(gate='FAIL',failures=[dict(reason='missing_camera_channels',
                     cameras=sorted(set(REQUIRED)-cameras.keys()))])
@@ -21,9 +21,13 @@ def check_coverage(cameras,telemetry_rows,tolerance_s=.5,max_gap_s=1.):
     for camera in REQUIRED:
         row=cameras[camera]
         if row.get('missing_pts',0):failures.append(dict(reason='camera_missing_packet_pts',camera=camera))
-        if row['first_pts_s']>start+tolerance_s or row['end_pts_s']<end-tolerance_s:
+        if row['first_pts_s']>start+tolerance_s or row['end_pts_s']<end-max(tolerance_s,short_tail_budget_s):
             failures.append(dict(reason='camera_does_not_cover_front',camera=camera,
                                  first_pts_s=row['first_pts_s'],end_pts_s=row['end_pts_s']))
+        elif row['end_pts_s']<end-tolerance_s:
+            warnings.append(dict(reason='short_camera_tail_unavailable',camera=camera,
+                                 interval_s=[row['end_pts_s'],end],missing_s=end-row['end_pts_s'],
+                                 display_requirement='show_recording_ended; do_not_freeze_as_current_source'))
         if row.get('max_gap_s',0)>max_gap_s:
             failures.append(dict(reason='camera_timestamp_gap',camera=camera,max_gap_s=row['max_gap_s']))
     usable=[]
@@ -40,10 +44,10 @@ def check_coverage(cameras,telemetry_rows,tolerance_s=.5,max_gap_s=1.):
             failures.append(dict(reason='telemetry_does_not_cover_front',first_pts_s=times[0],last_pts_s=times[-1],required_end_s=end))
         if max(gaps,default=0)>max_gap_s:
             failures.append(dict(reason='telemetry_timestamp_gap',max_gap_s=max(gaps)))
-    return dict(gate='FAIL' if failures else 'PASS',failures=failures,
+    return dict(gate='FAIL' if failures else 'PASS',failures=failures,warnings=warnings,
                 front_interval_s=[start,end],usable_telemetry_samples=len(times),
                 telemetry_interval_s=[times[0],times[-1]] if times else None,
-                tolerance_s=tolerance_s,max_gap_s=max_gap_s,
+                tolerance_s=tolerance_s,max_gap_s=max_gap_s,short_tail_budget_s=short_tail_budget_s,
                 scope='container/SEI coverage only; no sensor synchronization or decode quality claim')
 
 
@@ -75,7 +79,7 @@ def run(front,telemetry,output,source_hashes=None):
     result=check_coverage(cameras,rows);result['cameras']=cameras
     return publish(output,stage='input_preflight',payloads={'review.json':canonical(result)},
                    inputs=[dict(role='telemetry',artifact_id=tm['artifact_id'])],
-                   config=dict(source_hashes=hashes,tolerance_s=.5,max_gap_s=1.),
+                   config=dict(source_hashes=hashes,tolerance_s=.5,max_gap_s=1.,short_tail_budget_s=1.),
                    code_revision=digest(Path(__file__).read_bytes()),runtime=dict(cuda=False))
 
 

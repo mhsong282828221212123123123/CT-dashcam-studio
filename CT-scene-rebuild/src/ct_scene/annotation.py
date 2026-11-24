@@ -10,11 +10,14 @@ def prepare(front, destination, duration_s=35, sample_hz=5):
     import av
     if not math.isfinite(duration_s) or duration_s <= 0 or not math.isfinite(sample_hz) or not 0 < sample_hz <= 30:
         raise ValueError('Invalid duration/rate')
-    payloads, frames = {}, []
+    payloads, frames,coverage = {}, [],{}
     for camera, path in discover(front).items():
         sha = file_hash(path)
         with av.open(str(path)) as container:
             first, previous, step = None, None, 0
+            stream=container.streams.video[0]
+            end=float(((stream.start_time or 0)+stream.duration)*stream.time_base) if stream.duration is not None else None
+            coverage[camera]=dict(first_pts_s=None,end_pts_s=end,source_sha256=sha,clock_status='container_time_not_sensor_sync')
             count = math.ceil(duration_s*sample_hz)
             for frame in container.decode(video=0):
                 if frame.pts is None:
@@ -22,6 +25,7 @@ def prepare(front, destination, duration_s=35, sample_hz=5):
                 t = float(frame.pts*frame.time_base)
                 if first is None:
                     first = t
+                    coverage[camera]['first_pts_s']=t
                 while step < count and t-first >= step/sample_hz:
                     target = step/sample_hz
                     selected = frame
@@ -46,6 +50,7 @@ def prepare(front, destination, duration_s=35, sample_hz=5):
                 if step >= count:
                     break
     payloads['frames.json'] = canonical(frames)
+    payloads['camera-coverage.json']=canonical(coverage)
     template = Path(__file__).with_name('annotation.html').read_text(encoding='utf-8')
     payloads['annotate.html'] = template.replace('/*FRAME_DATA*/[]', canonical(frames).decode()).encode('utf-8')
     return publish(destination, stage='annotation_source', payloads=payloads, inputs=[],

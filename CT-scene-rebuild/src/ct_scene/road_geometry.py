@@ -8,6 +8,9 @@ def section_at(road,station):
     if section and section.get('boundary_profile') and section.get('left_added_lane'):
         values=profile_boundaries(section,station)
         section=dict(section,id=section['id']+(':left-open' if values[0]-values[1]>=section.get('minimum_profile_lane_width_m',.8) else ':left-closed'))
+    if section and section.get('camera_width_profile'):
+        values=profile_boundaries(section,station);count=sum(a-b>=section.get('minimum_profile_lane_width_m',.8) for a,b in zip(values,values[1:]))
+        section=dict(section,id=section['id']+':layout-'+str(count))
     return section
 
 
@@ -20,8 +23,8 @@ def boundaries_at(road,station):
     section=section_at(road,station)
     if section and section.get('boundary_profile'):
         values=profile_boundaries(section,station);minimum=section.get('minimum_profile_lane_width_m',.8)
-        if len(values)>2 and values[0]-values[1]<minimum:values.pop(0)
-        if len(values)>2 and values[-2]-values[-1]<minimum:values.pop(-2)
+        while len(values)>2 and values[0]-values[1]<minimum:values.pop(0)
+        while len(values)>2 and values[-2]-values[-1]<minimum:values.pop(-2)
         return values
     return section['boundaries_y'] if section else road['boundaries_y']
 

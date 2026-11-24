@@ -112,7 +112,8 @@ def _analyze(front,output,detector,road_model,lens_config,prototype_config,asset
     try:
         telemetry=stage('telemetry',lambda p:audit_sei(front,p,duration))
         coverage=stage('input-preflight',lambda p:preflight(front,telemetry,p,config['source_hashes']))
-        require_supported(coverage)
+        coverage_report=require_supported(coverage)
+        for warning in coverage_report.get('warnings',[]):print(json.dumps(dict(stage='input-preflight',state='source_tail_warning',warning=warning)),flush=True)
         package=stage('source',lambda p:prepare(front,p,duration,5))
         detections=stage('detections',lambda p:detect(package,detector,p,backend))
         tracks=stage('tracks',lambda p:track(package,detections,p))

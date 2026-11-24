@@ -1,0 +1,23 @@
+{
+  "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+  "source_path": "E:/tesla/a4/TeslaCam/SavedClips/2026-10-18_11-30-46/2026-10-18_11-24-28-front.mp4",
+  "source_sha256": "04fddb604c2f4b83c5f4815e7f2e3cec0c502a8c4bed02342d0a7cf1f66c969a",
+  "anchors": [
+    {
+      "time_s": 25,
+      "lanes": 2,
+      "basis": "Source front lane separators and outer road edges; road topology only, not metric width"
+    },
+    {
+      "time_s": 30,
+      "lanes": 2,
+      "basis": "Source front lane separators and outer road edges; road topology only, not metric width"
+    },
+    {
+      "time_s": 40,
+      "lanes": 2,
+      "basis": "Source front lane separators and outer road edges; road topology only, not metric width"
+    }
+  ],
+  "development_case": true
+}
