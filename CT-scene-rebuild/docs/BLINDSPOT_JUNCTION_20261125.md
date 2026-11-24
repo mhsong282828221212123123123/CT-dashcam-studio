@@ -1,5 +1,7 @@
 # 사각지대 추정·교차로 도로 개선 · 2026-11-25
 
+최종 확인본: [60초008](https://drive.google.com/file/d/1LYyMAkDySRbu1odJ-cwJwlosz54iclDW/view) · [교차로015 전체](https://drive.google.com/file/d/1xj8thCU5oEAYyHh4PkD8xj_QFBGq0LKT/view) · [램프005 전체](https://drive.google.com/file/d/1pnqZQ8DN3Z60BH6nbwR-WENzxwgIQATD/view). 최신 코드414검사 통과, 고유11원본13097프레임 생성·디코드. 선택 source 표본은 통과했으나 전체 정밀 정확도 합격/상용 완료가 아니다. 아래는 실패와 수정을 보존한 순차 이력이며 마지막 절을 최종 인계로 본다.
+
 사용자 지시로 B필러 사각지대 추론을 다시 주요 과제로 올렸다. 이전 실용 범위에서 허용했던 소실을 무조건 방치하지 않는다. 오늘 오전 7시(KST)까지 작업하고 검증한 결과를 Git과 Google Drive 테스트26에 남긴다.
 
 ## 되돌릴 기준
@@ -128,3 +130,16 @@ Oct18 11:24:28 교차로와 11:26:30 램프를 원본 화면에서 선정해 처
 [60초 확인본](https://drive.google.com/file/d/16m_it4jxuvFD6xbRp3Xr4QHEccR4WFH7/view) · [새 고속 전체](https://drive.google.com/file/d/15uu2xro0-lKHDMKz8HlhV7AIUsZdZGE5/view) · [다른 교차로 검토 전체](https://drive.google.com/file/d/1xRJRvb9n1MBwTJEyNPM5kYLOtZ3fPsM-/view) · [램프 전체](https://drive.google.com/file/d/1pnqZQ8DN3Z60BH6nbwR-WENzxwgIQATD/view). 모두 테스트26에 원본4채널 포함, H264/yuv420p/faststart. 교차로 일부 외부 차량 위치 및 기존 strict 겹침 실패는 남으며 전체 장면 정확도 합격으로 표시하지 않는다. 선택 source 표본 PASS와 전체 상용 정확도는 구분한다.
 
 로컬 확인본 runs/blindspot-junction-progress-60s-007.mp4. 최종 대표 재생성 및 편집기 통합 검사가 끝나면 마지막 체크포인트를 기록하고07:00에 중지한다. 빌드·릴리즈는 하지 않는다.
+
+
+## 최종 인계 · 07:00 이내 중지
+
+마지막으로 교차로의 camera-local section 밖에 놓이는 약한 측면 height-prior 위치에도 같은 미확정 처리를 적용했다. 전방·ground-contact 복구·선행차·교차 차량에는 적용하지 않는다. source-visible 관측은 원본 strip과 actors 파일에 남기고 3D 좌표를 도로 안으로 억지로 옮기지 않는다. 교차로015에서 측면2ID/100 actor-frame의 위치만 미확정 처리, raw actors·자차·유지된 모든 차량 상태 정확히 동일. 25/30/40초2차로 source 검사 PASS, 전체1196프레임 motion0/기존 겹침4. 실험실 재생·저장5검사 PASS.
+
+현재 source와 교차로015 composer revision6af37819eadd45d5f4c0946bf3c4e8cb0881b6a60b2876958c4e1850ebc3559b 일치 확인. 최종 고속015는014와 actors/render-states/MP4까지 바이트 동일하여 이전 고속 source 사각지대·측면 검증을 유지한다. Aug20 최종014는010과 세 파일 바이트 동일, 실제 SUV 변경·차로 배치 PASS. 대표 전체 회귀 결과 runs/final-regression-matrix-014.json, 마지막 교차로 runs/final-oct18-junction-review-015.
+
+실제 편집기 안에서 램프005 열기·재생·저장·원본 전달·격리된 분석 실행 검사13개 PASS. 새 Qt 실패본 누락 경고는 표시·내보내기까지 확인했다. 코드414 PASS. 모든 전달 영상은 테스트26 업로드 후 부모 폴더와 바이트 수를 재조회했다. 최종 전달 기록 runs/blindspot-junction-delivery-008.json.
+
+사용자가 지정한 시간까지 수행한 개선은 여기서 중지한다. 빌드·릴리즈 없음. 기본 실행은 G:/3d/CT-dashcam-studio/CT_Dashcam_Studio.py의 실험실 → 주행3D재현. 현재 편집기는 형제 엔진 G:/3d/CT-scene-rebuild를 사용하고, 편집기 Git에 같은 소스 스냅샷을 동기화한다. 브랜치 codex/blindspot-junction, 최초 되돌릴 기준 e5683c8.
+
+남는 한계: 일부 측면 대상은 위치 미확정으로 월드에서 빠진다. 교차로/인접도로 전 구간의 정확한 형상·차로 전이 지점은 미확정이며, 지도는 도로 윤곽 참고이고 GPS로 차로를 정하지 않는다. 기존 겹침 FAIL과 미측정 카메라/metric scale, container 기반 채널 시간 가정은 남는다. 이번 개선을 이 한계가 해결된 것으로 보고하지 않는다.

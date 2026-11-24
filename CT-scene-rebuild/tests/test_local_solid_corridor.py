@@ -71,3 +71,8 @@ class LocalSolidCorridorTests(unittest.TestCase):
         self.assertTrue(unresolved_side_height_position(road,actor,sample,[200,3.5,0]));self.assertFalse(unresolved_side_height_position(road,actor,sample,[200,0,0]))
         for changed_actor,changed_sample in [(dict(actor,frozen_lead=True),sample),(dict(actor,lane_index=-2),sample),(actor,dict(sample,camera_id='front')),(actor,dict(sample,projection_support='repeated_clear_ground_contact_after_conflicting_height_prior'))]:
             self.assertFalse(unresolved_side_height_position(road,changed_actor,changed_sample,[200,3.5,0]))
+
+    def test_side_height_outside_camera_local_section_is_not_placed_on_other_road(self):
+        road=dict(boundaries_y=[5.25,1.75,-1.75],reference_line=dict(points_W_xy=[[0,0],[300,0]]),lane_sections=[dict(id='local',station_range_m=[0,300],boundaries_y=[5.25,1.75,-1.75],support='local_camera_paint_with_explicit_optional_vehicle_width_priors')])
+        a=dict(frozen_lead=False,lane_index=0);r=dict(camera_id='left_repeater',projection_support='apparent_vehicle_height_prior')
+        self.assertTrue(unresolved_side_height_position(road,a,r,[200,7.5,0]));self.assertFalse(unresolved_side_height_position(road,a,r,[200,5.7,0]));self.assertFalse(unresolved_side_height_position(road,dict(a,lane_index=-2),r,[200,7.5,0]))

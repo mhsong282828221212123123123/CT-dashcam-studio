@@ -1,4 +1,10 @@
-# 최신 검토 영상 · 2026-11-16
+# 최신 검토 영상 · 2026-11-25
+
+최종 전달: [60초008](https://drive.google.com/file/d/1LYyMAkDySRbu1odJ-cwJwlosz54iclDW/view) · [고속 전체](https://drive.google.com/file/d/15uu2xro0-lKHDMKz8HlhV7AIUsZdZGE5/view) · [교차로015 전체](https://drive.google.com/file/d/1xj8thCU5oEAYyHh4PkD8xj_QFBGq0LKT/view) · [램프005 전체](https://drive.google.com/file/d/1pnqZQ8DN3Z60BH6nbwR-WENzxwgIQATD/view). 모두 Google Drive 테스트26에 보존. 하단 원본4채널 포함. [검증과 남는 한계](./BLINDSPOT_JUNCTION_20261125.md).
+
+로컬 바로 확인: [60초영상](<G:/3d/CT-scene-rebuild/runs/blindspot-junction-final-60s-008.mp4>) · [교차로](<G:/3d/CT-scene-rebuild/runs/final-oct18-junction-015/surrounding-world.mp4>) · [램프](<G:/3d/CT-scene-rebuild/runs/fresh-oct18-ramp-005/surrounding-world.mp4>).
+
+아래는 이전 전달 이력이다. C:/Users/ddno2/Documents/ChatGPT/테슬라 경로는 이동 전 기록이며 현재 루트는 G:/3d이다.
 
 2026-11-25 최신 진행본: [새40초 확인](https://drive.google.com/file/d/14ICVyQZG1MPnAtQUmMLzUWlYsGBm5aDy/view) · [새 고속 전체](https://drive.google.com/file/d/15uu2xro0-lKHDMKz8HlhV7AIUsZdZGE5/view). 로컬 runs/blindspot-junction-progress-40s-006.mp4 및 runs/fresh-nov01-highway-003.
 

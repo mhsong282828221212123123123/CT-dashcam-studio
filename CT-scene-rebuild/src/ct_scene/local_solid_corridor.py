@@ -79,7 +79,9 @@ def unresolved_side_height_position(road,actor,sample,position):
     from .road_frame import coordinates
     from .road_geometry import section_at,boundaries_at
     station,lateral,_=coordinates(road,position);section=section_at(road,float(station))
-    if not section or not section.get('camera_width_profile'):return False
+    if not section:return False
     bounds=boundaries_at(road,float(station))
-    if len(bounds)!=2:return False
-    return bool(lateral>bounds[0]+.25 or lateral<bounds[-1]-.25)
+    if section.get('camera_width_profile') and len(bounds)==2:margin=.25
+    elif not section.get('camera_width_profile') and section.get('support','').startswith(('local_camera_paint','local_repeated_outer_paint')):margin=.75
+    else:return False
+    return bool(lateral>bounds[0]+margin or lateral<bounds[-1]-margin)

@@ -1260,7 +1260,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             source_visible=actor['global_id'] in visible;ghost=not source_visible
             position_support='observed_geometry' if abs(ts[nearest]-t)<=.12 and samples[nearest]['support'] not in ('offline_two_endpoint_gap','offline_future_clear_geometry','offline_bidirectional_clear_geometry','offline_occluded_contact_reconstruction','offline_camera_tail_prediction','offline_camera_edge_prediction') and not samples[nearest].get('static_mesh_weight') and not (maneuver_active and samples[nearest].get('ego_maneuver_correction')) else 'temporal_geometry_reconstruction'
             if unresolved_side_height_position(road,actor,samples[nearest],pos):
-                local_scope_display_review.append(dict(time_s=t,global_id=actor['global_id'],reason='side_height_prior_conflicts_with_camera_narrow_road; source_visible_but_position_unlocalized',observation_modified=False))
+                local_scope_display_review.append(dict(time_s=t,global_id=actor['global_id'],reason='side_height_prior_conflicts_with_local_camera_road; source_visible_but_position_unlocalized',observation_modified=False))
                 continue
             active.append({'id':actor['global_id'],'position_W':pos,'yaw_rad':heading,'model':actor['model'],'ghost':ghost,'source_visible':source_visible,'position_support':position_support,
                            'rear_appearance':rear_lamp_trace.at(actor['global_id'],t,ghost),
