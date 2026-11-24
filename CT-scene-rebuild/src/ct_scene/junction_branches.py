@@ -8,6 +8,7 @@ import copy,math
 import numpy as np
 from .road_frame import world,coordinates
 from .road_geometry import boundaries_at
+from .junction_display import display_bounds
 
 
 def angle_delta(a,b):return float(np.arctan2(np.sin(a-b),np.cos(a-b)))
@@ -53,7 +54,7 @@ def hints(road,map_records,times,ego_yaws,length_m=25.,observed_end_station=None
             if group is None:clusters.append([arm])
             else:group.append(arm)
         main_start=float(coordinates(road,world(road,a,0))[2])+math.pi
-        main_end=float(coordinates(road,world(road,b,0))[2]);centre=np.asarray(world(road,display_station(junction),0),float)
+        main_end=float(coordinates(road,world(road,b,0))[2]);display_s=display_station(junction);display_b=display_bounds(road,display_s);centre=np.asarray(world(road,display_s,(display_b[0]+display_b[-1])/2),float)
         bounds=boundaries_at(road,a-.1);width=float(np.clip((bounds[0]-bounds[-1])*.5,3.5,10.));accepted=[];forward_supported=False
         for group in clusters:
             support={p['node'] for p in group}
@@ -85,12 +86,12 @@ def opening_display_polygons(road,junction):
         # crosswalk projections. It is a search/scope extent, not an asphalt
         # rectangle spanning every candidate station. Keep a short display
         # opening at the robust camera station; separate map arms show shape.
-        station=display_station(junction);bounds=boundaries_at(road,station)
+        station=display_station(junction);bounds=display_bounds(road,station)
         width=max(3.5,bounds[0]-bounds[-1]);half=min(10.,max(4.,width*.5+2.))
-        return [[world(road,s,d).tolist() for s,d in [(station-half,bounds[-1]-half),(station+half,bounds[-1]-half),(station+half,bounds[0]+half),(station-half,bounds[0]+half)]]]
+        return [[world(road,s,d).tolist() for s,d in [(station-half,bounds[-1]),(station+half,bounds[-1]),(station+half,bounds[0]),(station-half,bounds[0])]]]
     a,b=junction['road_station_range_m'];polygons=[]
     cuts=np.r_[np.arange(a,b,3.),b]
     for lo,hi in zip(cuts,cuts[1:]):
-        left,right=boundaries_at(road,(lo+hi)/2)[::len(boundaries_at(road,(lo+hi)/2))-1]
+        bounds=display_bounds(road,(lo+hi)/2);left,right=bounds[0],bounds[-1]
         polygons.append([world(road,s,d).tolist() for s,d in [(lo,right-1),(hi,right-1),(hi,left+1),(lo,left+1)]])
     return polygons

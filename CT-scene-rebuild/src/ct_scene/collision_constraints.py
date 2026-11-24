@@ -60,7 +60,8 @@ def omit_conflicting_predictions(frames,dimensions,near_m=30.,penetration_m=.5):
                     np.asarray(actor['position_W'][:2])-np.asarray(ego[:2]))<=near_m:
                 for other in observed:
                     hit=overlap(actor,other,dimensions)
-                    if hit and hit[0]>penetration_m:blockers.append(other['id'])
+                    threshold=0. if actor.get('position_support')=='bounded_pillar_blindspot_prediction' else penetration_m
+                    if hit and hit[0]>threshold:blockers.append(other['id'])
             if blockers:
                 omitted.append(dict(time_s=frame['time_s'],id=actor['id'],observed_ids=blockers,
                                     reason='unobserved_prediction_intersects_visible_body'))

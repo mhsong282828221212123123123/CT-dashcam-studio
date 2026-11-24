@@ -17,12 +17,12 @@ class BranchHintTests(unittest.TestCase):
         road,maps,t,yaw=fixture();j=road['junctions'][0];j['road_station_range_m']=[20,90];j['camera_station_peaks']=[dict(s=s,nodes=[10],times=[3,5]) for s in [35,40,75]]
         before=copy.deepcopy(j);polygons=opening_display_polygons(road,j);points=np.array(polygons[0])
         self.assertLess(np.ptp(points[:,0]),20);self.assertAlmostEqual(np.mean(points[:,0]),40);self.assertEqual(j,before)
-        out,_=hints(road,maps,t,yaw);self.assertEqual(out[0]['branch_display_hints'][0]['origin_W_xy'],[40.,0.])
+        out,_=hints(road,maps,t,yaw);self.assertEqual(out[0]['branch_display_hints'][0]['origin_W_xy'],[40.,1.75])
 
     def test_t_junction_has_only_actual_side_and_keeps_camera_anchor(self):
         road,maps,t,yaw=fixture();original=copy.deepcopy(road);out,review=hints(road,maps,t,yaw)
         arms=out[0]['branch_display_hints'];self.assertEqual(len(arms),1)
-        self.assertAlmostEqual(arms[0]['heading_W_rad'],math.pi/2);self.assertEqual(arms[0]['origin_W_xy'],[50.,0.])
+        self.assertAlmostEqual(arms[0]['heading_W_rad'],math.pi/2);self.assertEqual(arms[0]['origin_W_xy'],[50.,1.75])
         self.assertEqual(out[0]['polygon_W_xy'],road['junctions'][0]['polygon_W_xy']);self.assertEqual(road,original)
 
     def test_missing_map_and_map_without_camera_opening_create_no_branch(self):

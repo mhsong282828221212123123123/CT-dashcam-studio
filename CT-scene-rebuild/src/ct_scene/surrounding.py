@@ -32,6 +32,8 @@ from .unresolved_road import route_display as unresolved_route_display
 from .actor_rear_axis import align_actor as align_actor_rear_axis
 from .image_heading_refine import refine_actor as refine_image_heading
 from .clear_handoff import fit as fit_clear_handoff,repair as repair_clear_handoff
+from .blindspot_continuity import build as build_blindspot_coasts,at as blindspot_coasts_at
+from .junction_display import display_bounds,corridor_gaps,mouth_edges,branch_edges
 from .static_actor_refine import refine_actor as refine_static_actor
 from .left_median_membership import review as left_median_membership_review
 from .lane_prior_geometry import refine as refine_lane_geometry,confirmed_handoff_targets
@@ -695,11 +697,11 @@ class SurroundRenderer(Renderer):
         for x0,y0,x1,y1 in road.get('display_surface',{}).get('rectangles_W_xy',[]):
             for x,y in [(x0,y0),(x1,y0),(x1,y1),(x0,y0),(x1,y1),(x0,y1)]:
                 vertices.append([x,y,-.025,0,0,1,*road_color])
-        def quad(x1,x2,lo1,hi1,lo2,hi2,z,color):
+        def quad(x1,x2,lo1,hi1,lo2,hi2,z,color,display_override=False):
             midpoint=(x1+x2)/2
             if not road_supported(road,midpoint):
                 extent=road.get('reference_line',{}).get('supported_extent_m')
-                if z>-.015 or not extent or not extent[0]<=midpoint<=extent[1]:return
+                if (z>-.015 and not display_override) or not extent or not extent[0]<=midpoint<=extent[1]:return
             for s,d in [(x1,lo1),(x2,lo2),(x2,hi2),(x1,lo1),(x2,hi2),(x1,hi1)]:
                 x,y=road_world(road,s,d);vertices.append([x,y,z,0,0,1,*color])
         def rect(x1,x2,y1,y2,z,color):
@@ -747,6 +749,18 @@ class SurroundRenderer(Renderer):
                         quad(a,b,ba[k]-.055,ba[k]+.055,bb[k]-.055,bb[k]+.055,-.012,lane_color)
         if mark is not None:
             rect(mark-2,mark+12,bounds[-1]-5,bounds[0]+5,-.02,road_color);rect(mark-2.15,mark-1.85,bounds[-1],bounds[0],-.012,lane_color)
+        # Fill the main corridor across broad uncertain junction association
+        # scopes. This mesh never changes lane scopes or vehicle coordinates.
+        for start,end in corridor_gaps(road):
+            end=min(end,road_end)
+            if end<=start:continue
+            cuts=np.r_[np.arange(start,end,2.),end]
+            for a,b in zip(cuts,cuts[1:]):
+                ba,bb=display_bounds(road,a+1e-5),display_bounds(road,b-1e-5)
+                quad(a,b,ba[-1],ba[0],bb[-1],bb[0],-.02,road_color,True)
+                show_left,show_right=mouth_edges(road,(a+b)/2)
+                if show_left:quad(a,b,ba[0]-.045,ba[0]+.045,bb[0]-.045,bb[0]+.045,-.011,lane_color,True)
+                if show_right:quad(a,b,ba[-1]-.045,ba[-1]+.045,bb[-1]-.045,bb[-1]+.045,-.011,lane_color,True)
         for junction in road.get('junctions',[]):
             for outline in opening_display_polygons(road,junction):
                 polygon=np.asarray(outline);centre=polygon.mean(axis=0)
@@ -756,6 +770,10 @@ class SurroundRenderer(Renderer):
                 outline=np.asarray(branch['polygon_W_xy']);origin=outline.mean(axis=0)
                 for a,b in zip(outline,np.roll(outline,-1,axis=0)):
                     for x,y in (origin,a,b):vertices.append([x,y,-.02,0,0,1,*road_color])
+        for start,end in branch_edges(road):
+            delta=np.asarray(end)-start;normal=np.array([-delta[1],delta[0]])/np.linalg.norm(delta)*.045
+            for point in [start-normal,end-normal,end+normal,start-normal,end+normal,start+normal]:
+                vertices.append([*point,-.011,0,0,1,*lane_color])
         self.road=self.mesh(np.asarray(vertices,'f4'))
     def frame_many(self,actors,ego_position,ego_yaw,view_position=None,view_yaw=None,lamps=None):
         self.fbo.use();self.ctx.enable(self.gl.DEPTH_TEST);self.fbo.clear(*self.background_rgb,1,depth=1);self.draw(self.ground)
@@ -795,6 +813,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     revision_names.append('observed_surface.py')
     revision_names.append('context_surface.py')
     revision_names.append('local_road_extents.py')
+    revision_names.append('blindspot_continuity.py')
+    revision_names.append('junction_display.py')
     started_revision=revision()
     package,tracks,base,destination=map(Path,[package,tracks,base,destination])
     if destination.exists():raise FileExistsError(destination)
@@ -1190,6 +1210,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         context_surface=context_road_surface(map_manifest,telemetry,times,ego,map_records,
                                              [Path.cwd()/'map-cache',Path(__file__).parents[2]/'map-cache'],road=road)
         road['context_surface']=context_surface
+    blindspot_policy=dict(cfg.get('blindspot_policy',{}),observation_half_step_s=min(.15,float(np.median(np.diff([f['camera_time_s'] for f in front])))/2)+1e-6)
+    blindspot_coasts,blindspot_review=build_blindspot_coasts(global_actors,road,times,ego,eyaw,blindspot_policy)
     renderer=SurroundRenderer(assets,road,cfg.get('render_style'));work=destination.parent/(destination.name+'-work');work.mkdir(parents=True,exist_ok=False)
     (work/'world-checkpoint.json').write_bytes(canonical({'actors':global_actors,'road':road,'edges':edges,'paired_fov_review':pair_review,'excluded':excluded}))
     video=work/'surrounding-world.mp4';font=ImageFont.truetype('C:/Windows/Fonts/arial.ttf',18)
@@ -1224,6 +1246,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                 ray=pos[:2]-ep[:2];distance=np.linalg.norm(ray)
                 if distance>20:
                     active[-1].update(collision_cap_m=2.,collision_axis_W=(ray/distance).tolist())
+        active_ids={a['id'] for a in active}
+        active.extend(a for a in blindspot_coasts_at(blindspot_coasts,t) if a['id'] not in active_ids)
         scene_plan.append(dict(time_s=t,actors=active,ego_position_W=ep,ego_yaw_rad=yaw,visible_ids=visible))
     scene_plan,prediction_display_review=omit_conflicting_predictions(scene_plan,dimensions)
     scene_plan,collision_review=constrain_collisions(scene_plan,road,dimensions,max_iterations=cfg.get('collision_policy',{}).get('max_iterations',16))
@@ -1298,6 +1322,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         'association-review.json':canonical(edges),'paired-fov-review.json':canonical(pair_review),'render-states.jsonl':b''.join(canonical(r)+b'\n' for r in render_audit),'proof/contact.jpg':buf.getvalue()}
     payloads['collision-review.json']=canonical(collision_review)
     payloads['local-road-extent-review.json']=canonical(local_extent_review)
+    payloads['blindspot-inference-review.json']=canonical(dict(predictions=blindspot_review,observations_modified=False,identity_merged=False,scope='bounded_pillar_region_display_only'))
     payloads['prediction-display-review.json']=canonical(prediction_display_review)
     payloads['side-paint-geometry.json']=canonical(dict(models=side_paint,actors=side_paint_review))
     payloads['ego-lane-state.json']=canonical(lane_audit)
