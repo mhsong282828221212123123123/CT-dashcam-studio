@@ -1,5 +1,11 @@
 <div align="center">
 
+### 주행 3D 재현 · 소스 실행판
+
+편집기에서 영상을 선택한 뒤 **실험실 / Lab → 주행 3D 재현 / 분석·재생·MP4**를 누르면 같은 창의 **주행 3D 재현** 탭이 열립니다. **영상 편집** 탭으로 돌아갈 수 있으며 선택한 클립의 전방 원본이 자동 입력됩니다. **전체 분석 / 이어하기**, **결과 열기**, **MP4 내보내기**를 이 탭에서 사용합니다. 같은 시각의 4채널 원본이 필요합니다.
+
+재현 엔진 소스는 저장소 안의 `CT-scene-rebuild/`에 포함되어 있습니다. 해당 폴더의 `.venv`를 우선하며 기존 작업 환경의 형제 `CT-scene-rebuild/` 환경도 사용할 수 있습니다. 가상환경·분석 결과·모델 가중치는 Git에 포함하지 않습니다. UI는 에디터 내부에 있고 분석은 엔진 Python의 별도 프로세스로 실행합니다. CUDA는 사용하지 않습니다. 기존 설치 EXE를 새로 빌드하거나 릴리즈한 것은 아닙니다. [연결 검사](SCENE_EDITOR_INTEGRATION.md).
+
 [웹버전 (Web Version)](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/intro) 
 
 [![한국어](https://img.shields.io/badge/Language-한국어-0078D7?style=for-the-badge)](#)

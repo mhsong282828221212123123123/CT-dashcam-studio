@@ -1,0 +1,31 @@
+<!doctype html><meta charset="utf-8"><title>CT raw-only annotation</title>
+<style>body{font:16px sans-serif;background:#eee;margin:15px}canvas{max-width:96vw;max-height:70vh;background:#222;border:1px solid}input,button,select{font-size:16px;margin:5px}#info{white-space:pre-wrap}</style>
+<h2>원본 정답 작성 — 예측 결과 없음</h2>
+<p>카메라별 상대 시각입니다. 센서 동기는 미검증입니다. 영상을 대조해 같은 차량에 같은 ID를 지정하세요. 드래그로 박스를 그리고 저장합니다.</p>
+<select id="choose"></select><button id="prev">이전</button><button id="next">다음</button>
+<input id="oid" placeholder="global object ID"><select id="kind"><option>car</option><option>truck</option><option>bus</option><option>motorcycle</option><option>pedestrian</option><option>unknown</option></select>
+<button id="add">박스 확정</button><button id="undo">마지막 취소</button><button id="save">JSON 저장</button>
+<button id="review">현재 프레임 전체 확인 완료</button><input id="load" type="file" accept="application/json"><div id="info"></div><canvas id="canvas"></canvas>
+<script>
+const frames=/*FRAME_DATA*/[];const objects=[];const reviewed=new Set();const $=id=>document.getElementById(id);
+let current=0,start=null,box=null,ready=false;const image=new Image(),ctx=$('canvas').getContext('2d');
+frames.forEach((f,i)=>$('choose').add(new Option(`${f.camera_id} ${f.relative_request_s.toFixed(2)}s | PTS ${f.pts}`,i)));
+function draw(){ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.drawImage(image,0,0);ctx.strokeStyle='lime';ctx.lineWidth=3;
+for(const r of objects.filter(o=>o.frame_id===frames[current].frame_id)){const b=r.bbox_xyxy;ctx.strokeRect(b[0],b[1],b[2]-b[0],b[3]-b[1]);ctx.font='24px sans-serif';ctx.fillStyle='lime';ctx.fillText(r.object_id,b[0],Math.max(25,b[1]));}
+if(box){ctx.strokeStyle='yellow';ctx.strokeRect(box[0],box[1],box[2]-box[0],box[3]-box[1]);}}
+function status(){const f=frames[current];$('info').textContent=`${f.camera_id} raw ${f.width}×${f.height}\nPTS=${f.pts}, camera time=${f.camera_time_s.toFixed(4)} | labels=${objects.length} | reviewed frames=${reviewed.size}${reviewed.has(f.frame_id)?' | 전체 확인 완료':''}${ready?'':' | 이미지 로딩 중'}`;}
+function show(i){current=Math.max(0,Math.min(frames.length-1,i));$('choose').value=current;box=null;start=null;ready=false;$('add').disabled=true;$('review').disabled=true;ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);status();image.src=frames[current].image;}
+image.onload=()=>{ctx.canvas.width=image.width;ctx.canvas.height=image.height;ready=true;$('add').disabled=false;$('review').disabled=false;draw();status();};
+image.onerror=()=>{ready=false;$('add').disabled=true;$('review').disabled=true;$('info').textContent='이미지를 읽을 수 없습니다. 확인 완료로 처리하지 않았습니다.';};
+function point(e){const r=ctx.canvas.getBoundingClientRect();return [Math.max(0,Math.min(ctx.canvas.width,(e.clientX-r.left)*ctx.canvas.width/r.width)),Math.max(0,Math.min(ctx.canvas.height,(e.clientY-r.top)*ctx.canvas.height/r.height))];}
+ctx.canvas.onpointerdown=e=>{if(!ready)return;start=point(e);ctx.canvas.setPointerCapture(e.pointerId);};
+ctx.canvas.onpointermove=e=>{if(start){let p=point(e);box=[Math.min(start[0],p[0]),Math.min(start[1],p[1]),Math.max(start[0],p[0]),Math.max(start[1],p[1])];draw();}};
+ctx.canvas.onpointerup=()=>{start=null;};
+$('choose').onchange=()=>show(+$('choose').value);$('next').onclick=()=>show(current+1);$('prev').onclick=()=>show(current-1);
+$('add').onclick=()=>{if(!ready)return;const id=$('oid').value.trim();if(!box||!id||box[2]<=box[0]||box[3]<=box[1])return alert('ID와 유효 박스를 지정하세요.');const f=frames[current];if(objects.some(o=>o.frame_id===f.frame_id&&o.object_id===id))return alert('같은 프레임에 중복 ID입니다.');objects.push({frame_id:f.frame_id,object_id:id,bbox_xyxy:box,class_coarse:$('kind').value,reviewed:true,space_id:'raw'});reviewed.delete(f.frame_id);box=null;draw();status();};
+$('undo').onclick=()=>{const r=objects.pop();if(r)reviewed.delete(r.frame_id);draw();status();};
+$('review').onclick=()=>{if(!ready)return;reviewed.add(frames[current].frame_id);status();};
+$('save').onclick=()=>{const a=document.createElement('a');const url=URL.createObjectURL(new Blob([JSON.stringify({schema_version:'0.1.0',objects,reviewed_frames:[...reviewed]},null,2)],{type:'application/json'}));a.href=url;a.download='annotations.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+$('load').onchange=async()=>{try{const data=JSON.parse(await $('load').files[0].text());if(!Array.isArray(data.objects)||data.objects.some(o=>!frames.some(f=>f.frame_id===o.frame_id)))throw Error('다른 package 또는 잘못된 JSON');objects.splice(0,objects.length,...data.objects);reviewed.clear();(data.reviewed_frames||[]).forEach(f=>reviewed.add(f));draw();status();}catch(e){alert(e.message);}};
+if(frames.length)show(0);
+</script>

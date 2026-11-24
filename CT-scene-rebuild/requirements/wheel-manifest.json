@@ -1,0 +1,80 @@
+[
+  {
+    "name": "attrs",
+    "version": "26.1.0",
+    "wheel": "attrs-26.1.0-py3-none-any.whl",
+    "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
+  },
+  {
+    "name": "av",
+    "version": "17.1.0",
+    "wheel": "av-17.1.0-cp310-cp310-win_amd64.whl",
+    "sha256": "3453b06075c7bb973fdb6de52563f7692ff05cbc64c0bb45f4fd6e8709131f2f"
+  },
+  {
+    "name": "glcontext",
+    "version": "3.1.0",
+    "wheel": "glcontext-3.1.0-cp310-cp310-win_amd64.whl",
+    "sha256": "d115cc4544ac8e8a37d2c4d244e087202f0f9b86cd15e15bd9a74c2bef3d7a3b"
+  },
+  {
+    "name": "jsonschema",
+    "version": "4.25.1",
+    "wheel": "jsonschema-4.25.1-py3-none-any.whl",
+    "sha256": "3fba0169e345c7175110351d456342c364814cfcf3b964ba4587f22915230a63"
+  },
+  {
+    "name": "jsonschema-specifications",
+    "version": "2025.9.1",
+    "wheel": "jsonschema_specifications-2025.9.1-py3-none-any.whl",
+    "sha256": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe"
+  },
+  {
+    "name": "moderngl",
+    "version": "5.12.0",
+    "wheel": "moderngl-5.12.0-cp310-cp310-win_amd64.whl",
+    "sha256": "76d966194d51852f48c42a6e786a4520f1e1be5f93e2626423d673663422d559"
+  },
+  {
+    "name": "numpy",
+    "version": "2.2.6",
+    "wheel": "numpy-2.2.6-cp310-cp310-win_amd64.whl",
+    "sha256": "f0fd6321b839904e15c46e0d257fdd101dd7f530fe03fd6359c1ea63738703f3"
+  },
+  {
+    "name": "pillow",
+    "version": "12.3.0",
+    "wheel": "pillow-12.3.0-cp310-cp310-win_amd64.whl",
+    "sha256": "300557495eb45ebb8aec96c2da9c4be642fbf7cd937278b4013ba894ea8eb0eb"
+  },
+  {
+    "name": "referencing",
+    "version": "0.37.0",
+    "wheel": "referencing-0.37.0-py3-none-any.whl",
+    "sha256": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231"
+  },
+  {
+    "name": "rpds-py",
+    "version": "0.30.0",
+    "wheel": "rpds_py-0.30.0-cp310-cp310-win_amd64.whl",
+    "sha256": "1726859cd0de969f88dc8673bdd954185b9104e05806be64bcd87badbe313169"
+  },
+  {
+    "name": "trimesh",
+    "version": "4.10.1",
+    "wheel": "trimesh-4.10.1-py3-none-any.whl",
+    "sha256": "4e81fae696683dfe912ef54ce124869487d35d267b87e10fe07fc05ab62aaadb"
+  },
+  {
+    "name": "typing_extensions",
+    "version": "4.16.0",
+    "wheel": "typing_extensions-4.16.0-py3-none-any.whl",
+    "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"
+  },
+  {
+    "name": "opencv-python-headless",
+    "version": "4.12.0.88",
+    "wheel": "opencv_python_headless-4.12.0.88-cp37-abi3-win_amd64.whl",
+    "sha256": "86b413bdd6c6bf497832e346cd5371995de148e579b9774f8eba686dee3f5528"
+  }
+]

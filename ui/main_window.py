@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QCheckBox, QFileDialog, QGroupBox,
     QGraphicsBlurEffect, QMessageBox, QComboBox, QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator,
     QSplitter, QStyleFactory, QDialog, QProgressDialog, QApplication,
-    QSizePolicy, QSlider, QFrame
+    QSizePolicy, QSlider, QFrame, QTabWidget
 )
 from PyQt6.QtCore import Qt, QTimer, QRect, QPoint, QEvent, QSize, QUrl
 from PyQt6.QtGui import QImage, QPixmap, QColor, QBrush, QIcon, QKeySequence, QShortcut, QDesktopServices
@@ -102,6 +102,11 @@ class CTDashcamStudio(QMainWindow):
         self.checker.start()
 
     def init_ui(self):
+        self.scene_menu = self.menuBar().addMenu('실험실 / Lab')
+        self.scene_v2_action = self.scene_menu.addAction('주행 3D 재현 / 분석·재생·MP4')
+        self.scene_v2_action.triggered.connect(self.open_scene_v2)
+        self.scene_action = self.scene_menu.addAction('이전 주행 분석 / Scene Analysis')
+        self.scene_action.triggered.connect(self.open_scene_analysis)
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         root_layout = QHBoxLayout(main_widget)
@@ -3219,6 +3224,48 @@ class CTDashcamStudio(QMainWindow):
         dlg = QRShareDialog(video_path, self)
         dlg.exec()
 
+    def open_scene_v2(self):
+        if self.is_exporting:
+            return
+        if self.timer.isActive():
+            self.toggle_play()
+        panel = getattr(self, 'driving_scene_panel', None)
+        if panel is None:
+            try:
+                from ui.driving_scene_panel import DrivingScenePanel
+                panel = DrivingScenePanel(self)
+            except (ImportError, OSError) as error:
+                QMessageBox.warning(self, '주행 3D 재현', str(error))
+                return
+            self.driving_scene_panel = panel
+            editor = self.takeCentralWidget()
+            self.scene_tabs = QTabWidget(self)
+            self.scene_tabs.addTab(editor, '영상 편집')
+            self.scene_tabs.addTab(panel, '주행 3D 재현')
+            self.setCentralWidget(self.scene_tabs)
+        if self.active_clip_list:
+            index = getattr(self, 'current_active_clip_idx', 0)
+            if not isinstance(index, int) or not 0 <= index < len(self.active_clip_list):
+                index = 0
+            front = self.active_clip_list[index]['cams'].get('front', '')
+            if front:
+                panel.select_front(front)
+        self.scene_tabs.setCurrentWidget(panel)
+
+    def open_scene_analysis(self):
+        from ui.scene_dialog import SceneAnalysisDialog
+        if self.is_exporting:
+            return
+        if self.timer.isActive():
+            self.toggle_play()
+        front = ''
+        if self.active_clip_list:
+            index = getattr(self, 'current_active_clip_idx', 0)
+            if not isinstance(index, int) or not 0 <= index < len(self.active_clip_list):
+                index = 0
+            front = self.active_clip_list[index]['cams'].get('front', '')
+        SceneAnalysisDialog(front, self).exec()
+
     def open_feedback_form(self):
         if not QDesktopServices.openUrl(QUrl(FEEDBACK_FORM_URL)):
             self.show_toast(tr("feedback_open_failed"))
@@ -3255,6 +3302,14 @@ class CTDashcamStudio(QMainWindow):
             self.single_cam_popup.close()
 
     def closeEvent(self, event):
+        panel = getattr(self, 'driving_scene_panel', None)
+        if panel is not None:
+            if panel.review.process is not None:
+                QMessageBox.information(self, '주행 3D 재현',
+                                        '주행 재현 분석을 완료하거나 취소한 뒤 편집기를 닫으세요.')
+                event.ignore()
+                return
+            panel.review.player.stop()
         self.stop_motion_scanner()
         if hasattr(self, 'checker') and self.checker and self.checker.isRunning():
             self.checker.wait(500)

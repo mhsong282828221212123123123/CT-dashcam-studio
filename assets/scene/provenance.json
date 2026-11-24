@@ -1,0 +1,7 @@
+{
+  "source": "User supplied Gemini model, E:/tesla/project/fsd-sedan-3d/models/tesla_ego_model3.glb",
+  "sha256": "ad3d988c3fe949f924b946bf3acc2b2770aff516d180c06dc21564a14e517973",
+  "axes": "+X left, +Y up, +Z forward",
+  "wheel_radius_m": 0.343,
+  "renderer": "opaque CPU orthographic; approximate lighting, no PBR reflections"
+}

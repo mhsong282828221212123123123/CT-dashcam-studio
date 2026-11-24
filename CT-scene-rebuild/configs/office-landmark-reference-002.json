@@ -1,0 +1,183 @@
+{
+  "purpose": "manual_diagnostic_only_not_production_camera_calibration",
+  "space_id": "raw",
+  "source_camera": "front",
+  "source_request_s": 21,
+  "target_camera": "left_repeater",
+  "target_request_s": 28,
+  "annotation_uncertainty_px": 3,
+  "surface": "same real-estate office advertising facade, planar approximation",
+  "points": [
+    {
+      "id": "roof_left",
+      "split": "fit",
+      "source": [
+        522,
+        129
+      ],
+      "target": [
+        588,
+        314
+      ]
+    },
+    {
+      "id": "roof_right",
+      "split": "fit",
+      "source": [
+        972,
+        163
+      ],
+      "target": [
+        770,
+        234
+      ]
+    },
+    {
+      "id": "window1_tl",
+      "split": "fit",
+      "source": [
+        544,
+        215
+      ],
+      "target": [
+        593,
+        360
+      ]
+    },
+    {
+      "id": "window1_tr",
+      "split": "check",
+      "source": [
+        687,
+        224
+      ],
+      "target": [
+        639,
+        346
+      ]
+    },
+    {
+      "id": "window1_bl",
+      "split": "check",
+      "source": [
+        545,
+        294
+      ],
+      "target": [
+        593,
+        404
+      ]
+    },
+    {
+      "id": "window1_br",
+      "split": "fit",
+      "source": [
+        687,
+        295
+      ],
+      "target": [
+        639,
+        397
+      ]
+    },
+    {
+      "id": "window2_tl",
+      "split": "check",
+      "source": [
+        702,
+        225
+      ],
+      "target": [
+        644,
+        344
+      ]
+    },
+    {
+      "id": "window2_tr",
+      "split": "check",
+      "source": [
+        830,
+        231
+      ],
+      "target": [
+        699,
+        328
+      ]
+    },
+    {
+      "id": "window2_bl",
+      "split": "check",
+      "source": [
+        704,
+        296
+      ],
+      "target": [
+        643,
+        394
+      ]
+    },
+    {
+      "id": "window2_br",
+      "split": "check",
+      "source": [
+        832,
+        298
+      ],
+      "target": [
+        699,
+        380
+      ]
+    },
+    {
+      "id": "window3_tl",
+      "split": "fit",
+      "source": [
+        844,
+        230
+      ],
+      "target": [
+        705,
+        324
+      ]
+    },
+    {
+      "id": "window3_tr",
+      "split": "check",
+      "source": [
+        958,
+        235
+      ],
+      "target": [
+        770,
+        307
+      ]
+    },
+    {
+      "id": "window3_bl",
+      "split": "check",
+      "source": [
+        847,
+        299
+      ],
+      "target": [
+        705,
+        379
+      ]
+    },
+    {
+      "id": "window3_br",
+      "split": "fit",
+      "source": [
+        960,
+        302
+      ],
+      "target": [
+        772,
+        364
+      ]
+    }
+  ],
+  "revision": "002",
+  "supersedes": "office-landmark-reference.json",
+  "review_note": "Raw image review corrected mistaken roof corner and inconsistent window border locations. Automatic cornerSubPix proposals rejected when they jumped to adjacent frame/edge. Still approximate manual pixels, no surveyed truth."
+}

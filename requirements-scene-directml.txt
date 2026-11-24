@@ -1,0 +1,3 @@
+# Optional; install into a separate environment or ../scene-runtime-directml.
+# Do not install alongside another onnxruntime distribution in the same directory.
+onnxruntime-directml==1.23.0

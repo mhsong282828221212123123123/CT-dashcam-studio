@@ -1,0 +1,9 @@
+{
+  "python": "3.10.6 (tags/v3.10.6:9c7b4bd, Aug  1 2022, 21:53:49) [MSC v.1932 64 bit (AMD64)]",
+  "executable": "C:\\Users\\ddno2\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+  "packages": {
+    "numpy": "2.2.6",
+    "av": "17.1.0"
+  },
+  "usage": "bootstrap host interpreter only; not a locked redevelopment runtime"
+}

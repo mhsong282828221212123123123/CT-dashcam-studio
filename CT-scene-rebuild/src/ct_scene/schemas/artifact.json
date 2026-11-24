@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "schema_version", "artifact_id", "run_id", "stage", "status", "created_utc", "inputs", "code_revision", "config_sha256", "model_sha256", "runtime", "random_seed", "payloads", "warnings", "quality_gate"],
+  "properties": {
+    "schema": {"type":"string", "pattern":"^ct_scene\\."},
+    "schema_version": {"const":"0.1.0"},
+    "artifact_id": {"$ref":"#/$defs/hash"},
+    "run_id": {"type":"string", "minLength":1},
+    "stage": {"type":"string", "minLength":1},
+    "status": {"const":"complete"},
+    "created_utc": {"type":"string", "format":"date-time"},
+    "inputs": {"type":"array", "items":{"type":"object", "required":["role","artifact_id"], "properties":{"role":{"type":"string"},"artifact_id":{"$ref":"#/$defs/hash"}}, "additionalProperties":false}},
+    "code_revision": {"type":"string", "minLength":1},
+    "config_sha256": {"$ref":"#/$defs/hash"},
+    "model_sha256": {"type":"array", "items":{"$ref":"#/$defs/hash"}},
+    "runtime": {"type":"object"},
+    "random_seed": {"type":"integer"},
+    "payloads": {"type":"array", "items":{"type":"object", "required":["path","sha256","bytes"], "additionalProperties":false, "properties":{"path":{"type":"string", "minLength":1},"sha256":{"$ref":"#/$defs/hash"},"bytes":{"type":"integer", "minimum":0}}}},
+    "warnings": {"type":"array", "items":{"type":"string"}},
+    "quality_gate": {"enum":["PASS","FAIL","NOT_EVALUATED","BLOCKED"]}
+  },
+  "$defs": {"hash":{"type":"string", "pattern":"^[0-9a-f]{64}$"}}
+}

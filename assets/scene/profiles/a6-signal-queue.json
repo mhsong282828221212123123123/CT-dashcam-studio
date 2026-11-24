@@ -1,0 +1,157 @@
+{
+  "name": "a6 signal queue / image-referenced estimate",
+  "status": "estimated",
+  "lane_width": 3.5,
+  "cameras": {
+    "front": {
+      "focal": 850.0,
+      "horizon": 473.634194,
+      "yaw": 0.0,
+      "camera_height": 1.283533095,
+      "x": 0.0,
+      "z": 1.2,
+      "principal_x": 639.192074
+    },
+    "back": {
+      "focal": 650.0,
+      "horizon": 300.0,
+      "yaw": 180.0,
+      "camera_height": 0.8,
+      "x": 0.0,
+      "z": -2.2
+    },
+    "left_repeater": {
+      "focal": 800.0,
+      "horizon": 502,
+      "yaw": 146.0,
+      "camera_height": 0.9,
+      "x": 0.9,
+      "z": 0.8
+    },
+    "right_repeater": {
+      "focal": 800.0,
+      "horizon": 545.0,
+      "yaw": -145.0,
+      "camera_height": 0.9,
+      "x": -0.9,
+      "z": 0.8
+    },
+    "left_pillar": {
+      "focal": 800.0,
+      "horizon": 480.0,
+      "yaw": 65.0,
+      "camera_height": 1.1,
+      "x": 0.9,
+      "z": 0.3
+    },
+    "right_pillar": {
+      "focal": 800.0,
+      "horizon": 480.0,
+      "yaw": -65.0,
+      "camera_height": 1.1,
+      "x": -0.9,
+      "z": 0.3
+    }
+  },
+  "front_files": [
+    "2026-11-04_18-01-45-front.mp4"
+  ],
+  "provenance": {
+    "reference_time_s": 3.2,
+    "front_lane_pixels": {
+      "left": [
+        [
+          96,
+          888
+        ],
+        [
+          370,
+          682
+        ],
+        [
+          405,
+          650
+        ]
+      ],
+      "right": [
+        [
+          1216,
+          881
+        ],
+        [
+          960,
+          699
+        ],
+        [
+          823,
+          604
+        ]
+      ]
+    },
+    "assumed_lane_width_m": 3.5,
+    "focal_length_and_side_camera_poses": "estimated; not factory or measured calibration",
+    "lane_rendering": "straight continuation of the observed ego-lane pair; no lane count inferred",
+    "reference_file": "2026-11-04_18-01-45-front.mp4",
+    "left_repeater_pitch_fit": {
+      "method": "bounded one-parameter pitch proxy fit against first 0.5s SUV silhouettes",
+      "train_times_s": [
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4
+      ],
+      "training_boxes": [
+        [
+          323.41455078125,
+          295.45806884765625,
+          849.9140625,
+          466.5015869140625
+        ],
+        [
+          321.1619873046875,
+          294.91053771972656,
+          852.294677734375,
+          465.6591491699219
+        ],
+        [
+          322.1311950683594,
+          294.7936096191406,
+          851.1724243164062,
+          465.54583740234375
+        ],
+        [
+          329.7054443359375,
+          295.55909729003906,
+          848.9630126953125,
+          463.9778747558594
+        ],
+        [
+          328.9053955078125,
+          295.6767883300781,
+          849.4224853515625,
+          463.71673583984375
+        ]
+      ],
+      "fixed_assumptions": {
+        "focal_px": 800,
+        "yaw_deg": 146,
+        "camera_height_m": 0.9,
+        "body_prior_m": [
+          1.98,
+          4.95,
+          1.8
+        ]
+      },
+      "search_horizon_px": [
+        420,
+        580,
+        2
+      ],
+      "selected_horizon_px": 502,
+      "train_rms_normalized": 0.05015415960869852,
+      "source_sha256": "a5605a01f6dd662b2461f6ecd2af8defcb8cd37f10641915ff858cfd1b2427e9",
+      "limitations": "Conditional silhouette fit; does not identify lens distortion, height, yaw or physical scale. Same-scene later frames are consistency checks, not independent calibration accuracy."
+    }
+  }
+}

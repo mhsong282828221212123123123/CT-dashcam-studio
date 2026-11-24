@@ -1,0 +1,6 @@
+# Optional Scene Lab GLB software renderer
+numba==0.67.0
+# Optional offline trajectory fitting experiments
+scipy==1.15.3
+# Presentation timestamps for multi-camera sampling (CPU media I/O, no CUDA).
+av==17.1.0

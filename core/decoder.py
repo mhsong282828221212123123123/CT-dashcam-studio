@@ -161,6 +161,7 @@ class RealTeslaSEIDecoder:
         lat_deg = 0.0
         lon_deg = 0.0
         heading_deg = 0.0
+        frame_seq_no = None
         
         while pos < length:
             try:
@@ -189,7 +190,9 @@ class RealTeslaSEIDecoder:
                         if not (b & 0x80):
                             break
                         shift += 7
-                    if field_number == 7:
+                    if field_number == 3:
+                        frame_seq_no = val
+                    elif field_number == 7:
                         left_blinker = bool(val)
                     elif field_number == 8:
                         right_blinker = bool(val)
@@ -253,6 +256,8 @@ class RealTeslaSEIDecoder:
 
         return {
             "speed_kmh": max(0, speed_kmh),
+            "speed_mps": max(0.0, speed_mps),
+            "frame_seq_no": frame_seq_no,
             "steering_deg": int(round(steering_deg)),
             "accel_pct": min(100, max(0, int(round(accel_pct)))),
             "brake_applied": brake_applied,

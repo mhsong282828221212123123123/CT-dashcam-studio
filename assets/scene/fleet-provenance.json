@@ -1,0 +1,25 @@
+{
+  "source": "User-supplied Gemini assets, fsd-sedan-3d/models",
+  "sha256": {
+    "tesla_fsd_sedan.glb": "e40cd56de3f7196f2a05b0139f3e1fd2700b97931e32f82042ffd5fe73cab7ec",
+    "tesla_fsd_suv.glb": "2def48f676577f8c5c1dd879f2c7c5002127e70ca4009c59d5aef44271d7bec2",
+    "tesla_fsd_bus.glb": "9f8931221c47f6ac5d3404e0331bc4013fe37d019b5c75270c6627999c3f20ca",
+    "tesla_fsd_box_truck.glb": "a482f01a0f57c10e42bde29ef119bf96e72ba8ad5017eac9f9d5443701f683f0",
+    "tesla_fsd_motorcycle.glb": "95fae483fb3b6353756ab5bf78a6ae44115b9246c21899ac4ca9de7f510bbb73",
+    "tesla_fsd_cyclist.glb": "044bf196dcf8eead76a9b727bb873c6841aeca8fa2561dea764affbd63952ee3",
+    "tesla_fsd_pedestrian.glb": "eb7a8643c7168de65fd733334904f8fff8ca3706ba2dbc83142558dd719d48e6",
+    "tesla_fsd_traffic_cone.glb": "efbd36a388a65bf047823dfa1d51526dc3ea8e99f51841fb24c7093b0964050f",
+    "tesla_fsd_small_truck.glb": "7bf6d25beb125699a4177e05c2230140d6fe27426dfb304e0c049525b91c1868",
+    "tesla_fsd_traffic_light_head.glb": "dd76cdad8ea08638a2d2b7dc9feb56e849f084588e081ae594d4ec5d755f3397",
+    "tesla_fsd_sedan_ghost.glb": "0c5c892300eec2ef536079296872e334210463815314dcd0ae8270064e649695",
+    "tesla_fsd_suv_ghost.glb": "24e2f48411fcc861a6d5e656b4c766c1abfbe1fe8e6b81ac8eacbcdfe9f24410",
+    "tesla_fsd_box_truck_ghost.glb": "80e5d40dae9ea645dfcfce51a564e3d91af173068734dfc8fe131b0969ca7b53",
+    "tesla_fsd_small_truck_ghost.glb": "9d1afd2aa018ff786087fafd8cb36fcdd49ac168e91a56cbe73f97c7b7a4fc34",
+    "tesla_fsd_bus_ghost.glb": "33b139fc7850fa7bd9a3e6de387a4cef3af4ff7f0361e470961fd947b96ec1a8",
+    "tesla_fsd_pedestrian_ghost.glb": "b281ea8643acf89b099fd27766fd91c71386d60c4b3e11e5f508d787bea234a2",
+    "tesla_fsd_cyclist_ghost.glb": "0d8abd0886a159d36e50dd28e81790b57aefc7d0e9d07aabcb5212c58ead5b3c",
+    "tesla_fsd_motorcycle_ghost.glb": "521a4b04c3880725d92877aff7f29e3d3fd61ee40aa95ed6b7b8e882e4a6cbed",
+    "tesla_fsd_traffic_cone_ghost.glb": "ff7e82b8433541b5179f87f43a93fc4df39d14880ff5dcb27496230b6f6ea016",
+    "tesla_fsd_traffic_light_head_ghost.glb": "929cbd1d8486037a41f014826887d4567152c882e55d478b79bb31612ed59cd0"
+  }
+}

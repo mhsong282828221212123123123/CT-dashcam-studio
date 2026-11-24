@@ -1,0 +1,7 @@
+.venv/
+.orientation-export-venv/
+__pycache__/
+*.pyc
+runs/
+*.egg-info/
+requirements/wheels/

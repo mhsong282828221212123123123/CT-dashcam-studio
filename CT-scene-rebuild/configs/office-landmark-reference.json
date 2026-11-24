@@ -1,0 +1,24 @@
+{
+  "purpose": "manual_diagnostic_only_not_production_camera_calibration",
+  "space_id": "raw",
+  "source_camera": "front", "source_request_s": 21,
+  "target_camera": "left_repeater", "target_request_s": 28,
+  "annotation_uncertainty_px": 3,
+  "surface": "same real-estate office advertising facade, planar approximation",
+  "points": [
+    {"id":"roof_left","split":"fit","source":[522,129],"target":[587,313]},
+    {"id":"roof_right","split":"fit","source":[971,160],"target":[800,231]},
+    {"id":"window1_tl","split":"fit","source":[550,216],"target":[590,355]},
+    {"id":"window1_tr","split":"check","source":[686,222],"target":[639,341]},
+    {"id":"window1_bl","split":"check","source":[551,293],"target":[590,402]},
+    {"id":"window1_br","split":"fit","source":[687,296],"target":[639,387]},
+    {"id":"window2_tl","split":"check","source":[706,224],"target":[646,337]},
+    {"id":"window2_tr","split":"check","source":[831,228],"target":[701,320]},
+    {"id":"window2_bl","split":"check","source":[706,297],"target":[646,390]},
+    {"id":"window2_br","split":"check","source":[830,299],"target":[700,373]},
+    {"id":"window3_tl","split":"fit","source":[848,229],"target":[711,314]},
+    {"id":"window3_tr","split":"check","source":[961,233],"target":[769,300]},
+    {"id":"window3_bl","split":"check","source":[848,301],"target":[710,374]},
+    {"id":"window3_br","split":"fit","source":[962,303],"target":[767,357]}
+  ]
+}

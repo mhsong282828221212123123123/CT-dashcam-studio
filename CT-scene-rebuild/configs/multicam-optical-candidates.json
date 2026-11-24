@@ -1,0 +1,8 @@
+{
+  "status": "estimated_initial_candidates_not_factory_or_rig_calibration",
+  "cameras": {
+    "front": {"model": "SIMPLE_RADIAL", "resolution": [1280,960], "params": [1653.0677696820476,640,480,-0.3859065190204552], "provenance": "new rebuild front-sfm-003 training estimate; fixed in pilot-front-sfm-002 optical experiment"},
+    "left_repeater": {"model": "RADIAL", "resolution": [1280,960], "params": [1023.687444278542,640,480,-0.36177867719780016,0.12566347227486388], "provenance": "legacy inferred optical seed only; previous side check 14/16, not accepted rig"},
+    "right_repeater": {"model": "RADIAL", "resolution": [1280,960], "params": [1019.5993005444702,640,480,-0.37210209695315605,0.135376841085848], "provenance": "legacy inferred optical seed only; previous side check 14/16, not accepted rig"}
+  }
+}

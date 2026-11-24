@@ -1,0 +1,12 @@
+{
+  "model": "pinhole_radial_tangential",
+  "resolution": [1280, 960],
+  "fx": 1634.3442,
+  "fy": 1634.3442,
+  "cx": 640,
+  "cy": 480,
+  "coefficients_k1_k2_p1_p2_k3": [-0.3688346, 0, 0, 0, 0],
+  "status": "legacy_inferred_candidate_only",
+  "provenance": "SCENE_CAMERA_ZERO_REVIEW.md optical experiment, 2026-08-15 source. Not measured; not newly calibrated by rebuild.",
+  "metric_scale": "unestablished"
+}

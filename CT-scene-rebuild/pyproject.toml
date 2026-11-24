@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=65"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ct-scene-rebuild"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["numpy==2.2.6", "av==17.1.0", "jsonschema==4.25.1", "pillow==12.3.0", "opencv-python-headless==4.12.0.88"]
+
+[project.scripts]
+ct-scene = "ct_scene.cli:main"
+
+[project.optional-dependencies]
+calibration = ["pycolmap==4.2.1"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ct_scene = ["*.html", "schemas/*.json"]

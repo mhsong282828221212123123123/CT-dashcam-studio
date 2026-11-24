@@ -1,0 +1,10 @@
+{
+  "pilot-presence-review-001": "fc37ab64d4a86e048b6270ab86e9cbdd4a316c8b068ee4af847e7f4d9f152ce9",
+  "pilot-proposals-002": "9f341a8533077a8fda3884118a8f15368658e868480ff4048733eb2df05ad34e",
+  "pilot-raw-masks-001": "f10e7ee3b8e9314c9b45ee2c3b0bb96218904abbd24fea7231492dee6fccb8eb",
+  "calibration-drive-masks-001": "92f071e4b5f55dfea0f6aa0a4261d267a661876885a1991433ac52b3307407bf",
+  "pilot-static-features-002": "e1f64e6caab5d0efc858fff29a02a7cb1a6de03362baf34d21b4f68466abfd44",
+  "calibration-drive-static-features-002": "036763be2ecd738e01583dbb26ab2d315a17ff20b5606710044fb8584fa7f0a6",
+  "pilot-motion-candidates-004": "90c26f6bb0b420bb22540eebb0d5358d24d3a89edcbbb2d57a7e531ea483665f",
+  "calibration-drive-motion-candidates-004": "012451d1f1333f60b5a687962993053f764e48b244dad96b91258ce43d46b8ad"
+}
