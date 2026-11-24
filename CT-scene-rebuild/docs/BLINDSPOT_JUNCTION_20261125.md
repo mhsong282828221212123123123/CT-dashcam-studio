@@ -76,3 +76,23 @@ Oct02 원본에서 좌측 리피터의 검은 Hyundai 세단과 이후 전방의
 - 첫 OpenGL 전후 probe는 두 renderer의 current context가 섞여 무효임을 발견했다. 순차 context 해제 후 probe와 실제 저장 MP4 비교로 다시 확인했다. 잘못된 probe를 검증 근거로 쓰지 않는다.
 
 [신규 교차로 전체](https://drive.google.com/file/d/1GpY1mkfRgO80iboD9-REQuVYAL_bSOmK/view) · [신규 곡선·터널 전체](https://drive.google.com/file/d/1cuKapIhuqtLCxyOiaxzyzKACMOuqA1MK/view) · [40초 확인본](https://drive.google.com/file/d/1Im_Z_0QZy8CLWfDStWJv0Zg1eSk3uupY/view). 하단 원본 4채널 유지, H264 yuv420p faststart. Drive 테스트26의 부모 폴더·파일 크기를 다시 조회했다.
+
+
+## 세 번째 새 원본 · 잘못된 빈 월드와 우측 허위 차로 수정
+
+2026-11-01_13-50-00을 원본 화면만 보고 고른 뒤 처음부터 4채널 분석했다. 첫 결과는 차량 검출이 많음에도 기존 직선 기준의 허위 차선변경 보호가 곡선 도로 전체를 거부해 거의 모든 차량을 도로 밖으로 제외했다. 90.6%의 프레임이 빈 월드였는데 움직임/충돌 수치만으로 PASS였다. 이 결과를 채택하거나 업로드하지 않았다.
+
+연속적이고 신뢰 높은 실제 도색 phase가 같은 차로 유지를 지지할 때에만 오래된 직선 기준의 lane event가 곡선 참조를 거부하지 못하게 했다. 도색 누락·급격한 위상 점프·약한 관측·실제 1차로 폭의 위상 이동에서는 이 예외를 적용하지 않는다. 자차 궤적을 다른 차량으로 맞추지 않는다.
+
+- 수정 전 전방 관측 연결 28/1732(1.6%), 수정 후 1459/1732(84.2%). 이 비율은 원본 2D 관측의 world 연결 비율이며 독립 GT recall은 아니다. 수정 후 빈 프레임 0. 전체 1190프레임, 새 운동 불연속 0, 기존/신규 추정 몸체 겹침 22쌍·프레임은 strict FAIL로 남긴다.
+- 새로운 source_presence_screen은 검출이 풍부한데 월드가 거의 빈 경우를 별도로 기각한다. 첫 실패본은 REJECTED, 기존 8개와 수정본은 NOT_FLAGGED. NOT_FLAGGED는 정확도 PASS가 아니다. pipeline에도 이 구분을 전파했다.
+- 수정본에서 후반의 우측 확장 폭을 초반까지 그리는 문제를 발견했다. 기존 교차로/지역 profile을 덮어쓰지 않고 연속된 우측 실선으로 지지되는 접두 구간만 표시 폭을 줄였다. 실제 전진 차량이 그 선 너머에 있으면 거부한다. 새 고속 초반 2/25초는 3차로, 후반의 기존 폭 가설은 유지한다. 정확한 출구 개시 지점은 미확정이며 40m 전이 구간은 표시 추정이다. 해당 표시 보완 전후 actors/render-states 바이트 동일.
+- 새 BMW X5의 left_repeater-0010 → front-0026를 차체·크롬 trim·휠·후면 형상·시간 순서로 원본 대조했다. 39초에는 꼬리가 일부 보이므로 완전 사각 구간 기대는 보수적으로 41.0~44.2초로 정했다. 65프레임 고스트 유지와 차로0, 연결 연속성 PASS. 전환 최대30.451m/s, yaw step .0441도. 번호판 동일성/실측 거리 주장은 없다.
+- 동일 원본/객체/도로에서 future bridge만 끈 대조본은 그 구간 소실로 FAIL. 켠 본은 raw actor 파일·직접 지지 render 상태 동일, ID 강제 병합 없음. configs/nov01-pillar-source-control.json과 runs/fresh-nov01-highway-review-003에 보존했다.
+- 기존 Oct02를 새 곡선 판단으로 재생성한 007은 004와 actors/render-states 바이트 동일. 전체1194, 기존 사각지대73프레임/측면6개 source PASS.
+- Oct26 과거 검수의 lead 보존 FAIL은 훨씬 이전 다른 기준 결과와 비교한 것이었다. 이번 시작 커밋 e5683c8을 동일 입력으로 재생성한 기준본과는 actors 바이트·lead samples·ego 정확히 동일. 횡단 트럭의 실제 source/방향/solid25프레임 포함7검사 PASS. 과거 FAIL 파일도 보존했다. 검수기는 baseline을 명시하고 FAIL시 nonzero로 종료하도록 보완했다.
+- 코드399 PASS. 엔진 보존 도구의 신규 dependency 누락을 수정하고 실제 최신 artifact와 대조했다. 편집기 안에서 최신 고속 결과의 재생·저장·원본 선택 전달·분리 분석 실행 등13검사 PASS. 새 CLI 분석을 편집기 안에서 중복 추론시키지는 않았다.
+
+고유 9개 원본, 전체10708프레임. 새 전체 추론은 Nov01 3편3564프레임이며 나머지는 캐시를 사용한 전체 재현이다. 반복 렌더는 별도 새 사례로 세지 않는다.
+
+[새 고속 전체](https://drive.google.com/file/d/15uu2xro0-lKHDMKz8HlhV7AIUsZdZGE5/view) · [새 사각지대+교차로40초](https://drive.google.com/file/d/14ICVyQZG1MPnAtQUmMLzUWlYsGBm5aDy/view). 로컬 runs/fresh-nov01-highway-003 및 runs/blindspot-junction-progress-40s-006.mp4. 테스트26 업로드 부모/바이트 크기를 다시 확인했다.

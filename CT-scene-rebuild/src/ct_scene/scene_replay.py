@@ -92,7 +92,7 @@ def run(scene,assets_root,prototype_config,output):
                   replay_geometry_unchanged=True,replay_style=style,replay_inference_calls=0)
     payloads={'surrounding-world.mp4':video.read_bytes(),'report.json':canonical(report),
               'render-states.jsonl':states_bytes,'replay-review.json':canonical(proof),'display-style.json':canonical(style)}
-    for name in ('actors.json','ego-lane-state.json','actor-lane-state.json','prediction-display-review.json','road-display-review.json','blindspot-inference-review.json','branch-hints-review.json','local-road-extent-review.json','camera-crossing-road-review.json'):
+    for name in ('actors.json','ego-lane-state.json','actor-lane-state.json','prediction-display-review.json','road-display-review.json','blindspot-inference-review.json','branch-hints-review.json','local-road-extent-review.json','camera-crossing-road-review.json','right-edge-profile-review.json'):
         if (scene/name).is_file():payloads[name]=(scene/name).read_bytes()
     return publish(output,stage='scene_replay',payloads=payloads,
                    inputs=[dict(role='frozen_scene',artifact_id=manifest['artifact_id'])],

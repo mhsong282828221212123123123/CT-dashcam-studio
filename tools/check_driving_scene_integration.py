@@ -16,11 +16,13 @@ from ui.main_window import CTDashcamStudio, UpdateCheckWorker
 
 p = argparse.ArgumentParser()
 p.add_argument('--output', type=Path, required=True)
+p.add_argument('--scene', type=Path)
+p.add_argument('--front', type=Path)
 a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
 root = Path(__file__).resolve().parents[2] / 'CT-scene-rebuild'
-scene = root / 'runs/local-extents-aug20-full-001'
-front = Path('E:/tesla/a3/TeslaCam/SavedClips/2026-08-20_07-39-45/2026-08-20_07-34-02-front.mp4')
+scene = a.scene.resolve() if a.scene else root / 'runs/local-extents-aug20-full-001'
+front = a.front.resolve() if a.front else Path('E:/tesla/a3/TeslaCam/SavedClips/2026-08-20_07-39-45/2026-08-20_07-34-02-front.mp4')
 app = QApplication([])
 with patch.object(UpdateCheckWorker, 'start'):
     window = CTDashcamStudio()

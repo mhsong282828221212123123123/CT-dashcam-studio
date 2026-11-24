@@ -32,6 +32,7 @@ from .unresolved_road import route_display as unresolved_route_display
 from .actor_rear_axis import align_actor as align_actor_rear_axis
 from .image_heading_refine import refine_actor as refine_image_heading
 from .clear_handoff import fit as fit_clear_handoff,repair as repair_clear_handoff
+from .right_edge_profile import refine as refine_right_edge_profile
 from .blindspot_continuity import build as build_blindspot_coasts,at as blindspot_coasts_at
 from .junction_display import display_bounds,corridor_gaps,mouth_edges,branch_edges
 from .camera_junction_roads import supplement as camera_crossing_roads
@@ -53,7 +54,7 @@ from .local_road_extents import refine as refine_local_road_extents
 from .road_continuation import support_gaps
 from .ego_maneuver import windows as ego_maneuver_windows,compensate_actors,camera_view
 from .road_frame import coordinates as road_coordinates,world as road_world
-from .curved_road import paint_segments,side_yellow_segments,fit_reference,supported_boundaries,phase_protection_windows,vehicle_supported_paint_gaps
+from .curved_road import paint_segments,side_yellow_segments,fit_reference,supported_boundaries,phase_protection_windows,continuous_paint_excludes_lane_jump,vehicle_supported_paint_gaps
 from .junctions import infer as infer_junctions,inside as inside_junction,straight_openings,crossing_motion
 from .actor_heading import estimate as motion_headings,resolve_axis_flips
 from .ego_lamps import LampTrace,role as lamp_role
@@ -819,6 +820,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     revision_names.append('junction_display.py')
     revision_names.append('pillar_bridges.py')
     revision_names.append('camera_junction_roads.py')
+    revision_names.append('right_edge_profile.py')
     started_revision=revision()
     package,tracks,base,destination=map(Path,[package,tracks,base,destination])
     if destination.exists():raise FileExistsError(destination)
@@ -886,6 +888,9 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             old_lanes=lane_timeline(times,ego,eyaw,road,4.7,2.,centre_x_offset=-1.2)
             candidate_windows=ego_maneuver_windows(old_lanes['events'],times,ego,eyaw,road)
             protected=phase_protection_windows(candidate_windows,times,eyaw,road)
+            paint_refuted=[w for w in protected if continuous_paint_excludes_lane_jump(w,times,ego,eyaw,reference,width)]
+            protected=[w for w in protected if w not in paint_refuted]
+            curve_review['dense_camera_paint_refuted_straight_events']=len(paint_refuted)
             curve_review['old_straight_events']=len(candidate_windows)
             curve_review['heading_aligned_protected_events']=len(protected)
             new_lanes=lane_timeline(times,ego,eyaw,dict(road,reference_line=reference,marking_station_x=None),4.7,2.,centre_x_offset=-1.2)
@@ -1183,6 +1188,9 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     local_sections,local_extent_review=refine_local_road_extents(road,segments,json.loads(raw_geometry_payload),ego,width,cfg['max_lanes'])
     if local_extent_review.get('changes'):
         road['lane_sections']=local_sections;road['lane_count_mode']='section_local_paint_profile'
+    right_sections,right_edge_profile_review=refine_right_edge_profile(road,segments,json.loads(raw_geometry_payload),ego,width)
+    if right_sections:
+        road['lane_sections']=right_sections;road['lane_count_mode']='section_local_right_edge_profile'
     lane_audit=lane_timeline(times,ego,eyaw,road,float(dimensions['ego'][0]),float(dimensions['ego'][1]),centre_x_offset=-1.2,**cfg.get('lane_state_policy',{}))
     maneuver_policy=cfg.get('ego_maneuver_policy',{})
     maneuver_windows=[] if road.get('reference_line') else ego_maneuver_windows(lane_audit['events'],times,ego,eyaw,road,pre_s=maneuver_policy.get('pre_s',2.5),settle_s=maneuver_policy.get('settle_s',1.5))
@@ -1342,6 +1350,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         'association-review.json':canonical(edges),'paired-fov-review.json':canonical(pair_review),'render-states.jsonl':b''.join(canonical(r)+b'\n' for r in render_audit),'proof/contact.jpg':buf.getvalue()}
     payloads['collision-review.json']=canonical(collision_review)
     payloads['local-road-extent-review.json']=canonical(local_extent_review)
+    payloads['right-edge-profile-review.json']=canonical(right_edge_profile_review)
     payloads['blindspot-inference-review.json']=canonical(dict(predictions=blindspot_review,observations_modified=False,identity_merged=False,scope='bounded_pillar_region_display_only'))
     payloads['prediction-display-review.json']=canonical(prediction_display_review)
     payloads['side-paint-geometry.json']=canonical(dict(models=side_paint,actors=side_paint_review))

@@ -1,0 +1,32 @@
+{
+  "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+  "past_local_id": "left_repeater-0010",
+  "future_local_id": "front-0026",
+  "expected_lane": 0,
+  "ghost_interval_s": [
+    41.0,
+    44.2
+  ],
+  "continuity_interval_s": [
+    37.3,
+    44.6
+  ],
+  "max_transition_speed_mps": 45.0,
+  "source_files": [
+    {
+      "path": "E:/tesla/a5/RecentClips/2026-11-01_13-50-00-left_repeater.mp4",
+      "sha256": "ed34910ae43553fce60a89e9bc7cc00d616be145e72a9ef95aaade598b9e02ef"
+    },
+    {
+      "path": "E:/tesla/a5/RecentClips/2026-11-01_13-50-00-front.mp4",
+      "sha256": "97fb0a0c0c7a1574f54b851b1b209546cb5f2cb0984585efbd26bd9390447cf3"
+    }
+  ],
+  "review_basis": "Dark BMW X5 body, chrome window trim, wheel design, rear shape and chronological passage between left repeater and front; no plate equality claim. Partial tail is still visible at 39s, so fully unseen expectation starts conservatively at 41s.",
+  "review_images": [
+    "runs/fresh-nov01-highway-review-002/source-identity-crops.jpg",
+    "runs/fresh-nov01-highway-review-002/pillar-gap-source.jpg"
+  ],
+  "development_case": true,
+  "scope": "Selected practical display continuity, not surveyed metric or exhaustive identity ground truth"
+}

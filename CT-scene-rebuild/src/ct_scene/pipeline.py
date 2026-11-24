@@ -125,7 +125,7 @@ def _analyze(front,output,detector,road_model,lens_config,prototype_config,asset
         result=stage('scene',lambda p:surround(package,tracks,frozen,lens_config,prototype_config,assets,p,road_masks,context,telemetry=telemetry,image_headings=headings))
         quality=output/'numerical-review'
         checks=json.loads((quality/'review.json').read_text()) if quality.exists() else review(result,quality)
-        state.update(status='complete',current_stage=None,numerical_gate=checks['numerical_gate'],quality_gate='SOURCE_REVIEW_REQUIRED',
-                     video=str(result/'surrounding-world.mp4'),completed_utc_s=time.time());save();return state
+        state.update(status='complete',current_stage=None,numerical_gate=checks['numerical_gate'],quality_gate='WORLD_COVERAGE_REVIEW_REQUIRED' if checks.get('source_presence_screen',{}).get('gate')=='REJECTED' else 'SOURCE_REVIEW_REQUIRED',
+                     source_presence_screen=checks.get('source_presence_screen',{'gate':'NOT_EVALUATED'}),video=str(result/'surrounding-world.mp4'),completed_utc_s=time.time());save();return state
     except BaseException as error:
         state.update(status='interrupted' if isinstance(error,(KeyboardInterrupt,SystemExit)) else 'failed',error=str(error));save();raise

@@ -351,6 +351,28 @@ def continuous_edge_bounds(solid_bins,frame,width,actors,ego_positions,max_lanes
                 internal_stripes='observed_or_lane_width_prior; outer shoulder lines excluded',independent_lane_count_measurement=False)
 
 
+def continuous_paint_excludes_lane_jump(window,times,ego,yaws,reference,width=3.5):
+    """Dense unaliased camera stripe phase can refute an old straight-frame event.
+
+    The route is only a station index. A missing/low-confidence paint interval
+    cannot refute a real lane change. No ego or vehicle pose is changed.
+    """
+    stations=reference.get('station_support',[])
+    if len(stations)<6:return False
+    try:index=route_index(ego,yaws=yaws)
+    except ValueError:return False
+    endpoints=np.array([[np.interp(t,times,np.asarray(ego)[:,k]) for k in range(2)] for t in [window['start_s'],window['end_s']]])
+    lo,hi=index.project(endpoints)[:,0]
+    if hi-lo<50:return False
+    rows=[r for r in stations if lo-2<=r['s']<=hi+2]
+    if len(rows)<6:return False
+    s=np.array([r['s'] for r in rows]);phase=np.unwrap([r['phase'] for r in rows])
+    if s[0]-lo>20 or hi-s[-1]>20 or np.max(np.diff(s))>20:return False
+    if any(r.get('frames',0)<3 or r.get('concentration',0)<.9 for r in rows):return False
+    if np.max(abs(np.diff(phase)))>.75 or np.ptp(phase)*width/(2*np.pi)>width*.4:return False
+    return True
+
+
 def phase_protection_windows(windows,times,yaws,road,max_alignment_deg=2.5):
     """A straight-road event cannot veto curvature when its own heading is wrong.
 
