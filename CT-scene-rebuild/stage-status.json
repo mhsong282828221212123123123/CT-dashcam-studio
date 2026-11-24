@@ -321,5 +321,29 @@
     "profile_station_samples": 2100,
     "profile_inversions": 0,
     "wrong_scene_review": "REJECTED_BEFORE_OUTPUT"
+  },
+  "latest_timed_session": {
+    "status": "stopped",
+    "stopped_utc": "2026-11-24T21:52:20.094176+00:00",
+    "user_deadline_utc": "2026-11-24T22:00:00+00:00",
+    "reason": "verified_checkpoint_completed_within_user_time_limit",
+    "engine_commit": "e0c52d3",
+    "editor_commit": "deaed58b4dc44571dcfa6338ceec144655d44be3",
+    "branch": "codex/blindspot-junction",
+    "remote_head_verified": true,
+    "code_tests_passed": 414,
+    "unique_source_clips": 11,
+    "output_frames": 13097,
+    "preview": "G:/3d/CT-scene-rebuild/runs/blindspot-junction-final-60s-008.mp4",
+    "preview_drive": "https://drive.google.com/file/d/1LYyMAkDySRbu1odJ-cwJwlosz54iclDW/view",
+    "delivery_index": "runs/blindspot-junction-delivery-008.json",
+    "build": false,
+    "release": false,
+    "active_render_workers": 0,
+    "remaining": [
+      "some side objects unlocalized",
+      "existing estimated body overlaps",
+      "approximate road transitions and unmeasured metric calibration"
+    ]
   }
 }
