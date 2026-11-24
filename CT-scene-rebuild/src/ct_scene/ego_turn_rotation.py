@@ -6,7 +6,7 @@ enters the correction. Own SEI sets both endpoint headings and wheel distance.
 import numpy as np
 
 
-def corrected_yaw(times,yaws,camera_pairs):
+def corrected_yaw(times,yaws,camera_pairs,steering_cue=None):
     t=np.asarray(times,float);yaw=np.unwrap(np.asarray(yaws,float));result=yaw.copy();reviews=[]
     if len(t)<3 or len(t)!=len(yaw) or np.any(np.diff(t)<=0):raise ValueError('Ordered own motion required')
     active=np.flatnonzero(abs(np.gradient(yaw,t))>np.radians(4.))
@@ -23,7 +23,7 @@ def corrected_yaw(times,yaws,camera_pairs):
         ids=np.flatnonzero((t>=start)&(t<=end));review=dict(start_s=start,end_s=end,accepted=False)
         if len(ids)<10 or abs(yaw[ids[-1]]-yaw[ids[0]])<np.radians(20):
             review['reason']='not_a_large_own_turn';reviews.append(review);continue
-        increments=[];supported=0.;duration=t[ids[-1]]-t[ids[0]]
+        increments=[];supported=0.;steering_rejected=0;duration=t[ids[-1]]-t[ids[0]]
         for i,j in zip(ids[:-1],ids[1:]):
             lo,hi=t[i],t[j];rates=[]
             for camera,rows in camera_pairs.items():
@@ -39,10 +39,13 @@ def corrected_yaw(times,yaws,camera_pairs):
             if len(rates)>=2:
                 pair=min(((a,b) for k,a in enumerate(rates) for b in rates[k+1:]),key=lambda pair:abs(pair[0]-pair[1]))
                 if abs(pair[0]-pair[1])<=np.radians(4):selected=[r for r in rates if abs(r-np.mean(pair))<=np.radians(4)]
+            cue=steering_cue.rate_at((lo+hi)/2) if steering_cue is not None else None
+            if len(selected)>=2 and cue is not None and np.median(selected)*cue<0 and abs(np.median(selected))>np.radians(4):
+                selected=[];steering_rejected+=1
             if len(selected)>=2:
                 increments.append(float(np.median(selected))*(hi-lo));supported+=hi-lo
             else:increments.append(yaw[j]-yaw[i])
-        visual=np.r_[0,np.cumsum(increments)];drift=float(visual[-1]-(yaw[ids[-1]]-yaw[ids[0]]));review.update(consensus_fraction=supported/duration,endpoint_drift_deg=float(np.degrees(drift)))
+        visual=np.r_[0,np.cumsum(increments)];drift=float(visual[-1]-(yaw[ids[-1]]-yaw[ids[0]]));review.update(steering_direction_rejected_intervals=steering_rejected,consensus_fraction=supported/duration,endpoint_drift_deg=float(np.degrees(drift)))
         if supported/duration<.85 or abs(drift)>np.radians(8):
             review['reason']='insufficient_independent_rotation_consensus';reviews.append(review);continue
         local=yaw[ids[0]]+visual-drift*(t[ids]-t[ids[0]])/duration;correction=local-yaw[ids];review['max_correction_deg']=float(np.degrees(np.max(abs(correction))))

@@ -1,0 +1,23 @@
+{
+  "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+  "source_path": "E:\\tesla\\a5\\RecentClips\\2026-11-01_13-50-00-front.mp4",
+  "source_sha256": "97fb0a0c0c7a1574f54b851b1b209546cb5f2cb0984585efbd26bd9390447cf3",
+  "anchors": [
+    {
+      "time_s": 2,
+      "lanes": 3,
+      "basis": "Source front: two interior dashed separators, persistent right solid shoulder edge; checked with right repeater"
+    },
+    {
+      "time_s": 30,
+      "lanes": 3,
+      "basis": "Source front: two interior dashed separators, persistent right solid shoulder edge; checked with right repeater"
+    },
+    {
+      "time_s": 55,
+      "lanes": 3,
+      "basis": "Source front: two interior dashed separators, persistent right solid shoulder edge; checked with right repeater"
+    }
+  ],
+  "development_case": true
+}

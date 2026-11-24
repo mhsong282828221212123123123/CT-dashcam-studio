@@ -50,7 +50,7 @@ def run(package,tracks,telemetry,lens_config,destination):
     from .full_timeline import own_motion
     package,tracks,telemetry=map(Path,[package,tracks,telemetry]);pm,tm,sm=[verify(p) for p in (package,tracks,telemetry)]
     if pm['artifact_id'] not in {i['artifact_id'] for i in tm['inputs']}:raise ValueError('Rotation/source/track mismatch')
-    names=['background_rotation.py','ego_turn_rotation.py','full_timeline.py','affine_probe.py','wheel_scale.py'];revision=lambda:digest(b''.join(Path(__file__).with_name(n).read_bytes() for n in names));started=revision()
+    names=['background_rotation.py','steering_cue.py','ego_turn_rotation.py','full_timeline.py','affine_probe.py','wheel_scale.py'];revision=lambda:digest(b''.join(Path(__file__).with_name(n).read_bytes() for n in names));started=revision()
     frames=json.loads((package/'frames.json').read_text());front=sorted((f for f in frames if f['camera_id']=='front'),key=lambda f:f['camera_time_s']);times=np.array([f['camera_time_s'] for f in front]);sei=[json.loads(s) for s in (telemetry/'telemetry.jsonl').read_text().splitlines()]
     if {f['source_sha256'] for f in front}!={r['source_sha256'] for r in sei}:raise ValueError('Rotation/telemetry source mismatch')
     _,yaw=own_motion(times,sei);_,windows=corrected_yaw(times,yaw,{})

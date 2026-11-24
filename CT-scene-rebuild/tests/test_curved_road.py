@@ -126,13 +126,13 @@ class CurveEvidenceTests(unittest.TestCase):
         bounds,review=supported_boundaries(segments,reference,3.5,[],ego_positions=[[0,0,0],[40,0,0]])
         self.assertEqual(bounds,[1.75,-1.75]);self.assertEqual(review['status'],'repeated_continuous_carriageway_edges')
 
-    def test_solid_bus_separator_cannot_erase_supported_traffic_lane(self):
+    def test_vehicle_beyond_unbroken_right_edge_does_not_prove_traffic_lane(self):
         reference=dict(points_W_xy=[[0,0],[100,0]]);segments=[]
         for i in range(12):
             for d in [1.75,-1.75,-5.25]:segments.append(dict(kind='white',frame_id=str(i),points_W_xy=[[i*4,d],[i*4+10,d]],ground_length_m=10.,color_continuity=.95))
         rows=[dict(time_s=j*.2,position_W=[j,-3.5,0],support='detector_observation',bbox_xyxy=[100,300,300,500],image_width=1280) for j in range(40)]
         bounds,review=supported_boundaries(segments,reference,3.5,[dict(id='bus',camera_id='front',samples=rows)],ego_positions=[[0,0,0],[40,0,0]])
-        self.assertEqual(len(bounds)-1,2)
+        self.assertEqual(len(bounds)-1,1)
 
     def test_repeated_camera_paint_keeps_bends_between_stations(self):
         angle=np.linspace(0,1.3,150);ego=np.c_[80*np.sin(angle),80*(1-np.cos(angle)),angle*0]
@@ -223,3 +223,11 @@ class CurveEvidenceTests(unittest.TestCase):
         road={'boundaries_y':[1.75,-1.75],'reference_line':{'points_W_xy':ego[::4,:2].tolist(),'unsupported_intervals_m':[[0,50]]}}
         result=infer(t,ego,yaw,road,crossing_times=[.8,1.,1.2,1.4])
         self.assertEqual(len(result),1);self.assertIn('camera_crossing',result[0]['support'])
+
+    def test_right_curb_survives_missing_left_edge_and_outside_vehicle(self):
+        reference=dict(points_W_xy=[[0,0],[100,0]])
+        segments=[dict(kind='white',frame_id=str(i),ground_length_m=12.,color_continuity=.95,points_W_xy=[[i*4,d],[i*4+12,d]]) for i in range(14) for d in [-1.75,-5.25]]
+        segments += [dict(kind='white',frame_id=str(i),ground_length_m=3.,color_continuity=.95,points_W_xy=[[i*4,d],[i*4+3,d]]) for i in range(14) for d in [5.25,1.75]]
+        rows=[dict(time_s=j*.2,position_W=[j,-3.5,0],support='detector_observation',camera_id='front',bbox_xyxy=[100,300,300,500],image_width=1280) for j in range(40)]
+        bounds,proof=supported_boundaries(segments,reference,3.5,[dict(id='outside',camera_id='front',samples=rows)],ego_positions=[[0,0,0],[40,0,0]])
+        self.assertAlmostEqual(bounds[-1],-1.75);self.assertFalse(any(r['side']=='right' for r in proof.get('vehicle_extent',[])))

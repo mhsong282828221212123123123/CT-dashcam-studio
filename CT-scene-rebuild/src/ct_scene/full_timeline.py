@@ -12,6 +12,7 @@ from .affine_probe import camera_matrix
 from .prototype_front import model_vertices,rotation
 from .offline_paths import smooth_positions
 from .actor_heading import resolve_axis_flips
+from .steering_cue import SteeringCue
 
 
 def own_motion(times,sei,camera_pairs=None):
@@ -26,7 +27,7 @@ def own_motion(times,sei,camera_pairs=None):
     yaw=-(heading-heading[0]);ego=np.zeros((len(t),3))
     if camera_pairs is not None:
         from .ego_turn_rotation import corrected_yaw
-        yaw,_=corrected_yaw(t,yaw,camera_pairs)
+        yaw,_=corrected_yaw(t,yaw,camera_pairs,SteeringCue(sei))
     for i in range(1,len(t)):
         distance=trace.distance(t[i-1],t[i]);angle=(yaw[i]+yaw[i-1])/2;ego[i]=ego[i-1]+distance*np.array([np.cos(angle),np.sin(angle),0])
     return ego,yaw
@@ -62,7 +63,7 @@ def run(package,tracks,telemetry,lens_config,source,actor_asset,destination,asse
         if json.loads((Path(ego_rotation)/'report.json').read_text())['optics_sha256']!=digest(canonical(profiles)):raise ValueError('Own rotation optics mismatch')
         rotation_pairs=json.loads((Path(ego_rotation)/'camera-pairs.json').read_text())
         from .ego_turn_rotation import corrected_yaw
-        _,original_yaw=own_motion(times,sei);_,rotation_review=corrected_yaw(times,original_yaw,rotation_pairs)
+        _,original_yaw=own_motion(times,sei);_,rotation_review=corrected_yaw(times,original_yaw,rotation_pairs,SteeringCue(sei))
     ego,yaw=own_motion(times,sei,rotation_pairs);groups={}
     for r in map(json.loads,(tracks/'observations.jsonl').read_text().splitlines()):
         if r['camera_id']=='front' and r['class_id'] in (2,5,7):groups.setdefault(r['local_track_id'],[]).append(r)
@@ -111,8 +112,8 @@ def run(package,tracks,telemetry,lens_config,source,actor_asset,destination,asse
         'duplicate_motion_timestamps_collapsed':sum(r.get('duplicate_motion_messages',1)-1 for r in SpeedTrace(sei).rows),
         'body_axis_continuity_changed_samples':axis_changes,
         'initial_body_phase_review':phase_review,
-        'ego_source':'own SEI signed speed/heading with bounded two-camera static-background turn timing' if any(r['accepted'] for r in rotation_review) else 'own SEI signed speed/heading only','timeline_scope':'complete source; actor visibility cannot truncate export','observed_anchor_samples':len(observed),'metric_accuracy':'NOT_EVALUATED', 'own_rotation_review':rotation_review}
-    revision=digest(b''.join(Path(__file__).with_name(n).read_bytes() for n in ['full_timeline.py','ego_turn_rotation.py','actor_heading.py','actor_rear_axis.py','surrounding_lamps.py','rear_view_cue.py']))
+        'ego_source':'own SEI signed speed/heading with bounded two-camera static-background turn timing' if any(r['accepted'] for r in rotation_review) else 'own SEI signed speed/heading only','timeline_scope':'complete source; actor visibility cannot truncate export','observed_anchor_samples':len(observed),'metric_accuracy':'NOT_EVALUATED', 'own_rotation_review':rotation_review,'steering_direction_reference':SteeringCue(sei).report}
+    revision=digest(b''.join(Path(__file__).with_name(n).read_bytes() for n in ['full_timeline.py','steering_cue.py','ego_turn_rotation.py','actor_heading.py','actor_rear_axis.py','surrounding_lamps.py','rear_view_cue.py']))
     return publish(Path(destination),stage='full_source_ego_anchor',payloads={'trajectory.json':canonical(trajectory),'report.json':canonical(report)},
         inputs=[{'role':role,'artifact_id':m['artifact_id']} for role,m in zip(['source','tracks','telemetry'],[pm,tm,sm])]+([dict(role='own_background_rotation',artifact_id=rotation_manifest['artifact_id'])] if rotation_manifest else []),
         config={'height_prior_m':1.3,'pitch_prior_rad':0,'source_duration_s':float(duration),'actor_asset':str(actor_asset)},model_hashes=[file_hash(Path(actor_asset))],code_revision=revision,runtime={'av':av.__version__,'cuda':False})

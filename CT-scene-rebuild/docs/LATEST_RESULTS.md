@@ -1,3 +1,5 @@
+최신 갓길 수정: [고속 전체](https://drive.google.com/file/d/1a-GXPYfVZ-swnk5k5dAygyaSH9-HhPCo/view?usp=drivesdk). 로컬 G:/3d/CT-scene-rebuild/runs/curb-steering-highway-002/surrounding-world.mp4. [네 편 검증·회귀 영상·남는 한계](./CURB_STEERING_20261125.md). 테스트26 업로드 확인 완료.
+
 # 최신 검토 영상 · 2026-11-25
 
 최종 전달: [60초008](https://drive.google.com/file/d/1LYyMAkDySRbu1odJ-cwJwlosz54iclDW/view) · [고속 전체](https://drive.google.com/file/d/15uu2xro0-lKHDMKz8HlhV7AIUsZdZGE5/view) · [교차로015 전체](https://drive.google.com/file/d/1xj8thCU5oEAYyHh4PkD8xj_QFBGq0LKT/view) · [램프005 전체](https://drive.google.com/file/d/1pnqZQ8DN3Z60BH6nbwR-WENzxwgIQATD/view). 모두 Google Drive 테스트26에 보존. 하단 원본4채널 포함. [검증과 남는 한계](./BLINDSPOT_JUNCTION_20261125.md).

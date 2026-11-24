@@ -264,6 +264,7 @@ def supported_boundaries(segments,reference,width,actors,max_lanes=4,ego_positio
     if right_yellow:
         curb=max(right_yellow,key=lambda p:p['y'])
         peaks=[p for p in peaks if p['index']>curb['index']]+[curb]
+    curb=None
     if ego_positions is not None:
         edge_bounds,edge_review=continuous_edge_bounds(solid_bins,frame,width,actors,ego_positions,max_lanes,paint_peaks=peaks)
         if edge_bounds is not None:return edge_bounds,dict(edge_review,peaks=peaks,paint_phase=phase_review)
@@ -285,7 +286,7 @@ def supported_boundaries(segments,reference,width,actors,max_lanes=4,ego_positio
         if side and np.quantile(abs(local[:,1]-d),.8)>1.2:continue
         progress=(local[-1,0]-local[0,0])/(clear[-1]['time_s']-clear[0]['time_s'])
         if not (.5 if side else 2)<progress<55:continue
-        if not right_yellow and right-width+.3<d<right-.5 and count<max_lanes:
+        if not right_yellow and curb is None and right-width+.3<d<right-.5 and count<max_lanes:
             proof=dict(local_id=a['id'],median_lateral_m=d,clear_frames=len(clear),side='right',role='outer_vehicle_corridor_not_independent_road_truth')
             if side:side_candidates.append(dict(proof,frames={r['frame_id']:r['time_s'] for r in clear}))
             else:extra.append(proof)
@@ -320,9 +321,10 @@ def continuous_edge_bounds(solid_bins,frame,width,actors,ego_positions,max_lanes
         if len(frames)>=5:edges.append(dict(index=k,y=float(np.median([d for d,_ in rows])),solid_frames=len(frames)))
     left=sorted([p for p in edges if p['y']>hi+.4],key=lambda p:p['y'])
     right=sorted([p for p in edges if p['y']<lo-.4],key=lambda p:-p['y'])
-    if not left or not right:return None,dict(status='insufficient_repeated_continuous_edges')
+    if not right:return None,dict(status='insufficient_repeated_continuous_edges')
+    if not left:return None,dict(status='left_unresolved_right_edge_retained',right_edge_candidate=right[0])
     a,b=left[0],right[0];span=a['y']-b['y'];count=int(round(span/width))
-    if not 1<=count<=max_lanes or not .75*width<span/count<1.25*width:return None,dict(status='continuous_edge_spacing_unresolved')
+    if not 1<=count<=max_lanes or not .75*width<span/count<1.25*width:return None,dict(status='continuous_edge_spacing_unresolved',right_edge_candidate=b)
     # A dash occasionally projects as a long segment. It must not erase a
     # much more repeatedly observed adjacent stripe on an empty road merely
     # because no car is available to demonstrate that second lane. Yellow
@@ -343,10 +345,10 @@ def continuous_edge_bounds(solid_bins,frame,width,actors,ego_positions,max_lanes
         if 2<v[0]<50 and abs(v[1])<v[0]*.5:
             if d>a['y']+.5:blocked_left.append(actor['id'])
             if d<b['y']-.5:blocked_right.append(actor['id'])
-    if blocked_left or blocked_right:
+    if blocked_left:
         return None,dict(status='continuous_line_has_supported_forward_traffic_beyond_it',
                          left_traffic_ids=blocked_left,right_traffic_ids=blocked_right,
-                         right_edge_candidate=b if not blocked_right else None)
+                         right_edge_candidate=b,ignored_right_traffic_ids=blocked_right)
     return np.linspace(a['y'],b['y'],count+1).tolist(),dict(status='repeated_continuous_carriageway_edges',edge_support=[a,b],
                 internal_stripes='observed_or_lane_width_prior; outer shoulder lines excluded',independent_lane_count_measurement=False)
 
@@ -410,6 +412,8 @@ def vehicle_supported_paint_gaps(review,reference,width,actors,ego_positions,max
         motion=np.linalg.lstsq(np.c_[t-t[0],np.ones(len(t))],local[:,:2],rcond=None)[0][0]
         if not 2<motion[0]<50 or abs(motion[1])>motion[0]*.5:continue
         d=float(np.median(local[:,1]));spread=float(np.quantile(abs(local[:,1]-d),.8))
+        curbs=[p['y'] for p in peaks if p.get('kind')=='continuous_right_edge_hypothesis']
+        if curbs and d<max(curbs)-.4:continue
         if spread>1.2:continue
         proof.append(dict(local_id=actor['id'],lateral_m=d,clear_frames=len(rows),forward_mps=float(motion[0]),lateral_spread_m=spread))
     if len(proof)<2:return None,dict(status='insufficient_distinct_persistent_forward_tracks',vehicles=proof)
