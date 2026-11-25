@@ -1,0 +1,105 @@
+{
+  "controls": [
+    {
+      "scene": "highway",
+      "id": "front-0006",
+      "time_s": 3.0,
+      "expected": "keep",
+      "basis": "Source bus is normal same-direction highway traffic; do not hide lateral calibration error",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "development_control": true
+    },
+    {
+      "scene": "highway",
+      "id": "front-0026",
+      "time_s": 55.0,
+      "expected": "keep",
+      "basis": "Source vehicle is inside the highway carriageway",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "development_control": true
+    },
+    {
+      "scene": "junction",
+      "id": "front-0037",
+      "time_s": 25.2,
+      "expected": "exclude",
+      "basis": "Source box truck beyond right solid edge/shoulder",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "development_control": true
+    },
+    {
+      "scene": "oct22",
+      "id": "right_repeater-0061",
+      "time_s": 30.2,
+      "expected": "exclude",
+      "basis": "Source side vehicle in parking/sidewalk frontage outside driving road",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true
+    },
+    {
+      "scene": "oct22",
+      "id": "front-0069",
+      "time_s": 41.0,
+      "expected": "exclude",
+      "basis": "Source approaching vehicle beyond centre divider, opposite carriageway",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true
+    },
+    {
+      "scene": "oct22",
+      "id": "left_repeater-0016",
+      "time_s": 16.9,
+      "expected": "exclude",
+      "basis": "Vehicle on the separate cross-road, outside central shared crossing",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true
+    },
+    {
+      "scene": "oct22",
+      "id": "front-0045",
+      "time_s": 19.8,
+      "expected": "exclude",
+      "basis": "Vehicle parked in right frontage outside driving road",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true
+    },
+    {
+      "scene": "oct22",
+      "id": "front-0048",
+      "time_s": 20.8,
+      "expected": "exclude",
+      "basis": "Vehicle in right parking frontage",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true
+    },
+    {
+      "scene": "oct22",
+      "id": "right_repeater-0069",
+      "time_s": 32.0,
+      "expected": "exclude",
+      "basis": "Vehicle in sidewalk/parking frontage",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true
+    },
+    {
+      "scene": "oct22",
+      "id": "right_repeater-0072",
+      "time_s": 31.2,
+      "expected": "exclude",
+      "basis": "Vehicle in parking frontage beyond curb",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true
+    },
+    {
+      "scene": "oct22",
+      "id": "left_repeater-0035",
+      "time_s": 35.05,
+      "expected": "exclude",
+      "basis": "Truck on opposite/separate road",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true
+    }
+  ],
+  "source_evidence": "runs/excluded-source-final-001.jpg and runs/source-scope-preflight-001/excluded-source-candidates.jpg; manual source inspection by Codex, not independent holdout",
+  "additional_source_evidence": "runs/road-scope-additional-source-004.jpg"
+}

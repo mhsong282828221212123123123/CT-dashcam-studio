@@ -1,3 +1,5 @@
+별도 도로 범위 수정: [30초 검토](https://drive.google.com/file/d/1jTCQOuYtospG4hWdeZSUuPIvQXaWdKJJ/view?usp=drivesdk). 로컬 G:/3d/CT-scene-road-scope/runs/road-scope-preview-30s-004.mp4. [전체3편·검증·한계](./DRIVING_ROAD_SCOPE_20261125.md). 남은 차량의 좌표·방향은 기준과 동일하다.
+
 최신 정답·학습 검토: [33초 새 날짜 검토](https://drive.google.com/file/d/1IqjnD3INNurx1NZxBuryoK6xVYijTiBG/view?usp=drivesdk). 원본 정지 프레임의 정답/예측 비교이며 새 3D 결과가 아니다. [직접 정답106개와 실패 수치](./CONTACT_LABELS_V2_20261125.md). 기존 3D 결과에는 미적용.
 
 최신 학습 검토: [30초 원본 정지 프레임·예측점 비교](https://drive.google.com/file/d/1Je_kRwyXjw0WV4LbUYwGf8UXBFyirCwB/view?usp=drivesdk). 로컬 G:/3d/CT-scene-rebuild/runs/contact-learning-review-001/heldout-contact-review.mp4. 새 3D 재현 영상이 아니며 기본 위치 추정에는 미적용. [결과와 실패 이유](./CONTACT_LEARNING_20261125.md).
