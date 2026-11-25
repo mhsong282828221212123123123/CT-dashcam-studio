@@ -1,0 +1,101 @@
+{
+  "status": "trained_experimental_image_heads",
+  "runtime_adopted": false,
+  "metric_xyz_accuracy": "NOT_EVALUATED",
+  "new_supervised_weights": true,
+  "full_backbone_finetuned": false,
+  "source_split_unit": "recorded drive date/session",
+  "samples": {
+    "train": 63,
+    "validation": 32,
+    "test": 11
+  },
+  "selected": {
+    "contact": {
+      "feature_strength": 0.25,
+      "alpha": 0.01,
+      "validation_selection_score": 0.1254725162073844
+    },
+    "direction": {
+      "feature_strength": 0.25,
+      "alpha": 0.01,
+      "validation_selection_score": 0.10646569431038919
+    }
+  },
+  "results": {
+    "train": {
+      "contact_model": {
+        "samples": 37,
+        "mean_error_vehicle_height": 0.035907883056875964,
+        "median_error_vehicle_height": 0.023293967774653764,
+        "p90_error_vehicle_height": 0.08247408205110307
+      },
+      "bbox_bottom_baseline": {
+        "samples": 37,
+        "mean_error_vehicle_height": 0.1878697338299808,
+        "median_error_vehicle_height": 0.08578049342160791,
+        "p90_error_vehicle_height": 0.48566472105168557
+      },
+      "contact_count_by_camera": {
+        "front": 14,
+        "left_repeater": 15,
+        "right_repeater": 8
+      },
+      "direction_samples": 61,
+      "direction_accuracy": 1.0,
+      "training_majority_baseline": 0.39344262295081966
+    },
+    "validation": {
+      "contact_model": {
+        "samples": 19,
+        "mean_error_vehicle_height": 0.1254725162073844,
+        "median_error_vehicle_height": 0.09809156641281473,
+        "p90_error_vehicle_height": 0.2713411040744978
+      },
+      "bbox_bottom_baseline": {
+        "samples": 19,
+        "mean_error_vehicle_height": 0.16132268362876698,
+        "median_error_vehicle_height": 0.12751343848028868,
+        "p90_error_vehicle_height": 0.3429969669288431
+      },
+      "contact_count_by_camera": {
+        "front": 7,
+        "left_repeater": 9,
+        "right_repeater": 3
+      },
+      "direction_samples": 31,
+      "direction_accuracy": 0.7419354838709677,
+      "training_majority_baseline": 0.2903225806451613
+    },
+    "test": {
+      "contact_model": {
+        "samples": 6,
+        "mean_error_vehicle_height": 0.22940015985351872,
+        "median_error_vehicle_height": 0.19965582085087982,
+        "p90_error_vehicle_height": 0.36607694022496073
+      },
+      "bbox_bottom_baseline": {
+        "samples": 6,
+        "mean_error_vehicle_height": 0.14058892775975218,
+        "median_error_vehicle_height": 0.15730897584754394,
+        "p90_error_vehicle_height": 0.16501645682485894
+      },
+      "contact_count_by_camera": {
+        "front": 1,
+        "left_repeater": 3,
+        "right_repeater": 2
+      },
+      "direction_samples": 10,
+      "direction_accuracy": 0.7,
+      "training_majority_baseline": 0.4
+    }
+  },
+  "contact_2d_candidate_pass": false,
+  "all_cameras_have_three_test_contacts": false,
+  "direction_candidate_pass": true,
+  "annotation_provenance": "Codex visual labels, 8 tile-pixel uncertainty; no independent human adjudication",
+  "adoption_rule": "Keep disabled: pilot labels only; 2D contact and coarse image direction do not validate metric 3D centre or world yaw",
+  "cuda": false,
+  "annotations_sha256": "7c1a19e861708bfe73297fd87784c25e1eccca336c390706d70f88d8aa5690dc",
+  "encoder_sha256": "7b188b348a49ac4c6e51392567f1dc3ac7dbcf2fd9cdb70a5c722f2ca3356b92"
+}

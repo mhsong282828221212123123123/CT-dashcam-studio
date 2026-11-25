@@ -1,0 +1,22 @@
+[
+  [
+    "aug26",
+    "train",
+    "runs/blindspot-junction-aug26-003"
+  ],
+  [
+    "aug28",
+    "train",
+    "runs/blindspot-junction-aug28-004"
+  ],
+  [
+    "oct22",
+    "train",
+    "runs/blindspot-junction-oct22-003"
+  ],
+  [
+    "oct26",
+    "test",
+    "runs/blindspot-junction-oct26-004"
+  ]
+]

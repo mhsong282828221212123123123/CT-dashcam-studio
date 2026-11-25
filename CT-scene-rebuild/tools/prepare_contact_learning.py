@@ -5,13 +5,14 @@ from collections import defaultdict
 import cv2,numpy as np
 from PIL import Image,ImageDraw
 from ct_scene.artifacts import verify
-p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False)
+p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--cases',type=Path);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False)
 index={}
 for depth in ['*/artifact.json','*/*/artifact.json','*/*/*/artifact.json','*/*/*/*/artifact.json']:
  for f in Path('runs').glob(depth):
   m=json.loads(f.read_text());
   if 'artifact_id' in m:index.setdefault(m['artifact_id'],f.parent)
 cases=[('oct02','train','runs/final-oct02-015'),('oct18turn','train','runs/final-oct18-junction-015'),('oct18ramp','train','runs/fresh-oct18-ramp-005'),('aug20','validation','runs/final-aug20-014'),('nov01','test','runs/fresh-nov01-highway-003'),('nov01city','test','runs/fresh-nov01-city-road-002')]
+if a.cases:cases=json.loads(a.cases.read_text())
 records=[]
 for case,split,scene in cases:
  m=verify(Path(scene));roles={r['role']:r['artifact_id'] for r in m['inputs']};source=index[roles['source']];tracks=index[roles['tracks']];frames={f['frame_id']:f for f in json.loads((source/'frames.json').read_text())};groups=defaultdict(list)

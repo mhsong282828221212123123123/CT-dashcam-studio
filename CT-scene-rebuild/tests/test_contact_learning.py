@@ -25,3 +25,18 @@ class ContactLearningTests(unittest.TestCase):
     def test_cpu_encoder_preprocess_is_rgb_nchw(self):
         x=preprocess(np.ones((20,40,3),np.uint8)*128)
         self.assertEqual(x.shape,(1,3,224,224));self.assertEqual(x.dtype,np.float32);self.assertTrue(x.flags.c_contiguous)
+
+    def test_marked_tires_must_match_contact_and_cannot_be_occluded(self):
+        records=[dict(split=s,session=str(i),source_image_sha256=str(i),annotation_status='visual_review_by_codex') for i,s in enumerate(['train','validation','test'])]
+        records[0].update(wheel_contacts_tile_xy=[[10,20],[30,40]],contact_tile_xy=[20,30],contact_visibility='visible_tire_pair')
+        guard_splits(records)
+        records[0]['contact_tile_xy']=[50,50]
+        with self.assertRaises(ValueError):guard_splits(records)
+        records[0]['contact_tile_xy']=[20,30];records[0]['contact_visibility']='occluded_by_rail'
+        with self.assertRaises(ValueError):guard_splits(records)
+
+    def test_outside_or_nonfinite_tire_markers_are_rejected(self):
+        for pair in [[[10,20],[400,40]],[[10,20],[float('nan'),40]]]:
+            records=[dict(split=s,session=str(i),source_image_sha256=str(i),annotation_status='visual_review_by_codex') for i,s in enumerate(['train','validation','test'])]
+            records[0].update(wheel_contacts_tile_xy=pair,contact_tile_xy=[20,30])
+            with self.assertRaises(ValueError):guard_splits(records)

@@ -6,8 +6,8 @@ import numpy as np,av
 from PIL import Image,ImageDraw,ImageFont
 from ct_scene.learned_contact import LearnedContact,preprocess
 from ct_scene.contact_learning import contact_target
-p=argparse.ArgumentParser();p.add_argument('--annotations',type=Path,required=True);p.add_argument('--features',type=Path,required=True);p.add_argument('--model',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False)
-records=json.loads(a.annotations.read_text())['records'];features=np.load(a.features/'features.npz');model=LearnedContact(a.model);old=json.loads(Path('runs/contact-learning-trained-001/predictions.json').read_text());font=ImageFont.truetype('C:/Windows/Fonts/malgun.ttf',19);small=ImageFont.truetype('C:/Windows/Fonts/malgun.ttf',16);frames=[];parity=[];cache={};predictions=[]
+p=argparse.ArgumentParser();p.add_argument('--annotations',type=Path,required=True);p.add_argument('--features',type=Path,required=True);p.add_argument('--model',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--reference-predictions',type=Path,default=Path('runs/contact-learning-trained-001/predictions.json'));p.add_argument('--snapshot-seconds',type=float,default=1.5);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False)
+records=json.loads(a.annotations.read_text())['records'];features=np.load(a.features/'features.npz');model=LearnedContact(a.model);old=json.loads(a.reference_predictions.read_text());repeat=round(a.snapshot_seconds*20);assert repeat>0;font=ImageFont.truetype('C:/Windows/Fonts/malgun.ttf',19);small=ImageFont.truetype('C:/Windows/Fonts/malgun.ttf',16);frames=[];parity=[];cache={};predictions=[]
 for i,r in enumerate(records):
  crop=np.array(Image.open(r['crop']).convert('RGB'));prediction=model.predict(crop,r);predictions.append(dict(id=r['id'],**prediction));onnx=model.encoder.run(None,{'rgb_normalized':preprocess(crop)})[0][0];parity.append(float(np.max(abs(onnx-features['features'][i]))))
  if np.max(abs(np.array(prediction['contact_uv'])-old[i]['contact_uv']))>1e-5 or prediction['direction']!=old[i]['direction']:raise ValueError('Packaged inference differs from training')
@@ -36,13 +36,13 @@ video=a.output/'heldout-contact-review.mp4'
 with av.open(str(video),'w',options={'movflags':'+faststart'}) as out:
  stream=out.add_stream('libx264',rate=20);stream.width=1280;stream.height=1000;stream.pix_fmt='yuv420p';stream.options={'crf':'20','preset':'veryfast'};i=0
  for im in frames:
-  for _ in range(30):
+  for _ in range(repeat):
    f=av.VideoFrame.from_image(im);f.pts=i;f.time_base=Fraction(1,20);i+=1
    for packet in stream.encode(f):out.mux(packet)
  for packet in stream.encode():out.mux(packet)
 with av.open(str(video)) as c:decoded=sum(1 for _ in c.decode(video=0))
-assert decoded==len(frames)*30
+assert decoded==len(frames)*repeat
 sheet=Image.new('RGB',(1280,1000))
-for j,k in enumerate([0,4,9,17]):sheet.paste(frames[k].resize((640,500)),((j%2)*640,(j//2)*500))
+for j,k in enumerate(np.linspace(0,len(frames)-1,4).round().astype(int)):sheet.paste(frames[k].resize((640,500)),((j%2)*640,(j//2)*500))
 sheet.save(a.output/'heldout-sheet.jpg')
 (a.output/'review.json').write_text(json.dumps(dict(cpu_provider=model.encoder.get_providers(),max_torch_onnx_feature_abs_difference=max(parity),all_packaged_predictions_match_training=True,heldout_source_snapshots=len(frames),frames_decoded=decoded,retained_four_source_cameras=True,runtime_adopted=False,scope='Static original-image label/prediction review, not a new 3D result or video tracking validation'),indent=2));(a.output/'predictions.json').write_text(json.dumps(predictions,indent=2));print('CPU parity',max(parity),'decoded',decoded)

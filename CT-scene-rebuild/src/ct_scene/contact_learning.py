@@ -15,6 +15,12 @@ def guard_splits(records):
             if key in values and values[key]!=r['split']: raise ValueError('Source/session leakage across splits')
             values[key]=r['split']
         if r['annotation_status']!='visual_review_by_codex': raise ValueError('Unreviewed annotation')
+        pair=r.get('wheel_contacts_tile_xy')
+        if pair is not None:
+            points=np.asarray(pair,float)
+            if points.shape!=(2,2) or not np.isfinite(points).all() or np.any(points<0) or np.any(points>[360,230]):raise ValueError('Invalid visible tire landmarks')
+            if r.get('contact_tile_xy') is None or not np.allclose(points.mean(0),r['contact_tile_xy']):raise ValueError('Contact must match marked tire midpoint')
+        if r.get('contact_visibility','').startswith('occluded') and r.get('contact_tile_xy') is not None:raise ValueError('Occluded contact cannot be a target')
     if set(seen.values())!={'train','validation','test'}: raise ValueError('Three isolated splits required')
 
 

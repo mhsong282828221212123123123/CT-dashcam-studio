@@ -1,0 +1,45 @@
+{
+  "schema": "ct_scene.experimental_contact_adapter_v1",
+  "selected": {
+    "contact": {
+      "feature_strength": 0.25,
+      "alpha": 0.01,
+      "validation_selection_score": 0.1254725162073844
+    },
+    "direction": {
+      "feature_strength": 0.25,
+      "alpha": 0.01,
+      "validation_selection_score": 0.10646569431038919
+    }
+  },
+  "runtime_adopted": false,
+  "adoption_gate": "REJECTED: new Oct26 contact error above bbox baseline; six test contacts only; no metric 3D verification",
+  "files_sha256": {
+    "contact-encoder.onnx": "7b188b348a49ac4c6e51392567f1dc3ac7dbcf2fd9cdb70a5c722f2ca3356b92",
+    "adapter.npz": "a921bd6662d656a6be8bc0e95e4fb3f7bb6e9311fbe82e4d95dd18c976e6fd5d"
+  },
+  "cuda": false,
+  "annotation_source": "configs/contact-learning-annotations-v2.json",
+  "source_backbone": "https://github.com/ruhyadi/yolo3d-lightning/releases/tag/v0.6",
+  "source_weights_sha256": "a1e4a12870566967d248c28e9dcc6f40945142d1b0ecc3d11636668becbdae80",
+  "scope": "106 direct image labels; frozen backbone and newly trained heads; image features used in both v2 heads; no metric XYZ targets.",
+  "input_spec": {
+    "crop": "bbox with 12 percent padding left/right/top and 16 percent bottom, clipped to source image",
+    "color": "RGB",
+    "resize": "PIL bicubic224x224",
+    "normalize_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "normalize_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "image_resolution": [
+      1280,
+      960
+    ]
+  }
+}
