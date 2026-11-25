@@ -152,6 +152,13 @@ def main():
     numerical=commands.add_parser('review-export')
     numerical.add_argument('--result',required=True)
     numerical.add_argument('--output',required=True)
+    posacc=commands.add_parser('position-accuracy',help='Evaluate 3D contact-label accuracy and scene position surrogates')
+    posacc.add_argument('--output',required=True)
+    posacc.add_argument('--annotations')
+    posacc.add_argument('--lens-config',default='configs/multicam-optical-candidates.json')
+    posacc.add_argument('--prototype-config',default='configs/surrounding-prototype.json')
+    posacc.add_argument('--adapters',nargs='*',default=[])
+    posacc.add_argument('--scenes',nargs='*',default=[])
     pipeline=commands.add_parser('analyze')
     for name in ('front','output','detector','road-model','lens-config','prototype-config','assets-root'):pipeline.add_argument('--'+name,required=True)
     pipeline.add_argument('--osm')
@@ -172,6 +179,10 @@ def main():
             from .quality_review import review
             result=review(args.result,args.output)
             print(json.dumps({k:v for k,v in result.items() if k not in ('failures','worst_motion_events')}));return 0 if result['numerical_gate']=='PASS' else 2
+        elif args.command == 'position-accuracy':
+            from .position_accuracy import run
+            result=run(args.output,args.annotations,args.lens_config,args.prototype_config,args.adapters,args.scenes)
+            print(json.dumps({'status':'OK','scenes':list(result['scene_surrogates'].keys()),'has_contact_benchmark':result['contact_label_benchmark'] is not None}));return 0
         elif args.command == 'osm-fetch':
             from .osm_context import fetch
             print(json.dumps(fetch(args.telemetry,args.cache)));return 0
