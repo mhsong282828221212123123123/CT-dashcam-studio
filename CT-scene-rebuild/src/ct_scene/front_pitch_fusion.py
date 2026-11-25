@@ -5,8 +5,8 @@
    and chassis pitch from exploding ``1 / ray_y`` at long range.
 2. Fuses pitch-compensated ground-contact depth (error ~ z^2) with self-calibrated
    apparent vehicle-size depth (error ~ z) by inverse variance, suppressing
-   50m+ jitter spikes and border/occlusion depth blowups while preserving sub-30cm
-   near-field tire-contact accuracy.
+   50m+ jitter spikes and border/occlusion depth blowups while preserving
+   near-field tire-contact geometry priors; metric accuracy is unverified.
 """
 import json
 import math

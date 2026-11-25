@@ -6,9 +6,10 @@ velocity initialization, or prediction-triggered rejection of later evidence.
 """
 import math
 import numpy as np
+from .block_banded import solve as solve_blocks
 
 
-def smooth_crossing(actor,samples,step_obs,sigma_accel=3.,coordinate_frame='world_xy_crossing'):
+def smooth_crossing(actor,samples,step_obs,sigma_accel=3.,coordinate_frame='world_xy_crossing',acceleration_precisions=None):
     n=len(samples);ts=np.array([r['time_s'] for r in samples],float)
     if n<3 or np.any(np.diff(ts)<=0):return dict(applied=False,reason='insufficient_ordered_crossing_samples')
     observations=[]
@@ -20,26 +21,32 @@ def smooth_crossing(actor,samples,step_obs,sigma_accel=3.,coordinate_frame='worl
     if len(observations)<3:return dict(applied=False,reason='too_few_crossing_observations')
     # Integrated acceleration residual: velocity difference over each adjacent
     # interval. Isotropic world acceleration keeps the fit rotation invariant.
-    D=np.zeros((n-2,n))
+    prior_diag=np.tile(np.eye(2)*1e-9,(n,1,1));prior1=np.zeros_like(prior_diag);prior2=np.zeros_like(prior_diag)
     for i in range(1,n-1):
         left=ts[i]-ts[i-1];right=ts[i+1]-ts[i]
-        scale=1./(sigma_accel*math.sqrt((left+right)/2))
-        D[i-1,i-1]=scale/left;D[i-1,i]=-scale*(1/left+1/right);D[i-1,i+1]=scale/right
-    prior=np.kron(D.T@D,np.eye(2))+np.eye(2*n)*1e-9
+        scale=1./math.sqrt((left+right)/2)
+        precision=np.eye(2)/sigma_accel**2 if acceleration_precisions is None else acceleration_precisions[i]
+        coeff=[scale/left,-scale*(1/left+1/right),scale/right]
+        for a in range(3):
+            ia=i-1+a
+            prior_diag[ia]+=precision*coeff[a]**2
+            for b in range(a):
+                ib=i-1+b;target=prior1 if ia-ib==1 else prior2
+                target[ia]+=precision*coeff[a]*coeff[b]
     weights=np.ones(len(observations))
     for iteration in range(5):
-        normal=prior.copy();rhs=np.zeros(2*n)
+        normal=prior_diag.copy();rhs=np.zeros((n,2))
         for weight,(i,xy,precision) in zip(weights,observations):
-            sl=slice(2*i,2*i+2);W=weight*precision;normal[sl,sl]+=W;rhs[sl]+=W@xy
-        xy_fit=np.linalg.solve(normal,rhs).reshape(n,2)
+            W=weight*precision;normal[i]+=W;rhs[i]+=W@xy
+        xy_fit,posterior=solve_blocks(normal,prior1,prior2,rhs,True)
         residuals=[float((xy_fit[i]-xy)@precision@(xy_fit[i]-xy)) for i,xy,precision in observations]
         # Huber on the complete offline fit, never on one forward prediction.
         weights=np.minimum(1.,np.sqrt(9.21/np.maximum(residuals,1e-9)))
-    posterior=np.linalg.inv(normal);velocity=np.gradient(xy_fit,ts,axis=0)
+    velocity=np.gradient(xy_fit,ts,axis=0)
     for i,row in enumerate(samples):
         row['position_before_crossing_world_W']=list(row['position_W'])
         row['position_W']=[*map(float,xy_fit[i]),float(row['position_W'][2])]
-        cov=posterior[2*i:2*i+2,2*i:2*i+2]
+        cov=posterior[i]
         row['position_covariance_W_xy']=cov.tolist();row['kalman_coordinate_frame']=coordinate_frame
         row['kalman_sigma_s_m']=float(math.sqrt(max(cov[0,0],.02)))
         row['kalman_sigma_d_m']=float(math.sqrt(max(cov[1,1],.02)))
@@ -48,7 +55,7 @@ def smooth_crossing(actor,samples,step_obs,sigma_accel=3.,coordinate_frame='worl
         if np.linalg.norm(velocity[i])>1.8:row['yaw_rad']=float(math.atan2(velocity[i,1],velocity[i,0]))
     return dict(applied=True,coordinate_frame=coordinate_frame,method='robust_fixed_interval_acceleration_prior',samples=n,
                 observations=len(observations),downweighted_observations=int(sum(weights<.999)),
-                multi_camera_fused_steps=sum(len({o[3] for o in obs})>=2 for obs in step_obs),
+                multi_camera_fused_steps=sum(len({o[3] for o in obs if o[3] in ('front','left_repeater','right_repeater')})>=2 for obs in step_obs),
                 median_posterior_sigma_m=float(np.median([r['kalman_sigma_m'] for r in samples])),
                 uncertainty_role='conditional_on_estimated_camera_and_class_priors; not_metric_ground_truth')
 

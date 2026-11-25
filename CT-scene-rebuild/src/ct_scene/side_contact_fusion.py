@@ -76,7 +76,7 @@ def fuse_side_sample(row, frame_w, frame_h, profile, mount, vehicle_dims,
     rc = float(np.linalg.norm(vec_c))
     # Reject raised-curb / elevated-background boxes whose ground-plane ray
     # shoots far beyond apparent vehicle-size range.
-    if rc > 34.0 or rc > 1.25 * rh + 4.0:
+    if rc > 34.0 or rc > 1.25 * rh + 4.0 or rc < .55 * rh - 1.0:
         quality = float(np.clip(1.0 / (1.0 + 0.8 * sigma_h * sigma_h), 0.15, 0.35))
         return dict(
             relative_ego_m=rel_h,
@@ -112,12 +112,18 @@ def fuse_side_sample(row, frame_w, frame_h, profile, mount, vehicle_dims,
         half_shift = min(0.42, float(vehicle_dims[1]) * 0.22) * sin_view
         rel_c_center[1] += lat_sign * half_shift
 
-    sigma_c = (0.20 if uv_source == 'learned_contact' else 0.35) + 0.0032 * (rc * rc)
+    sigma_pixel = (0.20 if uv_source == 'learned_contact' else 0.35) + 0.0032 * (rc * rc)
+    sigma_pitch = rc*rc/max(float(mount['height_m']),.1)*float(mount.get('pitch_sigma_rad',.025))
+    # Class-height uncertainty is systematic; gross disagreement must not gain
+    # 99% weight merely because the ground ray is artificially near the camera.
+    sigma_disagreement=max(0.,abs(rc-rh)-.18*rh)
+    sigma_c = math.sqrt(sigma_pixel**2+sigma_pitch**2+sigma_disagreement**2)
     prec_c = alpha / (sigma_c * sigma_c)
     prec_h = 1.0 / (sigma_h * sigma_h)
     w_c = float(prec_c / (prec_c + prec_h))
     rel_fused = w_c * rel_c_center + (1.0 - w_c) * rel_h
-    sigma_fused = float(1.0 / math.sqrt(prec_c + prec_h))
+    sigma_yaw=float(np.linalg.norm(rel_fused[:2]-mount_off[:2]))*float(mount.get('yaw_sigma_rad',0.))
+    sigma_fused = float(math.sqrt(1.0/(prec_c+prec_h)+sigma_yaw**2))
     quality = float(np.clip(1.0 / (1.0 + 0.8 * sigma_fused * sigma_fused), 0.15, 0.85))
     support = 'gated_side_ground_contact_fusion' if w_c >= 0.5 else 'apparent_vehicle_height_prior'
     return dict(
@@ -128,6 +134,7 @@ def fuse_side_sample(row, frame_w, frame_h, profile, mount, vehicle_dims,
         contact_fusion_weight=w_c,
         quality=quality,
         raw_contact_ego_m=rel_c,
+        diagnostics=dict(pitch_calibration_accepted=bool(mount.get('pitch_calibration_accepted')),yaw_sigma_rad=float(mount.get('yaw_sigma_rad',0.)),clear_ground_candidate=bool(gate_basic),height_range_m=rh,contact_range_m=rc,pitch_correction_rad=float(mount.get('pitch_correction_rad',0.)),pitch_sigma_m=sigma_pitch,yaw_sigma_m=sigma_yaw,disagreement_sigma_m=sigma_disagreement),
     )
 
 
@@ -146,7 +153,9 @@ def calibrate_side_height_tails(samples, ego_times, ego_positions, ego_yaws, mou
         rh = float(np.linalg.norm(np.asarray(rel_h[:2], float) - mount_off[:2]))
         if rh > 2.5 and rf > 1.5:
             gated_ratios.append(rf / rh)
-    scale = float(np.clip(np.median(gated_ratios), 0.58, 1.20)) if len(gated_ratios) >= 5 else None
+    scale = float(np.median(gated_ratios)) if len(gated_ratios)>=5 else None
+    if not mount.get('pitch_calibration_accepted') or scale is None or not .78<=scale<=1.25:
+        scale=None
 
     for s in samples:
         rel_f = s.pop('_rel_fused_ego', None)

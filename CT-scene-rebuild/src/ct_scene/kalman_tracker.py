@@ -2,16 +2,17 @@
 
 Fuses multi-camera observations (including simultaneous front + side overlap and
 cross-camera handoffs) using each observation's physical covariance ``R_k``,
-incorporates soft lane-center likelihoods, and outputs posterior uncertainty
-``kalman_sigma_m`` so downstream collision avoidance operates strictly within
-each vehicle's Bayesian posterior confidence region (replacing ad-hoc boundary
-clamps and distance-multiplier ``collision_cap`` heuristics).
+incorporates camera-supported soft lane likelihoods and returns conditional
+smoothing uncertainty. Camera/class calibration is estimated, so this is not a
+surveyed confidence region or an independent metric-accuracy guarantee.
 """
 from collections import defaultdict
 import math
 import numpy as np
 from .actor_lane_motion import observation_usable
+from .camera_covariance import ray_covariance,update_position,initialize_offline
 from .crossing_smoother import smooth_crossing,bearing_conflict
+from .road_boundary_confidence import lane_confidence,membership_supported
 from .junctions import inside as inside_junction
 from .road_frame import coordinates as road_coordinates, world as road_world
 from .road_geometry import boundaries_at, lane_at, lane_bounds, pocket_width, supported as road_supported
@@ -177,7 +178,7 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
 
     # Group all real camera observations by 20Hz/10Hz timestamp bin (0.05s)
     obs_pool = [r for r in (raw_member_rows if raw_member_rows is not None else samples)
-                if r.get('camera_id') in ('front', 'left_repeater', 'right_repeater')]
+                if r.get('camera_id') in ('front', 'left_repeater', 'right_repeater') and r.get('support') in ('detector_observation','flow_observation')]
     if len(obs_pool) < 2:
         return dict(applied=False, reason='no_camera_observations')
 
@@ -210,7 +211,7 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
         tk = float(s_row['time_s'])
         bkey = round(tk * 20.0) / 20.0
         cands = obs_by_bin.get(bkey, [])
-        if not cands and s_row.get('camera_id') in ('front', 'left_repeater', 'right_repeater'):
+        if not cands and s_row.get('camera_id') in ('front', 'left_repeater', 'right_repeater') and s_row.get('support') in ('detector_observation','flow_observation'):
             cands = [s_row]
         ep = np.array([np.interp(tk, ego_times, ego_positions[:, 0]),
                        np.interp(tk, ego_times, ego_positions[:, 1])], float)
@@ -218,14 +219,10 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
         for r in cands:
             # Use raw unrefined camera observation so Kalman replaces ad-hoc clamps cleanly
             p_raw = np.asarray(r.get('unrefined_position_W', r['position_W'])[:2], float)
-            sd, _ = to_frame(p_raw[None, :])
+            sd, road_heading = to_frame(p_raw[None, :])
             dist = float(np.linalg.norm(p_raw - ep))
             sig_s, sig_d = observation_cov_sd(r, dist)
-            radial=p_raw-ep
-            if np.linalg.norm(radial)<1e-6:continue
-            radial=radial/np.linalg.norm(radial);tangent=np.array([-radial[1],radial[0]])
-            basis=np.column_stack([radial,tangent])
-            world_cov=basis@np.diag([sig_s*sig_s,sig_d*sig_d])@basis.T
+            world_cov,road_cov=ray_covariance(p_raw,ep,sig_s,sig_d,float(road_heading[0]))
             world_row=(p_raw,sig_s*sig_s,sig_d*sig_d,r.get('camera_id'),world_cov)
             world_parsed.append(world_row)
             box=r.get('bbox_xyxy')
@@ -233,22 +230,38 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
                     and box[2]-box[0]>=30 and box[3]-box[1]>=25
                     and min(box[0],box[1],r.get('image_width',1280)-box[2],r.get('image_height',960)-box[3])>6):
                 guard_parsed.append(world_row)
-            parsed.append((sd[0],sig_s*sig_s,sig_d*sig_d,r.get('camera_id'),world_cov if is_crossing else None))
+            parsed.append((sd[0],float(road_cov[0,0]),float(road_cov[1,1]),r.get('camera_id'),world_cov if is_crossing else road_cov))
         step_obs.append(parsed);world_step_obs.append(world_parsed);bearing_guard_obs.append(guard_parsed)
 
     if is_crossing:
         return smooth_crossing(actor,samples,step_obs)
+    if (actor.get('lane_motion_evidence',{}).get('clear_observations')==0
+            or len({r.get('camera_id') for r in obs_pool})>=2
+            or not any(membership_supported(actor,row) for row in samples)):
+        # A measured lane can remain a weak geometric likelihood in the world
+        # fit. Unresolved/disabled membership never acquires this likelihood.
+        acceleration_precisions=np.tile(np.eye(2)/9.,(len(samples),1,1))
+        if use_road_frame:
+            for k,row in enumerate(samples):
+                if not world_step_obs[k] or not membership_supported(actor,row):continue
+                raw=np.mean([o[0] for o in world_step_obs[k]],axis=0)
+                q=road_coordinates(road,np.array([[*raw,0.]]))[0];s_eff,s_sup=_extended_corridor_station(road,float(q[0]))
+                lane=row.get('lane_index',lane_idx_actor)
+                if lane is None:lane=lane_idx_actor
+                if not s_sup or not isinstance(lane,int) or lane<0 or lane>=len(boundaries_at(road,s_eff))-1:continue
+                confidence=lane_confidence(road,s_eff,lane)
+                if confidence<.5 or inside_junction(road,raw,3.):continue
+                center=sum(lane_bounds(road,s_eff,lane))/2
+                target=road_world(road,float(q[0]),center)[:2]
+                c,s=math.cos(q[2]),math.sin(q[2]);basis=np.array([[c,-s],[s,c]])
+                acceleration_precisions[k]=basis@np.diag([1/9.,1/(1.1/max(confidence,.15))**2])@basis.T
+                cov=basis@np.diag([1e8,(1.15/max(confidence,.15))**2])@basis.T
+                world_step_obs[k].append((target,1e8,(1.15/confidence)**2,'paint_boundary_prior',cov))
+        return smooth_crossing(actor,samples,world_step_obs,coordinate_frame='world_xy_multicamera_or_unresolved_lane',acceleration_precisions=acceleration_precisions)
 
     # Initialize state from first two observed steps
     first_idx = next((i for i, o in enumerate(step_obs) if o), 0)
-    z0 = np.mean([o[0] for o in step_obs[first_idx]], axis=0) if step_obs[first_idx] else to_frame(np.array([samples[0]['position_W'][:2]]))[0][0]
-    second_idx = next((i for i in range(first_idx + 1, len(step_obs)) if step_obs[i] and samples[i]['time_s'] - samples[first_idx]['time_s'] >= 0.15), None)
-    if second_idx is not None:
-        z1 = np.mean([o[0] for o in step_obs[second_idx]], axis=0)
-        dt01 = float(samples[second_idx]['time_s'] - samples[first_idx]['time_s'])
-        v0 = np.clip((z1 - z0) / max(dt01, 0.1), [-v_cap, -6.0], [v_cap, 6.0])
-    else:
-        v0 = np.array([12.0 if not is_crossing else 0.0, 0.0], float)
+    z0,v0,initial_position_var=initialize_offline(samples,step_obs,first_idx,v_cap)
 
     n = len(samples)
     x_pred = np.zeros((n, 4), float)
@@ -258,7 +271,7 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
     F_list = [np.eye(4) for _ in range(n)]
 
     x_cur = np.array([z0[0], z0[1], v0[0], v0[1]], float)
-    P_cur = np.diag([2.5, 1.5, 25.0, 6.0])
+    P_cur = np.diag([max(2.5,initial_position_var[0]),max(1.5,initial_position_var[1]),25.0,6.0])
     multi_cam_fused_steps = 0
 
     for k in range(n):
@@ -284,16 +297,18 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
 
         # Fuse all camera measurements at timestamp tk
         dt_step = max(0.05, tk - float(samples[k - 1]['time_s'])) if k > 0 else 0.05
-        for z_sd, var_s, var_d, _, _ in step_obs[k]:
+        for z_sd, var_s, var_d, _, obs_cov in step_obs[k]:
             # Chi-square (2-DOF 99% = 9.21) + kinematic jump gate against end-of-track ID glitches
             innov = z_sd - x_u[:2]
-            mahal = (innov[0] ** 2) / max(P_u[0, 0] + var_s, 1.0) + (innov[1] ** 2) / max(P_u[1, 1] + var_d, 1.0)
+            R_obs=np.diag([var_s,var_d]) if obs_cov is None else np.array(obs_cov,copy=True)
+            mahal=float(innov@np.linalg.solve(P_u[:2,:2]+R_obs+np.eye(2)*1e-8,innov))
             kin_jump = k >= 1 and (abs(innov[0]) > max(12.0, 32.0 * dt_step) or abs(innov[1]) > max(3.2, 12.0 * dt_step))
             if k >= 2 and (mahal > 9.21 or kin_jump):
                 scale_infl = min(400.0, max((mahal / 3.0) ** 2, 180.0 if kin_jump else 1.0))
                 var_s *= scale_infl
                 var_d *= scale_infl
-            x_u, P_u = _kalman_update_2d(x_u, P_u, z_sd, var_s, var_d)
+                R_obs *= scale_infl
+            x_u, P_u = update_position(x_u,P_u,z_sd,R_obs)
 
         # Soft lane-center likelihood for supported corridor vehicles outside junctions
         s_row = samples[k]
@@ -302,20 +317,21 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
             sl = lane_idx_actor
         s_eff, s_sup = _extended_corridor_station(road, float(x_u[0])) if use_road_frame else (float(x_u[0]), True)
         if (not is_crossing and sl is not None and isinstance(sl, int) and sl >= -1
-                and use_road_frame and s_sup
+                and use_road_frame and s_sup and membership_supported(actor,s_row)
                 and not inside_junction(road, from_frame(x_u[:2][None, :])[0], 3.0)):
             b_here = boundaries_at(road, s_eff)
             if sl == -1 and pocket_width(road.get('left_pockets', []), s_eff) >= 1.5:
                 l_hi, l_lo = lane_bounds(road, s_eff, -1)
                 d_center = 0.5 * (l_hi + l_lo)
-                var_lane = 0.95 ** 2
+                var_lane = 0.95 ** 2 / max(.15,lane_confidence(road,s_eff,-1))**2
                 x_u, P_u = _kalman_update_d_only(x_u, P_u, d_center, var_lane)
             elif 0 <= sl < len(b_here) - 1:
                 l_hi, l_lo = lane_bounds(road, s_eff, sl)
                 d_center = 0.5 * (l_hi + l_lo)
-                # Stronger lane prior when raw observation is weak/distant; gentle prior when clear
+                # Uncertain observations cannot strengthen a guessed lane. Repeated paint
+                # determines the strength of this separate geometric likelihood.
                 usable = observation_usable(s_row) if s_row.get('camera_id') in ('front', 'left_repeater', 'right_repeater') else False
-                var_lane = (1.15 ** 2) if usable else (0.72 ** 2)
+                var_lane = (1.15 ** 2 if usable else 2.0 ** 2) / max(.15,lane_confidence(road,s_eff,sl))**2
                 # Gate: a lane prior never drags a vehicle the cameras place far from that lane
                 # (e.g. cross-street traffic mislabelled with a corridor lane).
                 gate = max(2.4, 3.0 * math.sqrt(max(float(P_u[1, 1]), 0.0) + var_lane))
@@ -345,10 +361,11 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
     # Covariance-bounded soft carriageway projection (continuous across clip-end horizon)
     if not is_crossing and isinstance(lane_idx_actor, int) and lane_idx_actor >= -1 and use_road_frame:
         for k in range(n):
+            if not membership_supported(actor,samples[k]):continue
             sk = float(x_sm[k, 0])
             dk = float(x_sm[k, 1])
             s_eff, s_sup = _extended_corridor_station(road, sk)
-            if not s_sup:
+            if not s_sup or lane_confidence(road,s_eff,lane_idx_actor)<.5:
                 continue
             if inside_junction(road, from_frame(np.array([[sk, dk]]))[0], 3.0):
                 continue

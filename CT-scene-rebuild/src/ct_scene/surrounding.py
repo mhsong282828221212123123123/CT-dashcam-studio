@@ -45,6 +45,8 @@ from .handoff_appearance import review as review_handoff_appearance
 from .observed_surface import extract as observed_road_surface
 from .context_surface import extract as context_road_surface
 from .side_contact_recovery import recover as recover_side_contacts
+from .side_yaw import track_axis_candidates,fit_camera_yaw
+from .side_pitch import pitch_candidate,fit_camera_pitch
 from .side_contact_fusion import fuse_side_sample,calibrate_side_height_tails
 from .front_pitch_fusion import estimate_front_pitch_profile,project_front_ray_and_depths,fuse_front_track_depths
 from .kalman_tracker import smooth_actor_rts,limit_yaw_rate
@@ -75,6 +77,11 @@ def project_contact(box,profile,mount,max_depth=70.,minimum_ray_y=.015,contact_u
     else:
         pixel=np.array([[[box[0]+float(contact_uv[0])*(box[2]-box[0]),box[1]+float(contact_uv[1])*(box[3]-box[1])]]],float)
     ray=cv2.undistortPoints(pixel,K,D).reshape(2)
+    pitch=float(mount.get('pitch_correction_rad',0.))
+    if pitch:
+        c,sn=np.cos(pitch),np.sin(pitch);den=c-ray[1]*sn
+        if den<=0:raise ValueError('pitch_rotated_ray_behind_camera')
+        ray=np.array([ray[0]/den,(ray[1]*c+sn)/den])
     if ray[1]<=minimum_ray_y:raise ValueError('horizon_or_invalid_contact')
     depth=mount['height_m']/ray[1]
     if not .4<depth<max_depth:raise ValueError('contact_outside_prototype_depth')
@@ -91,6 +98,11 @@ def project_vehicle_height(box,profile,mount,vehicle_height):
     if not np.isfinite(vehicle_height) or vehicle_height<=0:raise ValueError('Positive vehicle height required')
     K,D=camera_matrix(profile);cx=(box[0]+box[2])/2
     rays=cv2.undistortPoints(np.array([[[cx,box[1]]],[[cx,box[3]]]],float),K,D).reshape(2,2)
+    pitch=float(mount.get('pitch_correction_rad',0.))
+    if pitch:
+        c,sn=np.cos(pitch),np.sin(pitch);den=c-rays[:,1]*sn
+        if np.any(den<=0):raise ValueError('height_ray_behind_camera')
+        rays=np.c_[rays[:,0]/den,(rays[:,1]*c+sn)/den]
     apparent=rays[1,1]-rays[0,1]
     if not np.isfinite(rays).all() or apparent<=.02:raise ValueError('Unresolved apparent vehicle height')
     depth=vehicle_height/apparent
@@ -902,10 +914,11 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     revision_names.append('static_actor_refine.py')
     revision_names.append('left_median_membership.py')
     revision_names.append('side_contact_recovery.py')
+    revision_names.extend(['side_pitch.py','side_yaw.py','side_contact_fusion.py'])
     revision_names.append('collision_constraints.py')
     revision_names.append('far_lead_stability.py')
-    revision_names.append('kalman_tracker.py')
-    revision_names.append('crossing_smoother.py')
+    revision_names.extend(['kalman_tracker.py','road_boundary_confidence.py'])
+    revision_names.extend(['crossing_smoother.py','camera_covariance.py','block_banded.py'])
     revision_names.append('image_motion_audit.py')
     revision_names.append('side_paint_geometry.py')
     revision_names.append('inside_median_pockets.py')
@@ -920,7 +933,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     revision_names.append('camera_junction_roads.py')
     revision_names.append('right_edge_profile.py')
     revision_names.append('source_strip.py')
-    revision_names.append('local_solid_corridor.py')
+    revision_names.extend(['local_solid_corridor.py','scene_visibility.py','collision_camera_policy.py'])
     started_revision=revision()
     package,tracks,base,destination=map(Path,[package,tracks,base,destination])
     if destination.exists():raise FileExistsError(destination)
@@ -969,6 +982,23 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     raw_merged,raw_edges=consolidate_camera_fragments(raw_actors)
     groups={a['id']:a['samples'] for a in raw_merged};original_ids={a['id']:a['local_ids'] for a in raw_merged}
     times=np.array([r['camera_time_s'] for r in frozen]);ego=np.array([r['ego_position_W'] for r in frozen]);eyaw=np.array([r['ego_yaw_rad'] for r in frozen])
+    dimensions={name:np.ptp(model_vertices(path)[:,:3],axis=0) for name,path in assets.items()}
+    lengths={name:float(d[0]) for name,d in dimensions.items()}
+    side_yaw_review={}
+    for cam in ('left_repeater','right_repeater'):
+        original=float(cfg['cameras'][cam]['yaw_deg']);prior=cfg.get('side_yaw_prior',{}).get('cameras',{}).get(cam,{})
+        prior_valid=prior.get('optics_sha256')==digest(canonical(profiles[cam]));seed=float(prior['yaw_deg']) if prior_valid else original
+        candidates=[]
+        for yaw_key,yaw_rows in groups.items():
+            if yaw_rows[0]['camera_id']!=cam or set(r['class_id'] for r in yaw_rows)&{0,1,3,15,16}:continue
+            f=by_frame[yaw_rows[0]['frame_id']];model,_=asset_class(yaw_rows,cam,assets,f['width'],f['height'])
+            windows=track_axis_candidates(yaw_rows,profiles[cam],times,eyaw,seed,float(dimensions[model][2]))
+            if windows:candidates.append(dict(track_id=yaw_key,model=model,median_yaw_deg=float(np.median([w['yaw_deg'] for w in windows])),windows=windows))
+        fit=fit_camera_yaw(candidates,seed);fit['original_yaw_deg']=original;fit['shared_rig_prior_used']=bool(not fit['accepted'] and prior_valid)
+        if not fit['accepted'] and prior_valid:
+            fit.update(used_yaw_deg=seed,sigma_yaw_deg=float(prior['sigma_yaw_deg']),status='shared_optics_matched_rig_prior')
+        side_yaw_review[cam]=fit
+        cfg['cameras'][cam]=dict(cfg['cameras'][cam],yaw_deg=fit['used_yaw_deg'],yaw_sigma_rad=math.radians(fit['sigma_yaw_deg']))
     front=sorted([f for f in frames if f['camera_id']=='front'],key=lambda f:f['camera_time_s']);width=cfg['lane_width_m']
     side_frames=sorted([f for f in frames if f['camera_id']=='left_repeater'],key=lambda f:f['camera_time_s'])
     side_boundary=side_boundary_evidence(package,side_frames,observations,times,ego,eyaw,profiles['left_repeater'],cfg['cameras']['left_repeater'])
@@ -1009,8 +1039,6 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                             boundaries_y=[width/2,-width/2],left_boundary_y=width/2,
                             left_boundary_role='inferred_extent_not_confirmed_centreline')
                 curve_review['unresolved_route_display']='ego_route_only; no_lane_priors_or_paint_claim'
-    dimensions={name:np.ptp(model_vertices(path)[:,:3],axis=0) for name,path in assets.items()}
-    lengths={name:float(d[0]) for name,d in dimensions.items()}
     front_pitch=estimate_front_pitch_profile(road_masks,front,observations,profiles['front']) if road_masks else {'status':'disabled_no_road_masks','by_frame_id':{}}
     front_pitch_by_fid=front_pitch.get('by_frame_id',{})
     contact_model=None;contact_img_cache={};contact_stats={'enabled':bool(contact_adapter),'model_dir':str(contact_adapter) if contact_adapter else None,'applied_front':0,'applied_side':0,'du_abs':[],'dv_abs':[],'cuda':False}
@@ -1036,6 +1064,20 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         if not np.isfinite(uv).all():return None
         contact_stats['du_abs'].append(abs(float(uv[0])-0.5));contact_stats['dv_abs'].append(abs(float(uv[1])-1.0))
         return uv
+    side_pitch_records=defaultdict(list)
+    for pitch_key,pitch_rows in groups.items():
+        cam=pitch_rows[0]['camera_id']
+        if cam not in ('left_repeater','right_repeater'):continue
+        pf=by_frame[pitch_rows[0]['frame_id']]
+        model,support=asset_class(pitch_rows,cam,assets,pf['width'],pf['height'])
+        if support=='unresolved_partial_body_conservative_car_prior':continue
+        for r in pitch_rows:
+            if r.get('support')!='detector_observation' or 'truncated' in r.get('quality_flags',[]) or r.get('score',0)<.55:continue
+            f=by_frame[r['frame_id']]
+            candidate=pitch_candidate(r['bbox_xyxy'],profiles[cam],cfg['cameras'][cam]['height_m'],float(dimensions[model][2]),f['width'],f['height'])
+            if candidate:side_pitch_records[cam].append(dict(candidate,track_id=pitch_key,time_s=r['camera_time_s'],model=model))
+    side_pitch_review={cam:fit_camera_pitch(side_pitch_records[cam]) for cam in ('left_repeater','right_repeater')}
+    side_mounts={cam:dict(cfg['cameras'][cam],pitch_correction_rad=fit['delta_pitch_rad'],pitch_sigma_rad=fit['sigma_pitch_rad'],pitch_calibration_accepted=fit['accepted']) for cam,fit in side_pitch_review.items()}
     for key,rows in groups.items():
         camera=rows[0]['camera_id'];rows=sorted(rows,key=lambda r:r['camera_time_s'])
         if camera=='back':continue
@@ -1076,7 +1118,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             side_fusion=None;front_ray_info=None
             try:
                 if camera in ('left_repeater','right_repeater'):
-                    side_fusion=fuse_side_sample(row,f['width'],f['height'],profiles[camera],cfg['cameras'][camera],
+                    side_fusion=fuse_side_sample(row,f['width'],f['height'],profiles[camera],side_mounts[camera],
                                                  dimensions[model],project_contact,project_vehicle_height,
                                                  contact_uv=learned_uv,camera=camera)
                     relative=side_fusion['relative_ego_m'].copy()
@@ -1108,6 +1150,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                 'projection_support':projection_support}
             if side_fusion is not None:
                 sample_entry['position_sigma_m']=side_fusion['position_sigma_m']
+                sample_entry['side_projection_diagnostics']=side_fusion.get('diagnostics',{})
                 sample_entry['contact_fusion_weight']=side_fusion['contact_fusion_weight']
                 sample_entry['_rel_fused_ego']=side_fusion['relative_ego_m'].tolist()
                 sample_entry['_rel_height_ego']=side_fusion['relative_height_m'].tolist()
@@ -1118,7 +1161,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             box=row['bbox_xyxy']
             if camera in ('left_repeater','right_repeater') and row['support']=='detector_observation' and 'truncated' not in row.get('quality_flags',[]) and box[2]-box[0]>=60 and box[3]-box[1]>=45 and min(box[0],box[1],f['width']-box[2],f['height']-box[3])>8:
                 try:
-                    contact=project_contact(box,profiles[camera],cfg['cameras'][camera])
+                    contact=project_contact(box,profiles[camera],side_mounts[camera])
                     samples[-1]['side_ground_contact_W']=(ep+rotation(yaw)@contact).tolist()
                 except ValueError:pass
         if camera=='front' and front_raw_entries:
@@ -1127,7 +1170,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             fuse_front_track_depths(front_raw_entries,cfg['cameras'][camera],front_half_len,rotation,times,ego,eyaw)
             samples=[s for s in samples if np.linalg.norm(np.asarray(s['position_W'][:2])-np.array([np.interp(s['time_s'],times,ego[:,0]),np.interp(s['time_s'],times,ego[:,1])]))<143.]
         if camera in ('left_repeater','right_repeater') and samples:
-            calibrate_side_height_tails(samples,times,ego,eyaw,cfg['cameras'][camera],rotation)
+            calibrate_side_height_tails(samples,times,ego,eyaw,side_mounts[camera],rotation)
         if len(samples)<(3 if short else 8):excluded.append({'id':key,'reason':'insufficient_ground_contacts'});continue
         actors.append({'id':key,'camera_id':camera,'model':model,'asset_class_support':class_support,'frozen_lead':False,'samples':samples,'short_crossing_candidate':short})
     left_median_membership=left_median_membership_review(package,frames,observations)
@@ -1240,6 +1283,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     lane_count=max([len(centres)]+[s.get('lane_count',len(s['boundaries_y'])-1) for s in road.get('lane_sections',[])])
     road.update(lane_count=lane_count,lane_count_support='camera_yellow_and_white_boundaries_with_outer_width_prior')
     if unresolved_lanes:road['lane_count_support']='unknown; nominal_display_band_is_not_a_lane_count'
+    from .road_boundary_confidence import review as boundary_confidence_review
+    road['boundary_confidence_review']=boundary_confidence_review(road)
     stopped=np.flatnonzero(np.linalg.norm(np.gradient(ego,times,axis=0),axis=1)<.2)
     stopped_anchor=[frozen[i]['fitted_actor_position_W'][0] for i in stopped if frozen[i]['fitted_actor_position_W'] is not None]
     if not road.get('reference_line') and len(stopped_anchor)>25 and road['marking_support_frames']>=3:
@@ -1372,6 +1417,9 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                 presence[membership[row['local_track_id']]].append(row['camera_time_s'])
     for gid,reference_times in reference_presence(rear_review,all_observations).items():presence[gid].extend(reference_times)
     presence={key:np.unique(times) for key,times in presence.items()}
+    from .scene_visibility import build as build_frame_visibility,visible_at as frame_visible_at
+    frame_visibility=build_frame_visibility(frames,all_observations,membership,rear_review)
+    from .collision_camera_policy import unresolved_front_depth_axis
     lane_audit=lane_timeline(times,ego,eyaw,road,float(dimensions['ego'][0]),float(dimensions['ego'][1]),centre_x_offset=-1.2,**cfg.get('lane_state_policy',{}))
     maneuver_policy=cfg.get('ego_maneuver_policy',{})
     maneuver_windows=[] if road.get('reference_line') else ego_maneuver_windows(lane_audit['events'],times,ego,eyaw,road,pre_s=maneuver_policy.get('pre_s',2.5),settle_s=maneuver_policy.get('settle_s',1.5))
@@ -1453,7 +1501,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     scene_plan=[];local_scope_display_review=[]
     for j in range(count):
         t=float(preview_times[j]) if preview_times is not None else times[0]+j/fps
-        ep=np.array([np.interp(t,times,ego[:,k]) for k in range(3)]);yaw=float(np.interp(t,times,eyaw));active=[];visible=visible_ids_at(presence,t)
+        ep=np.array([np.interp(t,times,ego[:,k]) for k in range(3)]);yaw=float(np.interp(t,times,eyaw));active=[];visible=frame_visible_at(frame_visibility,t)
         maneuver_active=any(w['start_s']<=t<=w['end_s'] for w in maneuver_windows)
         for actor in global_actors:
             # Each 5 Hz observation covers its nearest-time interval. Do
@@ -1471,13 +1519,18 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             row=samples[nearest]
             k_sig=row.get('kalman_sigma_m')
             if not actor.get('frozen_lead') and k_sig is not None:
-                # Step 4: collision displacement bounded by RTS Kalman 99% posterior confidence radius
+                # Bounded engineering correction conditional on estimated rig/class;
+                # this is not a surveyed 99% physical confidence region.
                 cap_post=float(np.clip(2.58*float(k_sig),0.55,4.50))
             else:
                 cap_post=0.
             active.append({'id':actor['global_id'],'position_W':pos,'yaw_rad':heading,'model':actor['model'],'ghost':ghost,'source_visible':source_visible,'position_support':position_support,
                            'rear_appearance':rear_lamp_trace.at(actor['global_id'],t,ghost),
                            'collision_cap_m':cap_post})
+            if cap_post>0:
+                ep_obs=np.array([np.interp(row['time_s'],times,ego[:,k]) for k in range(3)])
+                axis=unresolved_front_depth_axis(row,pos,road,ep_obs,ep)
+                if axis is not None:active[-1]['collision_axis_W']=axis
         for prediction in blindspot_coasts_at(blindspot_coasts,t):
             old=next((a for a in active if a['id']==prediction['id']),None)
             override=prediction.pop('override_unobserved',False)
@@ -1568,6 +1621,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         'render_actor_count_range':[min(render_counts),max(render_counts)],'ego_and_lead_source':'frozen base ego and observed anchor arrays unchanged',
         'source_duration_s':base_report.get('source_duration_s'),'export_full_source':'source_duration_s' in base_report,
         'clock_status':'assumed_relative_container_alignment_not_sensor_sync','excluded_tracks':excluded,'metric_accuracy':'NOT_EVALUATED'}
+    report['side_yaw_compensation']=side_yaw_review
+    report['side_pitch_compensation']=side_pitch_review
     report['front_pitch_compensation']={k:v for k,v in front_pitch.items() if k!='by_frame_id'}
     report['kalman_rts_tracking']={'enabled':True,'smoothed_actors':sum(1 for v in kalman_review.values() if v.get('applied')),'multi_camera_fused_steps':sum(v.get('multi_camera_fused_steps',0) for v in kalman_review.values())}
     report['learned_contact_adapter']={'enabled':contact_stats['enabled'],'model_dir':contact_stats['model_dir'],
@@ -1582,6 +1637,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                                   'changed_actors':[k for k,v in image_heading_review.items() if v.get('changed_samples')]}
     report['conditional_static_mesh_pose']={'accepted_actors':[k for k,v in static_pose_review.items() if v.get('accepted')],
                                            'ego_rig_road_or_identity_modified':False,'role':'conditional_parked_actor_pose_from_multicamera_source_reprojection; lower_body_may_be_occluded'}
+    report['observation_visibility_policy']=dict(source='nearest_displayed_frame_per_camera',inferred_raw_boxes_are_measurements=False,temporal_state='ghost_when_no_direct_or_flow_observation_in_nearest_frame')
     report['render_is_preview']=preview_times is not None
     if preview_times is not None:report['export_full_source']=False;report['preview_times_s']=preview_times.tolist()
     report['osm_context']={'enabled':bool(map_manifest),'gps_pose_registration':False,'map_lane_count_or_width_used':False,
@@ -1610,6 +1666,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     payloads['camera-strip-coverage.json']=canonical(dict(coverage=source_coverage,unavailable_render_frames=dict(source_strip_missing),recording_coverage_known=bool(source_coverage),stale_tail_presented_as_current=False if source_coverage else None))
     payloads['blindspot-inference-review.json']=canonical(dict(predictions=blindspot_review,observations_modified=False,identity_merged=False,scope='bounded_pillar_region_display_only'))
     payloads['prediction-display-review.json']=canonical(prediction_display_review)
+    payloads['side-yaw-review.json']=canonical(side_yaw_review)
+    payloads['side-pitch-review.json']=canonical(side_pitch_review)
     payloads['side-paint-geometry.json']=canonical(dict(models=side_paint,actors=side_paint_review))
     payloads['ego-lane-state.json']=canonical(lane_audit)
     payloads['actor-lane-state.json']=canonical(actor_lane_audit)

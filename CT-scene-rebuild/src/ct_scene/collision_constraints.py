@@ -100,8 +100,9 @@ def audit(frames,dimensions,tolerance_m=.1):
 def constrain(frames,road,dimensions,max_iterations=16):
     """Joint temporal correction, bounded by raw position and original lane.
 
-    Only explicitly movable side estimates may move. Ego, front observations,
-    IDs, headings, visibility, model scale and the road remain fixed.
+    Only explicitly permitted uncertain estimates may move within their cap.
+    An attached camera axis restricts the move to depth along that bearing.
+    Ego, IDs, headings, visibility, model scale and the road remain fixed.
     """
     result=copy.deepcopy(frames);original={};tracks=defaultdict(list)
     for i,f in enumerate(result):

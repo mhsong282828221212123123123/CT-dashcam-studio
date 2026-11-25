@@ -36,3 +36,9 @@ def require_full_clock(states,source_report,decoded_frames,fps=20):
 
 def source_exit_code(results):
     return 0 if results and all(r.get('gate')=='PASS' for r in results) else 2
+
+
+def require_input_artifact(scene_manifest,input_manifest,role):
+    ids=[r['artifact_id'] for r in scene_manifest.get('inputs',[]) if r['role']==role]
+    if len(ids)!=1 or input_manifest.get('artifact_id')!=ids[0]:
+        raise ValueError('Wrong '+role+' artifact; same date or filename is insufficient')

@@ -84,4 +84,11 @@ def unresolved_side_height_position(road,actor,sample,position):
     if section.get('camera_width_profile') and len(bounds)==2:margin=.25
     elif not section.get('camera_width_profile') and section.get('support','').startswith(('local_camera_paint','local_repeated_outer_paint')):margin=.75
     else:return False
+    diag=sample.get('side_projection_diagnostics',{})
+    # A change of fusion weight across 0.5 is not evidence that a clearly
+    # observed vehicle disappeared. Allow only calibrated lateral rig error;
+    # radial depth uncertainty must not admit arbitrarily distant off-road cars.
+    if (diag.get('pitch_calibration_accepted') and diag.get('clear_ground_candidate')
+            and 0<float(diag.get('yaw_sigma_rad',0.))<=math.radians(5.)):
+        margin+=min(2.5,2.*float(diag.get('yaw_sigma_m',0.)))
     return bool(lateral>bounds[0]+margin or lateral<bounds[-1]-margin)

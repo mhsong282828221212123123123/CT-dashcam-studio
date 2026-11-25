@@ -1,0 +1,262 @@
+{
+  "controls": [
+    {
+      "scene": "highway",
+      "id": "front-0006",
+      "time_s": 3.0,
+      "expected": "keep",
+      "basis": "Source bus is normal same-direction highway traffic; do not hide lateral calibration error",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "highway",
+      "id": "front-0026",
+      "time_s": 55.0,
+      "expected": "keep",
+      "basis": "Source vehicle is inside the highway carriageway",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "junction",
+      "id": "front-0037",
+      "time_s": 25.2,
+      "expected": "exclude",
+      "basis": "Source box truck beyond right solid edge/shoulder",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "oct22",
+      "id": "right_repeater-0061",
+      "time_s": 30.2,
+      "expected": "exclude",
+      "basis": "Source side vehicle in parking/sidewalk frontage outside driving road",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "oct22",
+      "id": "front-0069",
+      "time_s": 41.0,
+      "expected": "exclude",
+      "basis": "Source approaching vehicle beyond centre divider, opposite carriageway",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "oct22",
+      "id": "left_repeater-0016",
+      "time_s": 16.9,
+      "expected": "exclude",
+      "basis": "Vehicle on the separate cross-road, outside central shared crossing",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "oct22",
+      "id": "front-0045",
+      "time_s": 19.8,
+      "expected": "exclude",
+      "basis": "Vehicle parked in right frontage outside driving road",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "oct22",
+      "id": "front-0048",
+      "time_s": 20.8,
+      "expected": "exclude",
+      "basis": "Vehicle in right parking frontage",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "oct22",
+      "id": "right_repeater-0069",
+      "time_s": 32.0,
+      "expected": "exclude",
+      "basis": "Vehicle in sidewalk/parking frontage",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "oct22",
+      "id": "right_repeater-0072",
+      "time_s": 31.2,
+      "expected": "exclude",
+      "basis": "Vehicle in parking frontage beyond curb",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "oct22",
+      "id": "left_repeater-0035",
+      "time_s": 35.05,
+      "expected": "exclude",
+      "basis": "Truck on opposite/separate road",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "oct22",
+      "id": "right_repeater-0058",
+      "time_s": 24.0,
+      "expected": "exclude",
+      "basis": "Actual delivered preview opening: side frontage car with unresolved off-road position; must not draw as spinning/free-moving world vehicle",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "oct22",
+      "id": "right_repeater-0061",
+      "time_s": 25.0,
+      "expected": "exclude",
+      "basis": "Actual delivered preview opening: side frontage car with unresolved off-road position; must not draw as spinning/free-moving world vehicle",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true,
+      "kind": "presence"
+    },
+    {
+      "scene": "aug28",
+      "kind": "presence",
+      "id": "left_repeater-0026",
+      "time_s": 16.2,
+      "interval_s": [
+        15.5,
+        17.0
+      ],
+      "min_fraction": 0.9,
+      "expected": "keep",
+      "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+      "development_control": true,
+      "basis": "Original front/back/repeater reviewed; distinct same-direction traffic behind ego, not removable to conceal overlap"
+    },
+    {
+      "scene": "aug28",
+      "kind": "presence",
+      "id": "left_repeater-0049",
+      "time_s": 16.2,
+      "interval_s": [
+        15.5,
+        17.0
+      ],
+      "min_fraction": 0.9,
+      "expected": "keep",
+      "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+      "development_control": true,
+      "basis": "Original front/back/repeater reviewed; distinct same-direction traffic behind ego, not removable to conceal overlap"
+    },
+    {
+      "scene": "aug28",
+      "kind": "presence",
+      "id": "left_repeater-0056",
+      "time_s": 16.2,
+      "interval_s": [
+        15.5,
+        17.0
+      ],
+      "min_fraction": 0.9,
+      "expected": "keep",
+      "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+      "development_control": true,
+      "basis": "Original front/back/repeater reviewed; distinct same-direction traffic behind ego, not removable to conceal overlap"
+    },
+    {
+      "scene": "aug28",
+      "kind": "distinct_nonoverlapping_bodies",
+      "ids": [
+        "front-0005",
+        "front-0007"
+      ],
+      "time_s": 0.8,
+      "max_penetration_m": 0.1,
+      "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+      "development_control": true,
+      "basis": "Separate physical vehicles in original frame; both must exist and cannot be one merged body"
+    },
+    {
+      "scene": "aug28",
+      "kind": "distinct_nonoverlapping_bodies",
+      "ids": [
+        "front-0001",
+        "front-0014"
+      ],
+      "time_s": 6.2,
+      "max_penetration_m": 0.1,
+      "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+      "development_control": true,
+      "basis": "Separate physical vehicles in original frame; both must exist and cannot be one merged body"
+    },
+    {
+      "scene": "aug28",
+      "kind": "distinct_nonoverlapping_bodies",
+      "ids": [
+        "front-0040",
+        "front-0046"
+      ],
+      "time_s": 18.2,
+      "max_penetration_m": 0.1,
+      "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+      "development_control": true,
+      "basis": "Separate physical vehicles in original frame; both must exist and cannot be one merged body"
+    },
+    {
+      "scene": "aug28",
+      "kind": "distinct_nonoverlapping_bodies",
+      "ids": [
+        "left_repeater-0026",
+        "left_repeater-0056"
+      ],
+      "time_s": 16.3,
+      "max_penetration_m": 0.1,
+      "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+      "development_control": true,
+      "basis": "Separate physical vehicles in original frame; both must exist and cannot be one merged body"
+    },
+    {
+      "scene": "aug28",
+      "kind": "distinct_nonoverlapping_bodies",
+      "ids": [
+        "left_repeater-0026",
+        "left_repeater-0049"
+      ],
+      "time_s": 16.8,
+      "max_penetration_m": 0.1,
+      "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+      "development_control": true,
+      "basis": "Separate physical vehicles in original frame; both must exist and cannot be one merged body"
+    },
+    {
+      "scene": "aug28",
+      "kind": "distinct_nonoverlapping_bodies",
+      "ids": [
+        "front-0040",
+        "front-0046"
+      ],
+      "time_s": 17.55,
+      "max_penetration_m": 0.1,
+      "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+      "development_control": true,
+      "basis": "Both separate source vehicles must remain present and nonoverlapping across the complete known failure interval; endpoints alone are insufficient",
+      "interval_s": [
+        17.0,
+        18.3
+      ]
+    }
+  ],
+  "scope": "Source-reviewed development regression cases; not independent 3D metric ground truth"
+}

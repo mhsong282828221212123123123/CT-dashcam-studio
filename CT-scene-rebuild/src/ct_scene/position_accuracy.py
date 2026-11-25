@@ -1,7 +1,7 @@
 """Step 1 baseline position accuracy & surrogate consistency evaluator.
 
 Evaluates:
-1. Supervised 3D tire-contact projection error on ``contact-learning-annotations``
+1. 2D tire-contact labels reprojected through the same estimated camera rig on ``contact-learning-annotations``
    stratified by split, camera (front / left_repeater / right_repeater), and
    distance range (0-20m, 20-50m, 50m+).
 2. Unlabeled full-scene surrogate accuracy metrics on ``surrounding-prototype``
@@ -212,6 +212,11 @@ def evaluate_contact_labels(annotations_path, lens_config_path, prototype_config
         summary[subset_name] = dict(total_records=len(sub_rows), methods=method_out)
 
     return dict(
+        metric_vehicle_center_accuracy='NOT_EVALUATED',
+        annotation_independent_human_review=ann.get('independent_human_review',False),
+        annotated_metric_xyz_labels=ann.get('metric_xyz_labels',False),
+        reference_kind='visually_labelled_2d_tire_contacts_projected_with_shared_estimated_rig',
+        scope='Contact adapter comparison in estimated geometry; not surveyed vehicle-center 3D accuracy',
         annotations_path=str(annotations_path),
         visible_evaluated_records=len(rows),
         skipped_horizon_gt_records=skipped_gt,
@@ -493,6 +498,8 @@ def run(output, annotations=None, lens_config='configs/multicam-optical-candidat
     """Run Step 1 position accuracy benchmark and save canonical JSON report."""
     payload = dict(
         schema='ct_scene.position_accuracy_baseline_v1',
+        metric_vehicle_center_accuracy='NOT_EVALUATED',
+        measurement_scope='source-contact projection benchmark and scene surrogates; no independent surveyed 3D ground truth',
         contact_label_benchmark=None,
         scene_surrogates={},
     )

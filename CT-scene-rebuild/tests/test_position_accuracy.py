@@ -57,6 +57,9 @@ class PositionAccuracyTests(unittest.TestCase):
                 repo_root / 'configs' / 'multicam-optical-candidates.json',
                 repo_root / 'configs' / 'surrounding-prototype.json',
             )
+            self.assertEqual(res['metric_vehicle_center_accuracy'],'NOT_EVALUATED')
+            self.assertFalse(res['annotation_independent_human_review'])
+            self.assertFalse(res['annotated_metric_xyz_labels'])
             self.assertEqual(res['visible_evaluated_records'], 2)
             holdout = res['subsets']['holdout_val_test']
             self.assertEqual(holdout['total_records'], 2)

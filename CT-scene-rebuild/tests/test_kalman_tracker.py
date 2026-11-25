@@ -11,6 +11,8 @@ class KalmanTrackerTests(unittest.TestCase):
             'junctions': [],
             'left_pockets': [],
         }
+        # This fixture intentionally describes a camera-confirmed corridor.
+        self.road['lane_sections']=[dict(id='paint',station_range_m=[0.,300.],boundaries_y=[3.5,0.,-3.5],evidence=dict(peaks=[dict(y=y,kind='white',frames=20) for y in [3.5,0.,-3.5]]))]
         self.ego_t = np.linspace(0.0, 10.0, 51)
         self.ego_xyz = np.c_[self.ego_t * 15.0, np.zeros(51), np.zeros(51)]
 
@@ -168,3 +170,16 @@ class CrossingWorldFrameTests(unittest.TestCase):
         self.assertFalse(bearing_conflict(np.array([[80.,0.] for t in ts]),obs,ts)['trigger'])
         self.assertTrue(bearing_conflict(np.array([[60.,3.] for t in ts]),obs,ts)['trigger'])
         self.assertFalse(bearing_conflict(np.array([[60.,3.] for t in ts[:4]]),obs[:4],ts[:4])['trigger'])
+
+
+class ExplicitlyDisabledMembershipTests(unittest.TestCase):
+    def test_clear_observation_count_does_not_override_disabled_membership(self):
+        import copy
+        ts=np.arange(14)*.2;ego=np.c_[ts*5,ts*0,ts*0]
+        rows=[dict(time_s=float(t),camera_id='front',support='detector_observation',position_W=[30+2*t,4+t,0.],unrefined_position_W=[30+2*t,4+t,0.],position_sigma_m=1.,bbox_xyxy=[600,450,650,500],lane_prior='disabled_outside_unknown_or_conflicting_membership',lane_index=None) for t in ts]
+        a=dict(id='car',global_id='car',lane_index=1,lane_motion_evidence=dict(clear_observations=6),samples=rows);b=copy.deepcopy(a)
+        straight=dict(boundaries_y=[7,3.5,0],left_pockets=[],junctions=[],reference_line=dict(points_W_xy=[[0,0],[100,0]],supported_extent_m=[0,100]))
+        turn=dict(straight,reference_line=dict(points_W_xy=[[0,0],[25,0],[25,80]],supported_extent_m=[0,105]))
+        r=smooth_actor_rts(a,straight,ts,ego);smooth_actor_rts(b,turn,ts,ego)
+        self.assertEqual(r['coordinate_frame'],'world_xy_multicamera_or_unresolved_lane')
+        np.testing.assert_allclose([r['position_W'] for r in a['samples']],[r['position_W'] for r in b['samples']],atol=1e-8)

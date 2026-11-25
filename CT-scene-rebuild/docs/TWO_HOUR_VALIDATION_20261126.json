@@ -1,0 +1,1370 @@
+{
+  "status": "PARTIAL_IMPROVEMENT_NOT_FULL_ACCEPTANCE",
+  "unit_tests": 526,
+  "frames_decoded": 8331,
+  "complete_cases": 7,
+  "numerical_pass_cases": 5,
+  "metric_vehicle_center_accuracy": "NOT_EVALUATED",
+  "source_controls": {
+    "checks": [
+      {
+        "control": {
+          "basis": "Source bus is normal same-direction highway traffic; do not hide lateral calibration error",
+          "development_control": true,
+          "expected": "keep",
+          "id": "front-0006",
+          "kind": "presence",
+          "scene": "highway",
+          "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+          "time_s": 3.0
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 1.0,
+        "resolved_ids": [
+          "front-0006"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Source vehicle is inside the highway carriageway",
+          "development_control": true,
+          "expected": "keep",
+          "id": "front-0026",
+          "kind": "presence",
+          "scene": "highway",
+          "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+          "time_s": 55.0
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 1.0,
+        "resolved_ids": [
+          "front-0026"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Source box truck beyond right solid edge/shoulder",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "front-0037",
+          "kind": "presence",
+          "scene": "junction",
+          "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+          "time_s": 25.2
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": [
+          "front-0037"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Source side vehicle in parking/sidewalk frontage outside driving road",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "right_repeater-0061",
+          "kind": "presence",
+          "scene": "oct22",
+          "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+          "time_s": 30.2
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": [
+          "right_repeater-0061"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Source approaching vehicle beyond centre divider, opposite carriageway",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "front-0069",
+          "kind": "presence",
+          "scene": "oct22",
+          "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+          "time_s": 41.0
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": [
+          "front-0069"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Vehicle on the separate cross-road, outside central shared crossing",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "left_repeater-0016",
+          "kind": "presence",
+          "scene": "oct22",
+          "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+          "time_s": 16.9
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": [
+          "left_repeater-0016"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Vehicle parked in right frontage outside driving road",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "front-0045",
+          "kind": "presence",
+          "scene": "oct22",
+          "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+          "time_s": 19.8
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": [
+          "front-0045"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Vehicle in right parking frontage",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "front-0048",
+          "kind": "presence",
+          "scene": "oct22",
+          "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+          "time_s": 20.8
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": [
+          "front-0048"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Vehicle in sidewalk/parking frontage",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "right_repeater-0069",
+          "kind": "presence",
+          "scene": "oct22",
+          "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+          "time_s": 32.0
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": [
+          "right_repeater-0069"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Vehicle in parking frontage beyond curb",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "right_repeater-0072",
+          "kind": "presence",
+          "scene": "oct22",
+          "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+          "time_s": 31.2
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": [
+          "right_repeater-0072"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Truck on opposite/separate road",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "left_repeater-0035",
+          "kind": "presence",
+          "scene": "oct22",
+          "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+          "time_s": 35.05
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": []
+      },
+      {
+        "control": {
+          "basis": "Actual delivered preview opening: side frontage car with unresolved off-road position; must not draw as spinning/free-moving world vehicle",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "right_repeater-0058",
+          "kind": "presence",
+          "scene": "oct22",
+          "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+          "time_s": 24.0
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": [
+          "right_repeater-0058"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Actual delivered preview opening: side frontage car with unresolved off-road position; must not draw as spinning/free-moving world vehicle",
+          "development_control": true,
+          "expected": "exclude",
+          "id": "right_repeater-0061",
+          "kind": "presence",
+          "scene": "oct22",
+          "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+          "time_s": 25.0
+        },
+        "frames": 1,
+        "passed": true,
+        "present_fraction": 0.0,
+        "resolved_ids": [
+          "right_repeater-0061"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Original front/back/repeater reviewed; distinct same-direction traffic behind ego, not removable to conceal overlap",
+          "development_control": true,
+          "expected": "keep",
+          "id": "left_repeater-0026",
+          "interval_s": [
+            15.5,
+            17.0
+          ],
+          "kind": "presence",
+          "min_fraction": 0.9,
+          "scene": "aug28",
+          "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+          "time_s": 16.2
+        },
+        "frames": 31,
+        "passed": true,
+        "present_fraction": 0.9354838709677419,
+        "resolved_ids": [
+          "left_repeater-0026"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Original front/back/repeater reviewed; distinct same-direction traffic behind ego, not removable to conceal overlap",
+          "development_control": true,
+          "expected": "keep",
+          "id": "left_repeater-0049",
+          "interval_s": [
+            15.5,
+            17.0
+          ],
+          "kind": "presence",
+          "min_fraction": 0.9,
+          "scene": "aug28",
+          "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+          "time_s": 16.2
+        },
+        "frames": 31,
+        "passed": true,
+        "present_fraction": 1.0,
+        "resolved_ids": [
+          "left_repeater-0049"
+        ]
+      },
+      {
+        "control": {
+          "basis": "Original front/back/repeater reviewed; distinct same-direction traffic behind ego, not removable to conceal overlap",
+          "development_control": true,
+          "expected": "keep",
+          "id": "left_repeater-0056",
+          "interval_s": [
+            15.5,
+            17.0
+          ],
+          "kind": "presence",
+          "min_fraction": 0.9,
+          "scene": "aug28",
+          "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+          "time_s": 16.2
+        },
+        "frames": 31,
+        "passed": true,
+        "present_fraction": 0.9354838709677419,
+        "resolved_ids": [
+          "left_repeater-0056"
+        ]
+      },
+      {
+        "body_ids": [
+          "front-0005",
+          "front-0007"
+        ],
+        "control": {
+          "basis": "Separate physical vehicles in original frame; both must exist and cannot be one merged body",
+          "development_control": true,
+          "ids": [
+            "front-0005",
+            "front-0007"
+          ],
+          "kind": "distinct_nonoverlapping_bodies",
+          "max_penetration_m": 0.1,
+          "scene": "aug28",
+          "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+          "time_s": 0.8
+        },
+        "passed": true,
+        "penetration_m": 0.0
+      },
+      {
+        "body_ids": [
+          "front-0001",
+          "front-0014"
+        ],
+        "control": {
+          "basis": "Separate physical vehicles in original frame; both must exist and cannot be one merged body",
+          "development_control": true,
+          "ids": [
+            "front-0001",
+            "front-0014"
+          ],
+          "kind": "distinct_nonoverlapping_bodies",
+          "max_penetration_m": 0.1,
+          "scene": "aug28",
+          "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+          "time_s": 6.2
+        },
+        "passed": true,
+        "penetration_m": 0.0
+      },
+      {
+        "body_ids": [
+          "front-0040",
+          "front-0046"
+        ],
+        "control": {
+          "basis": "Separate physical vehicles in original frame; both must exist and cannot be one merged body",
+          "development_control": true,
+          "ids": [
+            "front-0040",
+            "front-0046"
+          ],
+          "kind": "distinct_nonoverlapping_bodies",
+          "max_penetration_m": 0.1,
+          "scene": "aug28",
+          "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+          "time_s": 18.2
+        },
+        "passed": true,
+        "penetration_m": 0.0
+      },
+      {
+        "body_ids": [
+          "left_repeater-0026",
+          "left_repeater-0056"
+        ],
+        "control": {
+          "basis": "Separate physical vehicles in original frame; both must exist and cannot be one merged body",
+          "development_control": true,
+          "ids": [
+            "left_repeater-0026",
+            "left_repeater-0056"
+          ],
+          "kind": "distinct_nonoverlapping_bodies",
+          "max_penetration_m": 0.1,
+          "scene": "aug28",
+          "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+          "time_s": 16.3
+        },
+        "passed": true,
+        "penetration_m": 0.0
+      },
+      {
+        "body_ids": [
+          "left_repeater-0026",
+          "left_repeater-0049"
+        ],
+        "control": {
+          "basis": "Separate physical vehicles in original frame; both must exist and cannot be one merged body",
+          "development_control": true,
+          "ids": [
+            "left_repeater-0026",
+            "left_repeater-0049"
+          ],
+          "kind": "distinct_nonoverlapping_bodies",
+          "max_penetration_m": 0.1,
+          "scene": "aug28",
+          "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+          "time_s": 16.8
+        },
+        "passed": true,
+        "penetration_m": 0.0
+      },
+      {
+        "control": {
+          "basis": "Both separate source vehicles must remain present and nonoverlapping across the complete known failure interval; endpoints alone are insufficient",
+          "development_control": true,
+          "ids": [
+            "front-0040",
+            "front-0046"
+          ],
+          "interval_s": [
+            17.0,
+            18.3
+          ],
+          "kind": "distinct_nonoverlapping_bodies",
+          "max_penetration_m": 0.1,
+          "scene": "aug28",
+          "source_artifact_id": "9ef7903f041f65dc05d0cf92854ca0d339907207061f9ea8b1e4635b70d3783e",
+          "time_s": 17.55
+        },
+        "failed_frames": 1,
+        "frames": 27,
+        "maximum_penetration_m": 1.1223845854601073,
+        "missing_or_merged_frames": 0,
+        "passed": false
+      }
+    ],
+    "controls": 22,
+    "failed": 1,
+    "gate": "FAIL",
+    "scope": "Selected original-source development controls; not metric accuracy or full detection recall"
+  },
+  "analysis_commit": "748b5c5",
+  "analysis_code_revision": "ef2845c634c75b44847105525a7ec8d24db158db6d6f076c424cca0fe0c7a678",
+  "results": [
+    {
+      "case": "oct26",
+      "frames": 1178,
+      "numerical_gate": "PASS",
+      "body_overlap_pair_frames_before": 0,
+      "body_overlap_pair_frames_after": 0,
+      "failure_intervals": [],
+      "motion_discontinuity_events": [],
+      "max_abs_ground_z_m": 0.0,
+      "source_motion_alerts": 11,
+      "shared_camera_global_tracks": 0,
+      "simultaneous_camera_fused_steps": 0,
+      "source_reprojection": {
+        "front": {
+          "after": {
+            "median_bbox_iou": 0.8138123484077537,
+            "median_height_ratio": 0.9949012650701919,
+            "p90_abs_log_height_ratio": 0.28767640791266885,
+            "p90_centre_x_error_px": 35.01809192583789
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.8138123484077537,
+            "median_height_ratio": 0.9949012650701919,
+            "missing_world_at_observation": 35,
+            "p90_abs_log_height_ratio": 0.28767640791266885,
+            "p90_centre_x_error_px": 35.01809192583789,
+            "reprojected": 466,
+            "source_clear_observations": 501
+          },
+          "before": {
+            "median_bbox_iou": 0.8138123484077651,
+            "median_height_ratio": 0.9949012650701919,
+            "p90_abs_log_height_ratio": 0.28737494191551427,
+            "p90_centre_x_error_px": 34.61788861845247
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.812574573395816,
+            "median_height_ratio": 0.9948685637929299,
+            "missing_world_at_observation": 34,
+            "p90_abs_log_height_ratio": 0.2871001155842837,
+            "p90_centre_x_error_px": 34.567207367984196,
+            "reprojected": 467,
+            "source_clear_observations": 501
+          },
+          "common_projected_observations": 466,
+          "gained_projections": 0,
+          "lost_projections": 1
+        },
+        "right_repeater": {
+          "after": {
+            "median_bbox_iou": 0.4544760741532684,
+            "median_height_ratio": 1.439465643083599,
+            "p90_abs_log_height_ratio": 0.6025370614324872,
+            "p90_centre_x_error_px": 132.01615715915932
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.43544627324370977,
+            "median_height_ratio": 1.2541218954287165,
+            "p90_abs_log_height_ratio": 0.4570229626033563,
+            "p90_centre_x_error_px": 115.77426066262916,
+            "reprojected": 33,
+            "source_clear_observations": 33
+          },
+          "before": {
+            "median_bbox_iou": 0.43914023815134734,
+            "median_height_ratio": 1.392088406933241,
+            "p90_abs_log_height_ratio": 0.5525143992667166,
+            "p90_centre_x_error_px": 167.6027214245338
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.43914023815134734,
+            "median_height_ratio": 1.392088406933241,
+            "missing_world_at_observation": 23,
+            "p90_abs_log_height_ratio": 0.5525143992667166,
+            "p90_centre_x_error_px": 167.6027214245338,
+            "reprojected": 12,
+            "source_clear_observations": 35
+          },
+          "common_projected_observations": 12,
+          "gained_projections": 21,
+          "lost_projections": 0
+        }
+      },
+      "ego_clock_exact": true,
+      "source_track_base_hashes_exact": true,
+      "format_gate": "PASS"
+    },
+    {
+      "case": "aug20",
+      "frames": 1198,
+      "numerical_gate": "FAIL",
+      "body_overlap_pair_frames_before": 31,
+      "body_overlap_pair_frames_after": 25,
+      "failure_intervals": [
+        {
+          "end_s": 23.1,
+          "frames": 8,
+          "ids": [
+            "front-0017",
+            "front-0024"
+          ],
+          "peak_time_s": 22.9,
+          "penetration_peak_m": 1.4196271499144273,
+          "start_s": 22.75
+        },
+        {
+          "end_s": 42.8,
+          "frames": 2,
+          "ids": [
+            "front-0024",
+            "front-0069"
+          ],
+          "peak_time_s": 42.75,
+          "penetration_peak_m": 0.18374917554864334,
+          "start_s": 42.75
+        },
+        {
+          "end_s": 3.85,
+          "frames": 15,
+          "ids": [
+            "left_repeater-0001",
+            "right_repeater-0001"
+          ],
+          "peak_time_s": 3.8,
+          "penetration_peak_m": 1.6843669504375791,
+          "start_s": 3.15
+        }
+      ],
+      "motion_discontinuity_events": [],
+      "max_abs_ground_z_m": 0.0,
+      "source_motion_alerts": 27,
+      "shared_camera_global_tracks": 3,
+      "simultaneous_camera_fused_steps": 0,
+      "source_reprojection": {
+        "front": {
+          "after": {
+            "median_bbox_iou": 0.5146638657220753,
+            "median_height_ratio": 1.1047813437737017,
+            "p90_abs_log_height_ratio": 0.3907226003496845,
+            "p90_centre_x_error_px": 40.71494017637879
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.5138048115776265,
+            "median_height_ratio": 1.1034420069904072,
+            "missing_world_at_observation": 26,
+            "p90_abs_log_height_ratio": 0.3895878918783741,
+            "p90_centre_x_error_px": 40.67380705800233,
+            "reprojected": 544,
+            "source_clear_observations": 570
+          },
+          "before": {
+            "median_bbox_iou": 0.5162301240266156,
+            "median_height_ratio": 1.1103802009130437,
+            "p90_abs_log_height_ratio": 0.548433102449991,
+            "p90_centre_x_error_px": 54.687371008346425
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.5162301240266156,
+            "median_height_ratio": 1.1103802009130437,
+            "missing_world_at_observation": 21,
+            "p90_abs_log_height_ratio": 0.548433102449991,
+            "p90_centre_x_error_px": 54.687371008346425,
+            "projected_body_crosses_camera_plane": 1,
+            "reprojected": 540,
+            "source_clear_observations": 562
+          },
+          "common_projected_observations": 540,
+          "gained_projections": 4,
+          "lost_projections": 0
+        },
+        "left_repeater": {
+          "after": {
+            "median_bbox_iou": 0.5685668213950991,
+            "median_height_ratio": 1.0789985122112498,
+            "p90_abs_log_height_ratio": 0.3290256674691516,
+            "p90_centre_x_error_px": 105.22173312870626
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.6325017865080378,
+            "median_height_ratio": 1.1211738930082493,
+            "missing_world_at_observation": 48,
+            "p90_abs_log_height_ratio": 0.31862597511197943,
+            "p90_centre_x_error_px": 38.54443931232775,
+            "reprojected": 222,
+            "source_clear_observations": 270
+          },
+          "before": {
+            "median_bbox_iou": 0.2182396371460792,
+            "median_height_ratio": 1.880421373786672,
+            "p90_abs_log_height_ratio": 0.7228700709620581,
+            "p90_centre_x_error_px": 128.79894840362084
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.22018150608002784,
+            "median_height_ratio": 1.8062730446410806,
+            "missing_world_at_observation": 2,
+            "p90_abs_log_height_ratio": 0.7219154410068049,
+            "p90_centre_x_error_px": 115.45786880263209,
+            "reprojected": 58,
+            "source_clear_observations": 60
+          },
+          "common_projected_observations": 49,
+          "gained_projections": 173,
+          "lost_projections": 9
+        },
+        "right_repeater": {
+          "after": {
+            "median_bbox_iou": 0.3689074718330719,
+            "median_height_ratio": 1.323258127665253,
+            "p90_abs_log_height_ratio": 0.4803005797519311,
+            "p90_centre_x_error_px": 166.52733481587978
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.43998603448764234,
+            "median_height_ratio": 1.2565644572101633,
+            "missing_world_at_observation": 8,
+            "p90_abs_log_height_ratio": 0.4249237344142584,
+            "p90_centre_x_error_px": 92.14143704769913,
+            "reprojected": 211,
+            "source_clear_observations": 219
+          },
+          "before": {
+            "median_bbox_iou": 0.3785231527021861,
+            "median_height_ratio": 1.1089209828944413,
+            "p90_abs_log_height_ratio": 0.547308002995033,
+            "p90_centre_x_error_px": 154.66375252004158
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.3785231527021861,
+            "median_height_ratio": 1.1089209828944413,
+            "missing_world_at_observation": 28,
+            "p90_abs_log_height_ratio": 0.547308002995033,
+            "p90_centre_x_error_px": 154.66375252004158,
+            "reprojected": 105,
+            "source_clear_observations": 133
+          },
+          "common_projected_observations": 105,
+          "gained_projections": 106,
+          "lost_projections": 0
+        }
+      },
+      "ego_clock_exact": true,
+      "source_track_base_hashes_exact": true,
+      "format_gate": "PASS"
+    },
+    {
+      "case": "aug28",
+      "frames": 1187,
+      "numerical_gate": "FAIL",
+      "body_overlap_pair_frames_before": 82,
+      "body_overlap_pair_frames_after": 1,
+      "failure_intervals": [
+        {
+          "end_s": 17.55,
+          "frames": 1,
+          "ids": [
+            "front-0040",
+            "front-0046"
+          ],
+          "peak_time_s": 17.55,
+          "penetration_peak_m": 1.1223845854601073,
+          "start_s": 17.55
+        }
+      ],
+      "motion_discontinuity_events": [],
+      "max_abs_ground_z_m": 0.0,
+      "source_motion_alerts": 38,
+      "shared_camera_global_tracks": 4,
+      "simultaneous_camera_fused_steps": 0,
+      "source_reprojection": {
+        "front": {
+          "after": {
+            "median_bbox_iou": 0.5303463853043536,
+            "median_height_ratio": 0.9829517750181163,
+            "p90_abs_log_height_ratio": 0.24371728092249836,
+            "p90_centre_x_error_px": 27.355088645477892
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.5303463853043536,
+            "median_height_ratio": 0.9829517750181163,
+            "missing_world_at_observation": 16,
+            "p90_abs_log_height_ratio": 0.24371728092249836,
+            "p90_centre_x_error_px": 27.355088645477892,
+            "reprojected": 1090,
+            "source_clear_observations": 1106
+          },
+          "before": {
+            "median_bbox_iou": 0.46656732357157793,
+            "median_height_ratio": 0.9801134125054924,
+            "p90_abs_log_height_ratio": 0.27877009256939705,
+            "p90_centre_x_error_px": 35.643767981827985
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.46656732357157793,
+            "median_height_ratio": 0.9801134125054924,
+            "missing_world_at_observation": 16,
+            "p90_abs_log_height_ratio": 0.27877009256939705,
+            "p90_centre_x_error_px": 35.643767981827985,
+            "reprojected": 1090,
+            "source_clear_observations": 1106
+          },
+          "common_projected_observations": 1090,
+          "gained_projections": 0,
+          "lost_projections": 0
+        },
+        "left_repeater": {
+          "after": {
+            "median_bbox_iou": 0.5339415711728295,
+            "median_height_ratio": 1.2038149138507217,
+            "p90_abs_log_height_ratio": 0.33352361688841176,
+            "p90_centre_x_error_px": 79.87899937490093
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.5233361021961622,
+            "median_height_ratio": 1.166718978292615,
+            "missing_world_at_observation": 8,
+            "p90_abs_log_height_ratio": 0.3181129068229,
+            "p90_centre_x_error_px": 76.43680869675961,
+            "reprojected": 204,
+            "source_clear_observations": 212
+          },
+          "before": {
+            "median_bbox_iou": 0.15054158315653443,
+            "median_height_ratio": 2.3246337038413882,
+            "p90_abs_log_height_ratio": 1.024623707420212,
+            "p90_centre_x_error_px": 182.99527296349072
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.13263062291850924,
+            "median_height_ratio": 2.2760364067414622,
+            "missing_world_at_observation": 12,
+            "p90_abs_log_height_ratio": 1.0312429778747911,
+            "p90_centre_x_error_px": 181.4500489559822,
+            "reprojected": 186,
+            "source_clear_observations": 198
+          },
+          "common_projected_observations": 150,
+          "gained_projections": 54,
+          "lost_projections": 36
+        },
+        "right_repeater": {
+          "after": {
+            "median_bbox_iou": 0.4481482583974877,
+            "median_height_ratio": 1.2985216660502898,
+            "p90_abs_log_height_ratio": 0.42177992446014057,
+            "p90_centre_x_error_px": 70.05444345823824
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.460420534488621,
+            "median_height_ratio": 1.2968412693098084,
+            "missing_world_at_observation": 8,
+            "p90_abs_log_height_ratio": 0.3926498009240246,
+            "p90_centre_x_error_px": 56.499438855872405,
+            "reprojected": 424,
+            "source_clear_observations": 432
+          },
+          "before": {
+            "median_bbox_iou": 0.37518826380161985,
+            "median_height_ratio": 1.3284071290530783,
+            "p90_abs_log_height_ratio": 0.4065629888755162,
+            "p90_centre_x_error_px": 75.97444024952193
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.37275934661497806,
+            "median_height_ratio": 1.3278684214553738,
+            "missing_world_at_observation": 107,
+            "p90_abs_log_height_ratio": 0.4070686562035738,
+            "p90_centre_x_error_px": 75.58036303102963,
+            "reprojected": 263,
+            "source_clear_observations": 370
+          },
+          "common_projected_observations": 258,
+          "gained_projections": 166,
+          "lost_projections": 5
+        }
+      },
+      "ego_clock_exact": true,
+      "source_track_base_hashes_exact": true,
+      "format_gate": "PASS"
+    },
+    {
+      "case": "highway",
+      "frames": 1190,
+      "numerical_gate": "PASS",
+      "body_overlap_pair_frames_before": 0,
+      "body_overlap_pair_frames_after": 0,
+      "failure_intervals": [],
+      "motion_discontinuity_events": [],
+      "max_abs_ground_z_m": 0.0,
+      "source_motion_alerts": 15,
+      "shared_camera_global_tracks": 1,
+      "simultaneous_camera_fused_steps": 0,
+      "source_reprojection": {
+        "front": {
+          "after": {
+            "median_bbox_iou": 0.6609966250802791,
+            "median_height_ratio": 0.9346155748024806,
+            "p90_abs_log_height_ratio": 0.192068642254274,
+            "p90_centre_x_error_px": 17.057609113165856
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.6609966250802791,
+            "median_height_ratio": 0.9346155748024806,
+            "p90_abs_log_height_ratio": 0.192068642254274,
+            "p90_centre_x_error_px": 17.057609113165856,
+            "reprojected": 1338,
+            "source_clear_observations": 1338
+          },
+          "before": {
+            "median_bbox_iou": 0.6402083468545844,
+            "median_height_ratio": 0.9352129043170162,
+            "p90_abs_log_height_ratio": 0.1918557522078059,
+            "p90_centre_x_error_px": 27.889225011691632
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.6402083468545844,
+            "median_height_ratio": 0.9352129043170162,
+            "p90_abs_log_height_ratio": 0.1918557522078059,
+            "p90_centre_x_error_px": 27.889225011691632,
+            "reprojected": 1338,
+            "source_clear_observations": 1338
+          },
+          "common_projected_observations": 1338,
+          "gained_projections": 0,
+          "lost_projections": 0
+        },
+        "left_repeater": {
+          "after": {
+            "median_bbox_iou": 0.6705874281442205,
+            "median_height_ratio": 1.1015295780337755,
+            "p90_abs_log_height_ratio": 0.15469207280845948,
+            "p90_centre_x_error_px": 30.00641955879229
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.6705874281442205,
+            "median_height_ratio": 1.1015295780337755,
+            "p90_abs_log_height_ratio": 0.15469207280845948,
+            "p90_centre_x_error_px": 30.00641955879229,
+            "reprojected": 702,
+            "source_clear_observations": 702
+          },
+          "before": {
+            "median_bbox_iou": 0.20141909165740224,
+            "median_height_ratio": 1.7992701574534995,
+            "p90_abs_log_height_ratio": 0.7772174785832798,
+            "p90_centre_x_error_px": 62.00949347715773
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.19728846678679746,
+            "median_height_ratio": 1.8103353423885142,
+            "p90_abs_log_height_ratio": 0.7874427470905689,
+            "p90_centre_x_error_px": 61.505396687306785,
+            "reprojected": 725,
+            "source_clear_observations": 725
+          },
+          "common_projected_observations": 702,
+          "gained_projections": 0,
+          "lost_projections": 23
+        }
+      },
+      "ego_clock_exact": true,
+      "source_track_base_hashes_exact": true,
+      "format_gate": "PASS"
+    },
+    {
+      "case": "junction",
+      "frames": 1196,
+      "numerical_gate": "PASS",
+      "body_overlap_pair_frames_before": 0,
+      "body_overlap_pair_frames_after": 0,
+      "failure_intervals": [],
+      "motion_discontinuity_events": [],
+      "max_abs_ground_z_m": 0.0,
+      "source_motion_alerts": 6,
+      "shared_camera_global_tracks": 1,
+      "simultaneous_camera_fused_steps": 0,
+      "source_reprojection": {
+        "front": {
+          "after": {
+            "median_bbox_iou": 0.7433983154135246,
+            "median_height_ratio": 1.0064950328790427,
+            "p90_abs_log_height_ratio": 0.25792076222617094,
+            "p90_centre_x_error_px": 19.609257964742202
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.7433983154135246,
+            "median_height_ratio": 1.0064950328790427,
+            "missing_world_at_observation": 15,
+            "p90_abs_log_height_ratio": 0.25792076222617094,
+            "p90_centre_x_error_px": 19.609257964742202,
+            "reprojected": 432,
+            "source_clear_observations": 447
+          },
+          "before": {
+            "median_bbox_iou": 0.7395093220472504,
+            "median_height_ratio": 1.0063838769605395,
+            "p90_abs_log_height_ratio": 0.2656088513854872,
+            "p90_centre_x_error_px": 22.715350028628364
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.7395093220472504,
+            "median_height_ratio": 1.0063838769605395,
+            "missing_world_at_observation": 15,
+            "p90_abs_log_height_ratio": 0.2656088513854872,
+            "p90_centre_x_error_px": 22.715350028628364,
+            "reprojected": 432,
+            "source_clear_observations": 447
+          },
+          "common_projected_observations": 432,
+          "gained_projections": 0,
+          "lost_projections": 0
+        },
+        "left_repeater": {
+          "after": {
+            "median_bbox_iou": 0.47013927739912575,
+            "median_height_ratio": 1.4461901119713956,
+            "p90_abs_log_height_ratio": 0.4751693453922254,
+            "p90_centre_x_error_px": 85.68291202144525
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.4738450521053809,
+            "median_height_ratio": 1.277553290182058,
+            "missing_world_at_observation": 16,
+            "p90_abs_log_height_ratio": 0.409786680649587,
+            "p90_centre_x_error_px": 61.75973314165689,
+            "reprojected": 268,
+            "source_clear_observations": 284
+          },
+          "before": {
+            "median_bbox_iou": 0.18206185933787,
+            "median_height_ratio": 2.1833161913422643,
+            "p90_abs_log_height_ratio": 0.8451832787843809,
+            "p90_centre_x_error_px": 83.8715855554393
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.18011316469959926,
+            "median_height_ratio": 2.1919330955691354,
+            "missing_world_at_observation": 2,
+            "p90_abs_log_height_ratio": 0.8586356125533013,
+            "p90_centre_x_error_px": 83.70901546873979,
+            "reprojected": 64,
+            "source_clear_observations": 66
+          },
+          "common_projected_observations": 62,
+          "gained_projections": 206,
+          "lost_projections": 2
+        },
+        "right_repeater": {
+          "after": {
+            "median_bbox_iou": 0.34754545915494917,
+            "median_height_ratio": 1.1345995690394335,
+            "p90_abs_log_height_ratio": 0.2447856561338152,
+            "p90_centre_x_error_px": 55.46243908402652
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.4873074522844023,
+            "median_height_ratio": 1.1260204446498425,
+            "missing_world_at_observation": 6,
+            "p90_abs_log_height_ratio": 0.2420507718591093,
+            "p90_centre_x_error_px": 57.12359005419641,
+            "reprojected": 47,
+            "source_clear_observations": 53
+          },
+          "before": {
+            "median_bbox_iou": 0.26921831206786967,
+            "median_height_ratio": 2.067937631180847,
+            "p90_abs_log_height_ratio": 0.9713031754542144,
+            "p90_centre_x_error_px": 22.50258711126553
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.24617004671416168,
+            "median_height_ratio": 2.1573702117013984,
+            "p90_abs_log_height_ratio": 0.9647457574996842,
+            "p90_centre_x_error_px": 22.862466003109148,
+            "reprojected": 41,
+            "source_clear_observations": 41
+          },
+          "common_projected_observations": 30,
+          "gained_projections": 17,
+          "lost_projections": 11
+        }
+      },
+      "ego_clock_exact": true,
+      "source_track_base_hashes_exact": true,
+      "format_gate": "PASS"
+    },
+    {
+      "case": "oct22",
+      "frames": 1188,
+      "numerical_gate": "PASS",
+      "body_overlap_pair_frames_before": 0,
+      "body_overlap_pair_frames_after": 0,
+      "failure_intervals": [],
+      "motion_discontinuity_events": [],
+      "max_abs_ground_z_m": 0.0,
+      "source_motion_alerts": 21,
+      "shared_camera_global_tracks": 0,
+      "simultaneous_camera_fused_steps": 0,
+      "source_reprojection": {
+        "front": {
+          "after": {
+            "median_bbox_iou": 0.6173748192803672,
+            "median_height_ratio": 0.9990973859885386,
+            "p90_abs_log_height_ratio": 0.2444799792740798,
+            "p90_centre_x_error_px": 26.11423993575245
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.6173748192803672,
+            "median_height_ratio": 0.9990973859885386,
+            "missing_world_at_observation": 60,
+            "p90_abs_log_height_ratio": 0.2444799792740798,
+            "p90_centre_x_error_px": 26.11423993575245,
+            "reprojected": 308,
+            "source_clear_observations": 368
+          },
+          "before": {
+            "median_bbox_iou": 0.6040210618388464,
+            "median_height_ratio": 1.0005948647492104,
+            "p90_abs_log_height_ratio": 0.2626726461352148,
+            "p90_centre_x_error_px": 29.185600257546277
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.6039882862078738,
+            "median_height_ratio": 1.0007766662038922,
+            "missing_world_at_observation": 57,
+            "p90_abs_log_height_ratio": 0.2551234116470408,
+            "p90_centre_x_error_px": 29.531674197018333,
+            "reprojected": 311,
+            "source_clear_observations": 368
+          },
+          "common_projected_observations": 308,
+          "gained_projections": 0,
+          "lost_projections": 3
+        },
+        "left_repeater": {
+          "after": {
+            "median_bbox_iou": 0.46369416418228315,
+            "median_height_ratio": 1.033930911899756,
+            "p90_abs_log_height_ratio": 0.03336795750939597,
+            "p90_centre_x_error_px": 30.776219737921053
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.6236810008561318,
+            "median_height_ratio": 1.0823375640875457,
+            "missing_world_at_observation": 19,
+            "p90_abs_log_height_ratio": 0.12860916183893809,
+            "p90_centre_x_error_px": 25.330066343335183,
+            "reprojected": 4,
+            "source_clear_observations": 23
+          },
+          "before": {
+            "median_bbox_iou": 0.6181113026860741,
+            "median_height_ratio": 1.0940544723573595,
+            "p90_abs_log_height_ratio": 0.08989049467736075,
+            "p90_centre_x_error_px": 34.74828598435391
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.3344066410606461,
+            "median_height_ratio": 1.7517046708538164,
+            "missing_world_at_observation": 41,
+            "p90_abs_log_height_ratio": 0.6694945173502892,
+            "p90_centre_x_error_px": 57.61718965599633,
+            "reprojected": 6,
+            "source_clear_observations": 47
+          },
+          "common_projected_observations": 1,
+          "gained_projections": 3,
+          "lost_projections": 5
+        },
+        "right_repeater": {
+          "after": null,
+          "after_source_counts": {
+            "median_bbox_iou": 0.4929264808623835,
+            "median_height_ratio": 1.3510216947471443,
+            "missing_world_at_observation": 167,
+            "p90_abs_log_height_ratio": 0.3754500420919878,
+            "p90_centre_x_error_px": 11.865081727303277,
+            "reprojected": 11,
+            "source_clear_observations": 178
+          },
+          "before": null,
+          "before_source_counts": {
+            "missing_world_at_observation": 159,
+            "source_clear_observations": 159
+          },
+          "common_projected_observations": 0,
+          "gained_projections": 11,
+          "lost_projections": 0
+        }
+      },
+      "ego_clock_exact": true,
+      "source_track_base_hashes_exact": true,
+      "format_gate": "PASS"
+    },
+    {
+      "case": "oct02",
+      "frames": 1194,
+      "numerical_gate": "PASS",
+      "body_overlap_pair_frames_before": 0,
+      "body_overlap_pair_frames_after": 0,
+      "failure_intervals": [],
+      "motion_discontinuity_events": [],
+      "max_abs_ground_z_m": 0.0,
+      "source_motion_alerts": 28,
+      "shared_camera_global_tracks": 2,
+      "simultaneous_camera_fused_steps": 0,
+      "source_reprojection": {
+        "front": {
+          "after": {
+            "median_bbox_iou": 0.7270534089469673,
+            "median_height_ratio": 0.9558357760501262,
+            "p90_abs_log_height_ratio": 0.31306730959712237,
+            "p90_centre_x_error_px": 18.001949399892403
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.7270534089469673,
+            "median_height_ratio": 0.9558357760501262,
+            "p90_abs_log_height_ratio": 0.31306730959712237,
+            "p90_centre_x_error_px": 18.001949399892403,
+            "reprojected": 1315,
+            "source_clear_observations": 1315
+          },
+          "before": {
+            "median_bbox_iou": 0.6510121981176574,
+            "median_height_ratio": 0.9549206597821128,
+            "p90_abs_log_height_ratio": 0.33122372169785785,
+            "p90_centre_x_error_px": 26.014694716933615
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.6510121981176574,
+            "median_height_ratio": 0.9549206597821128,
+            "p90_abs_log_height_ratio": 0.33122372169785785,
+            "p90_centre_x_error_px": 26.014694716933615,
+            "reprojected": 1315,
+            "source_clear_observations": 1315
+          },
+          "common_projected_observations": 1315,
+          "gained_projections": 0,
+          "lost_projections": 0
+        },
+        "left_repeater": {
+          "after": {
+            "median_bbox_iou": 0.6067149837194182,
+            "median_height_ratio": 1.200639727843684,
+            "p90_abs_log_height_ratio": 0.5620296666192106,
+            "p90_centre_x_error_px": 32.66682786026419
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.6050115037492193,
+            "median_height_ratio": 1.1348111682819262,
+            "p90_abs_log_height_ratio": 0.5154167109187057,
+            "p90_centre_x_error_px": 26.596278101164845,
+            "reprojected": 575,
+            "source_clear_observations": 575
+          },
+          "before": {
+            "median_bbox_iou": 0.18186220970713227,
+            "median_height_ratio": 2.1347629649686066,
+            "p90_abs_log_height_ratio": 0.9878786717611938,
+            "p90_centre_x_error_px": 81.3173802040408
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.1810502385818256,
+            "median_height_ratio": 2.136257792696776,
+            "p90_abs_log_height_ratio": 0.9872837331563254,
+            "p90_centre_x_error_px": 80.92931400837404,
+            "reprojected": 305,
+            "source_clear_observations": 305
+          },
+          "common_projected_observations": 302,
+          "gained_projections": 273,
+          "lost_projections": 3
+        },
+        "right_repeater": {
+          "after": {
+            "median_bbox_iou": 0.6256412322711324,
+            "median_height_ratio": 1.1576453678118972,
+            "p90_abs_log_height_ratio": 0.36009916393500263,
+            "p90_centre_x_error_px": 101.64491509020242
+          },
+          "after_source_counts": {
+            "median_bbox_iou": 0.6416420796028584,
+            "median_height_ratio": 1.1255409524393776,
+            "p90_abs_log_height_ratio": 0.3476104671532976,
+            "p90_centre_x_error_px": 84.89039586492659,
+            "reprojected": 69,
+            "source_clear_observations": 69
+          },
+          "before": {
+            "median_bbox_iou": 0.25444044312597935,
+            "median_height_ratio": 1.5467370933381193,
+            "p90_abs_log_height_ratio": 0.7740454538336443,
+            "p90_centre_x_error_px": 187.4230693056601
+          },
+          "before_source_counts": {
+            "median_bbox_iou": 0.25444044312597935,
+            "median_height_ratio": 1.5467370933381193,
+            "p90_abs_log_height_ratio": 0.7740454538336443,
+            "p90_centre_x_error_px": 187.4230693056601,
+            "reprojected": 59,
+            "source_clear_observations": 59
+          },
+          "common_projected_observations": 59,
+          "gained_projections": 10,
+          "lost_projections": 0
+        }
+      },
+      "ego_clock_exact": true,
+      "source_track_base_hashes_exact": true,
+      "format_gate": "PASS"
+    }
+  ],
+  "delivery": [
+    {
+      "case": "oct26",
+      "id": "1j-04dR85uhr90E1dAvW0V0-ptaJQv6FU",
+      "url": "https://drive.google.com/file/d/1j-04dR85uhr90E1dAvW0V0-ptaJQv6FU/view?usp=drivesdk",
+      "bytes": 6226104,
+      "name": "20261126_위치보정_교차로10-26_전체검토본_021.mp4",
+      "local_video": "G:/3d/CT-scene-road-scope/runs/final-world-oct26-021/surrounding-world.mp4",
+      "folder_id": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30",
+      "sha256": "493320cd46bbe7fe56b92ae10170769907f6ecae7ae00069c2ea008c6634e166",
+      "format_verified": true
+    },
+    {
+      "case": "overview",
+      "id": "1UvpjX7FeKroDG8zkzOAMdpm4fd-QoPor",
+      "url": "https://drive.google.com/file/d/1UvpjX7FeKroDG8zkzOAMdpm4fd-QoPor/view?usp=drivesdk",
+      "name": "20261126_부분개선검토_7개영상_84초_021.mp4",
+      "local_video": "G:/3d/CT-scene-road-scope/runs/position-review-seven-cases-021.mp4",
+      "bytes": 16509193,
+      "folder_id": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30",
+      "sha256": "0b6d7f54f96fa3c9d04f04975694431ca80a25d28ef49eec63452bfbfa592d30",
+      "format_verified": true
+    },
+    {
+      "case": "highway",
+      "id": "1HgGflhA4f49h3lqtIJVN-6Cpl_ms3_P7",
+      "url": "https://drive.google.com/file/d/1HgGflhA4f49h3lqtIJVN-6Cpl_ms3_P7/view?usp=drivesdk",
+      "name": "20261126_위치보정_고속도로11-01_전체검토본_021.mp4",
+      "local_video": "G:/3d/CT-scene-road-scope/runs/final-world-highway-021/surrounding-world.mp4",
+      "bytes": 10006616,
+      "folder_id": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30",
+      "sha256": "c7429a97b110f88f8934dca42216f7a79bc3ac6fa4b75d52131f157b5659e200",
+      "format_verified": true
+    },
+    {
+      "case": "junction",
+      "id": "1iVzmJpx8V7krOPwmnzfd2QRjrY6CGgim",
+      "url": "https://drive.google.com/file/d/1iVzmJpx8V7krOPwmnzfd2QRjrY6CGgim/view?usp=drivesdk",
+      "name": "20261126_위치보정_교차로10-18_전체검토본_021.mp4",
+      "local_video": "G:/3d/CT-scene-road-scope/runs/final-world-junction-021/surrounding-world.mp4",
+      "bytes": 12813109,
+      "folder_id": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30",
+      "sha256": "2548f9cc786a315f5ba504d5eefc067597eba6f275f17094183af1a3abe09991",
+      "format_verified": true
+    },
+    {
+      "case": "oct22",
+      "id": "1S0uTaAX5d3oSPz6fVjiAavp6S36xLMXG",
+      "url": "https://drive.google.com/file/d/1S0uTaAX5d3oSPz6fVjiAavp6S36xLMXG/view?usp=drivesdk",
+      "name": "20261126_위치보정_도심10-22_전체검토본_021.mp4",
+      "local_video": "G:/3d/CT-scene-road-scope/runs/final-world-oct22-021/surrounding-world.mp4",
+      "bytes": 15861749,
+      "folder_id": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30",
+      "sha256": "2d5c441187cca56301e3ef60129ff207b9ebee7564bb8a31ea61ef3c24092bb1",
+      "format_verified": true
+    },
+    {
+      "case": "oct02",
+      "id": "1cM_ilIQuDChfFkajegI0Ar_Cr0Jblyy_",
+      "url": "https://drive.google.com/file/d/1cM_ilIQuDChfFkajegI0Ar_Cr0Jblyy_/view?usp=drivesdk",
+      "name": "20261126_위치보정_고속도로10-02_전체검토본_021.mp4",
+      "local_video": "G:/3d/CT-scene-road-scope/runs/final-world-oct02-021/surrounding-world.mp4",
+      "bytes": 10578434,
+      "folder_id": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30",
+      "sha256": "d91227b3878ccab4afa487636bbe4e86cff0f60cd9a33ce6129043eb4e929870",
+      "format_verified": true
+    },
+    {
+      "case": "aug28",
+      "id": "1EKQyg20GIOd50DEUL4_QE_tmB0L3jByC",
+      "url": "https://drive.google.com/file/d/1EKQyg20GIOd50DEUL4_QE_tmB0L3jByC/view?usp=drivesdk",
+      "name": "20261126_위치보정_08-28_잔여겹침_실패참고_021.mp4",
+      "local_video": "G:/3d/CT-scene-road-scope/runs/final-world-aug28-021/surrounding-world.mp4",
+      "bytes": 15688456,
+      "folder_id": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30",
+      "sha256": "3f51f56cc5727d2963d850deb701cbe1ac1c8697100c03e7c128acbdcf2ae4c5",
+      "format_verified": true
+    },
+    {
+      "case": "aug20",
+      "id": "1QpazYl_CGKw4A-lnUfjLmEyamzOyCqKd",
+      "url": "https://drive.google.com/file/d/1QpazYl_CGKw4A-lnUfjLmEyamzOyCqKd/view?usp=drivesdk",
+      "name": "20261126_위치보정_08-20_잔여오류_실패참고_021.mp4",
+      "local_video": "G:/3d/CT-scene-road-scope/runs/final-world-aug20-021/surrounding-world.mp4",
+      "bytes": 12522933,
+      "folder_id": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30",
+      "sha256": "bfd66fb1436a327aef0e8ed2a68b68d311d3fb4398fb4889cb14cd40b89f9206",
+      "format_verified": true
+    }
+  ],
+  "road_semantic_audit": {
+    "automatically_applied": false,
+    "report": "G:\\3d\\CT-scene-road-scope\\runs\\session-20261126-two-hours\\side-road-audit-022\\report.json",
+    "inferred_frames": 895,
+    "backend": "DirectML",
+    "cuda": false
+  },
+  "manual_visual_scope": "Four actual MP4 frames per case: opening .5s/2.5s, selected issue time, final .5s; original 4-camera strip retained. Not a claim of human real-time viewing of every frame.",
+  "invalidated_exploratory_source_sheet": "Aug20 afternoon image used for morning clip in one exploratory sheet; marked invalid, replaced by exact source/frame hash review; not used in shipped algorithm.",
+  "editor_final_checks": {
+    "normal": {
+      "passed": true,
+      "checks": 17
+    },
+    "failure": {
+      "passed": true,
+      "checks": 17
+    }
+  }
+}
