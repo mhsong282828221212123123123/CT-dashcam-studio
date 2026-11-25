@@ -74,7 +74,37 @@
     "source_motion_alerts_before": 42,
     "source_motion_alerts_after": 42,
     "unresolved_issue": "different observed vehicles share estimated lane/depth; conditional tracker covariance omits correlated calibration/model error",
-    "failure_reference_url": "https://drive.google.com/file/d/1nGeMAV4KKtavyWpS8tiy8Mngt0aWMX8A/view?usp=drivesdk"
+    "failure_reference_url": "https://drive.google.com/file/d/1nGeMAV4KKtavyWpS8tiy8Mngt0aWMX8A/view?usp=drivesdk",
+    "side_pitch_hypothesis": {
+      "status": "HYPOTHESIS_NOT_APPLIED",
+      "scope": "Class-height and bbox-bottom diagnostics, not measured camera calibration",
+      "rows": [
+        {
+          "id": "left_repeater-0026",
+          "height_prior_depth_m": 25.144368653291387,
+          "bbox_bottom_ground_depth_m": 11.943683484222355,
+          "implied_ray_y_correction_rad": -0.03736253870363353,
+          "implied_pitch_deg": -2.1407157796123912,
+          "actual_contact_fusion_weight": 0.9930125238404433
+        },
+        {
+          "id": "left_repeater-0049",
+          "height_prior_depth_m": 36.65008692563816,
+          "bbox_bottom_ground_depth_m": 15.310165927515628,
+          "implied_ray_y_correction_rad": -0.032326361592165426,
+          "implied_pitch_deg": -1.8521640862448832,
+          "actual_contact_fusion_weight": 0.9846821453973037
+        },
+        {
+          "id": "left_repeater-0056",
+          "height_prior_depth_m": 14.368776701733365,
+          "bbox_bottom_ground_depth_m": 8.784064726022303,
+          "implied_ray_y_correction_rad": -0.03761009086335605,
+          "implied_pitch_deg": -2.1548994735738405,
+          "actual_contact_fusion_weight": 0.9921061461919998
+        }
+      ]
+    }
   },
   "delivery": [
     {
