@@ -8,6 +8,7 @@ import copy,math
 import numpy as np
 from .road_frame import coordinates,world,frame_for
 from .road_geometry import lane_at,lane_bounds
+from .junctions import inside as inside_junction
 
 
 def axes(yaw):
@@ -124,7 +125,8 @@ def constrain(frames,road,dimensions,max_iterations=16):
         lane=lanes[i,a['id']]
         allow_unresolved_ego=lane is None and a['id'] in ego_conflict_keys
         allow_ray_depth=lane is None and a.get('collision_axis_W') is not None
-        if cap<=0 or (lane is None and not allow_unresolved_ego and not allow_ray_depth):return origin.copy()
+        allow_junction_side=lane is None and road.get('junctions') and inside_junction(road,origin,margin=5.)
+        if cap<=0 or (lane is None and not allow_unresolved_ego and not allow_ray_depth and not allow_junction_side):return origin.copy()
         delta=np.asarray(candidate)-origin;delta[2]=0
         if a.get('collision_axis_W') is not None:
             axis=np.asarray(a['collision_axis_W'],float);axis/=np.linalg.norm(axis)
@@ -204,8 +206,10 @@ def constrain(frames,road,dimensions,max_iterations=16):
                     if options:
                         score,pa,pb=min(options,key=lambda r:r[0])
                         if score[0]<hit[0]-1e-7:
-                            if wa>0:a['position_W']=pa
-                            if wb>0:b['position_W']=pb
+                            # Damped step during early iterations lets temporal smoothing build a smooth ramp instead of a 1-frame velocity spike.
+                            relax=.6 if iteration<max_iterations-3 else 1.
+                            if wa>0:a['position_W']=project(i,a,np.asarray(a['position_W'])+relax*(pa-np.asarray(a['position_W'])))
+                            if wb>0:b['position_W']=project(i,b,np.asarray(b['position_W'])+relax*(pb-np.asarray(b['position_W'])))
         if iteration>=3 and audit(result,dimensions)['gate']=='PASS':break
     # A smaller overlap count cannot justify a newly impossible motion. Reject
     # the affected temporal correction window, retaining its unresolved overlap.
@@ -219,10 +223,10 @@ def constrain(frames,road,dimensions,max_iterations=16):
             speed=np.linalg.norm(b['position_W']-a['position_W'])/dt
             if speed>65 and raw_speed<=65:bad.append(result[j]['time_s'])
         if not bad:continue
-        lo,hi=min(bad)-1.,max(bad)+1.
+        lo,hi=min(bad)-.25,max(bad)+.25
         for i,a in rows:
             t=result[i]['time_s'];distance=max(lo-t,t-hi,0.)
-            weight=min(distance/.5,1.);u=weight*weight*(3-2*weight)
+            weight=min(distance/.25,1.);u=weight*weight*(3-2*weight)
             a['position_W']=project(i,a,original[i,key]+u*(a['position_W']-original[i,key]))
         rejected.append(dict(id=key,start_s=lo,end_s=hi,reason='collision_separation_would_introduce_motion_discontinuity',source_review_required=True))
     changed=[]

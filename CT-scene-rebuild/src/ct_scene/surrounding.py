@@ -1293,16 +1293,24 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             if unresolved_side_height_position(road,actor,samples[nearest],pos):
                 local_scope_display_review.append(dict(time_s=t,global_id=actor['global_id'],reason='side_height_prior_conflicts_with_local_camera_road; source_visible_but_position_unlocalized',observation_modified=False))
                 continue
+            side_cam=samples[nearest].get('camera_id') in ('left_repeater','right_repeater')
+            side_dist=float(np.linalg.norm(pos[:2]-ep[:2]))
+            side_cap=float(min(1.5,max(.75,0.075*side_dist))) if not actor.get('frozen_lead') and side_cam else 0.
             active.append({'id':actor['global_id'],'position_W':pos,'yaw_rad':heading,'model':actor['model'],'ghost':ghost,'source_visible':source_visible,'position_support':position_support,
                            'rear_appearance':rear_lamp_trace.at(actor['global_id'],t,ghost),
-                           'collision_cap_m':.75 if not actor.get('frozen_lead') and samples[nearest].get('camera_id') in ('left_repeater','right_repeater') else 0.})
+                           'collision_cap_m':side_cap})
             row=samples[nearest]
             front_uncertain_obs=(row.get('camera_id')=='front' and row.get('projection_support') in ('estimated_ground_contact','far_ground_contact_low_confidence','observed_height_prior_after_unresolved_contact') and row.get('support') in ('detector_observation','flow_observation','offline_two_endpoint_gap') and not lane_observation_usable(row))
             front_reconstructed_gap=(actor.get('camera_id')=='front' and row.get('camera_id')=='reconstructed' and row.get('support')=='offline_two_endpoint_gap')
+            front_usable_obs=(row.get('camera_id')=='front' and row.get('projection_support')=='estimated_ground_contact' and row.get('support')=='detector_observation' and lane_observation_usable(row))
             if not actor.get('frozen_lead') and (front_uncertain_obs or front_reconstructed_gap):
                 ray=pos[:2]-ep[:2];distance=np.linalg.norm(ray)
                 if distance>8:
                     active[-1].update(collision_cap_m=float(min(2.,0.1*distance)),collision_axis_W=(ray/distance).tolist())
+            elif not actor.get('frozen_lead') and front_usable_obs:
+                ray=pos[:2]-ep[:2];distance=np.linalg.norm(ray)
+                if distance>15:
+                    active[-1].update(collision_cap_m=float(min(1.,0.04*distance)),collision_axis_W=(ray/distance).tolist())
         for prediction in blindspot_coasts_at(blindspot_coasts,t):
             old=next((a for a in active if a['id']==prediction['id']),None)
             override=prediction.pop('override_unobserved',False)

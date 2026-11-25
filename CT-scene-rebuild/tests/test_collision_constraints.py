@@ -128,3 +128,10 @@ class CollisionTests(unittest.TestCase):
         self.assertGreater(np.linalg.norm(moved),0.5)
         self.assertLessEqual(fixed[0]['actors'][0]['position_W'][1],3.980001)
         self.assertAlmostEqual(axis[0]*moved[1]-axis[1]*moved[0],0.,places=5)
+
+    def test_side_actors_inside_detected_junction_separate_within_cap(self):
+        jroad=dict(self.road,junctions=[dict(road_station_range_m=[0,20],polygon_W_xy=[[0,6],[20,6],[20,16],[0,16]])])
+        f=[dict(time_s=0,actors=[actor('s1',[10.,10.,0],cap=.75),actor('s2',[10.,11.2,0],cap=.75)])]
+        fixed,r=constrain(f,jroad,self.dims)
+        self.assertEqual(r['after']['gate'],'PASS')
+        self.assertLessEqual(r['max_correction_m'],.750001)
