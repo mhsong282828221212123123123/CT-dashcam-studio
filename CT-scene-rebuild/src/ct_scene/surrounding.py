@@ -722,11 +722,32 @@ class SurroundRenderer(Renderer):
         terminals=[j['terminal_display_station_m'] for j in road.get('junctions',[]) if 'terminal_display_station_m' in j]
         if terminals:road_end=min(road_end,min(terminals))
         zones=[(s['station_range_m'][0],s['station_range_m'][1],s['boundaries_y']) for s in road['lane_sections'] if not s.get('boundary_profile')] if road.get('lane_sections') else [(-100,road_end,bounds)] if mark is None else [(-100,mark-2,bounds),(mark+12,road_end,post)]
-        opp_enabled=bool((road.get('opposing_display') or {}).get('enabled'))
+        opp_cfg=road.get('opposing_display') or {}
+        opp_enabled=bool(opp_cfg.get('enabled'))
+        max_same_dir=opp_cfg.get('max_same_dir_lanes')
         for x1,x2,zone_bounds in zones:
             x2=min(x2,road_end)
             if x2<=x1:continue
             left,right=zone_bounds[0],zone_bounds[-1]
+            # When OSM confirms a narrower per-direction lane count (e.g. 1+1 two-way residential street)
+            # and camera paint included the opposing lane beyond an unconfirmed centerline, split the
+            # section cleanly at the inner divider instead of mirroring the already-included opposing lane.
+            split_inside=(opp_enabled and max_same_dir is not None and road.get('left_boundary_role')=='inferred_extent_not_confirmed_centreline'
+                          and len(zone_bounds)-1>max_same_dir and len(zone_bounds)>=3)
+            if split_inside:
+                split_idx=len(zone_bounds)-1-max_same_dir
+                center_y=zone_bounds[split_idx]
+                rect(x1,x2,right,left,-.02,road_color)
+                rect(x1,x2,center_y-.075,center_y-.005,-.012,[.85,.68,.22])
+                rect(x1,x2,center_y-.215,center_y-.145,-.012,[.85,.68,.22])
+                rect(x1,x2,left-.045,left+.045,-.012,lane_color)
+                rect(x1,x2,right-.045,right+.045,-.012,lane_color)
+                for y in zone_bounds[1:-1]:
+                    if abs(y-center_y)<1e-6:continue
+                    for x in np.arange(-100,road_end,6):
+                        a,b=max(x,x1),min(x+3,x2)
+                        if b>a:rect(a,b,y-.055,y+.055,-.012,lane_color)
+                continue
             zone_opp_w=max(3.0,float(left-right)) if opp_enabled else 0.
             rect(x1,x2,right,left,-.02,road_color)
             has_yellow=opp_enabled or road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline'
@@ -1305,6 +1326,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     two_way_display=(road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline') or bool((context_surface or {}).get('main_way_two_way'))
     if two_way_display and road.get('lane_geometry_status')!='unknown_route_display_only':
         road['opposing_display']=dict(enabled=True,lanes=max(1,min(3,same_dir_lanes)),lane_width_m=float(road.get('lane_width_m_prior',3.5)),
+                                      max_same_dir_lanes=(context_surface or {}).get('main_way_lanes_per_dir'),
                                       role='visual_opposing_carriageway_only; no_vehicle_or_lane_scope_change')
     blindspot_policy=dict(cfg.get('blindspot_policy',{}),observation_half_step_s=min(.15,float(np.median(np.diff([f['camera_time_s'] for f in front])))/2)+1e-6)
     blindspot_coasts,blindspot_review=build_blindspot_coasts(global_actors,road,times,ego,eyaw,blindspot_policy)

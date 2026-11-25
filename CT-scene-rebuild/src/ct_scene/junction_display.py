@@ -49,10 +49,10 @@ def mouth_edges(road,station):
 def opposing_width(road,station=None):
     opp=road.get('opposing_display') or {}
     if not opp.get('enabled'):return 0.
-    if station is not None:
-        b=display_bounds(road,station)
-        return max(3.0,float(b[0]-b[-1]))
-    b=road.get('boundaries_y',[3.5,0.])
+    max_same=opp.get('max_same_dir_lanes')
+    b=display_bounds(road,station) if station is not None else road.get('boundaries_y',[3.5,0.])
+    if max_same is not None and road.get('left_boundary_role')=='inferred_extent_not_confirmed_centreline' and len(b)-1>max_same:
+        return 0.
     return max(3.0,float(b[0]-b[-1]))
 
 

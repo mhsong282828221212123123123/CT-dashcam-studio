@@ -194,7 +194,19 @@ def build(ways,gps_rows,times,ego,records,road=None):
                 use='display_context_only; GPS_accuracy_does_not_assign_a_lane')
     if alignment is not None:
         two_way=any(by_id[wid]['tags'].get('oneway') not in ('yes','1','true','-1') and by_id[wid]['tags'].get('highway') not in ('motorway','motorway_link','trunk_link') for wid in main_ids if wid in by_id)
-        result.update(main_road_alignment=alignment,main_road_display='fused_with_camera_corridor',suppressed_duplicate_main_way_ids=sorted(main_ids),main_way_two_way=two_way)
+        per_dir=[]
+        for wid in main_ids:
+            if wid not in by_id:continue
+            t=by_id[wid]['tags']
+            if 'lanes' in t:
+                try:
+                    n=int(str(t['lanes']).split(';')[0])
+                    is_1w=t.get('oneway') in ('yes','1','true','-1') or t.get('highway') in ('motorway','motorway_link','trunk_link')
+                    per_dir.append(n if is_1w else max(1,n//2))
+                except ValueError:pass
+        result.update(main_road_alignment=alignment,main_road_display='fused_with_camera_corridor',
+                      suppressed_duplicate_main_way_ids=sorted(main_ids),main_way_two_way=two_way,
+                      main_way_lanes_per_dir=min(per_dir) if per_dir else None)
     if alignment is not None and alignment.get('local_regions'):result['registration']='local_camera_road_display_field; no_ego_actor_lane_or_metric_registration'
     return result
 
