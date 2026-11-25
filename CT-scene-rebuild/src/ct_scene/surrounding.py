@@ -725,11 +725,15 @@ class SurroundRenderer(Renderer):
         opp_cfg=road.get('opposing_display') or {}
         opp_enabled=bool(opp_cfg.get('enabled'))
         max_same_dir=opp_cfg.get('max_same_dir_lanes')
+        single_lane_total=opp_cfg.get('total_lanes')==1
         for x1,x2,zone_bounds in zones:
             x2=min(x2,road_end)
             if x2<=x1:continue
+            if single_lane_total and len(zone_bounds)>=3:
+                # Single-lane street (OSM lanes=1): keep only the ego-side lane and discard phantom outer sidewalk/curb bands.
+                zone_bounds=zone_bounds[-2:]
             left,right=zone_bounds[0],zone_bounds[-1]
-            # When OSM confirms a narrower per-direction lane count (e.g. 1+1 two-way residential street)
+            # When OSM confirms a narrower per-direction lane count (e.g. 1+1 two-way street)
             # and camera paint included the opposing lane beyond an unconfirmed centerline, split the
             # section cleanly at the inner divider instead of mirroring the already-included opposing lane.
             split_inside=(opp_enabled and max_same_dir is not None and road.get('left_boundary_role')=='inferred_extent_not_confirmed_centreline'
@@ -1323,9 +1327,12 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                                              [Path.cwd()/'map-cache',Path(__file__).parents[2]/'map-cache'],road=road,osm_path=map_osm_path)
         road['context_surface']=context_surface
     same_dir_lanes=max(1,len(road.get('boundaries_y',[0,0]))-1)
-    two_way_display=(road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline') or bool((context_surface or {}).get('main_way_two_way'))
-    if two_way_display and road.get('lane_geometry_status')!='unknown_route_display_only':
-        road['opposing_display']=dict(enabled=True,lanes=max(1,min(3,same_dir_lanes)),lane_width_m=float(road.get('lane_width_m_prior',3.5)),
+    osm_total=(context_surface or {}).get('main_way_total_lanes')
+    two_way_display=(osm_total!=1) and ((road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline') or bool((context_surface or {}).get('main_way_two_way')))
+    if road.get('lane_geometry_status')!='unknown_route_display_only' and (two_way_display or osm_total==1):
+        road['opposing_display']=dict(enabled=bool(two_way_display),lanes=max(1,min(3,same_dir_lanes)) if two_way_display else 0,
+                                      lane_width_m=float(road.get('lane_width_m_prior',3.5)),
+                                      total_lanes=osm_total,
                                       max_same_dir_lanes=(context_surface or {}).get('main_way_lanes_per_dir'),
                                       role='visual_opposing_carriageway_only; no_vehicle_or_lane_scope_change')
     blindspot_policy=dict(cfg.get('blindspot_policy',{}),observation_half_step_s=min(.15,float(np.median(np.diff([f['camera_time_s'] for f in front])))/2)+1e-6)

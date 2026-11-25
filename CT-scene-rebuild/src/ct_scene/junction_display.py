@@ -9,13 +9,16 @@ from .road_frame import world,coordinates
 
 
 def display_bounds(road,station):
-    if section_at(road,station):return boundaries_at(road,station)
+    single=(road.get('opposing_display') or {}).get('total_lanes')==1
+    def _trim(b):return list(b[-2:]) if single and len(b)>=3 else b
+    if section_at(road,station):return _trim(boundaries_at(road,station))
     sections=road.get('lane_sections',[])
     before=[s for s in sections if s['station_range_m'][1]<=station]
     after=[s for s in sections if s['station_range_m'][0]>=station]
-    if not before or not after:return boundaries_at(road,station)
+    if not before or not after:return _trim(boundaries_at(road,station))
     a=max(before,key=lambda s:s['station_range_m'][1]);b=min(after,key=lambda s:s['station_range_m'][0]);lo=a['station_range_m'][1];hi=b['station_range_m'][0]
-    w=(station-lo)/max(.001,hi-lo);left=(1-w)*a['boundaries_y'][0]+w*b['boundaries_y'][0];right=(1-w)*a['boundaries_y'][-1]+w*b['boundaries_y'][-1]
+    ab=_trim(a['boundaries_y']);bb=_trim(b['boundaries_y'])
+    w=(station-lo)/max(.001,hi-lo);left=(1-w)*ab[0]+w*bb[0];right=(1-w)*ab[-1]+w*bb[-1]
     return [float(left),float(right)]
 
 
