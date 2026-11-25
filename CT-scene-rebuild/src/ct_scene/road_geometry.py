@@ -26,7 +26,17 @@ def boundaries_at(road,station):
         while len(values)>2 and values[0]-values[1]<minimum:values.pop(0)
         while len(values)>2 and values[-2]-values[-1]<minimum:values.pop(-2)
         return values
-    return section['boundaries_y'] if section else road['boundaries_y']
+    if section:
+        return section['boundaries_y']
+    sections=road.get('lane_sections',[])
+    if len(sections)>=2:
+        prev_s=max((s for s in sections if s['station_range_m'][1]<=station),key=lambda s:s['station_range_m'][1],default=None)
+        next_s=min((s for s in sections if s['station_range_m'][0]>station),key=lambda s:s['station_range_m'][0],default=None)
+        if prev_s and next_s and len(prev_s['boundaries_y'])==len(next_s['boundaries_y']):
+            span=next_s['station_range_m'][0]-prev_s['station_range_m'][1]
+            t=float(np.clip((station-prev_s['station_range_m'][1])/max(span,1e-6),0.,1.))
+            return [float((1.-t)*a+t*b) for a,b in zip(prev_s['boundaries_y'],next_s['boundaries_y'])]
+    return road['boundaries_y']
 
 
 def support_kind(road,station):

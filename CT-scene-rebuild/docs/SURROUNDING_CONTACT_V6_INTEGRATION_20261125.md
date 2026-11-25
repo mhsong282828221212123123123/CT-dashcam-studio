@@ -8,6 +8,10 @@
 2. **차로 미확정 교차로 입구의 자차(`__ego__`) 겹침 해소 (`src/ct_scene/collision_constraints.py`)**:
    - 기존 `project()`는 `lane is None`이면 이동을 전면 차단해, 교차로 입구에서 측면 추정 차량(`left_repeater-0016`, `cap=0.75m`)이 자차 `__ego__`와 0.23m 겹쳐도 분리하지 못했다.
    - 도로 밖 일반 차량 쌍의 불변 규칙(`test_lane_boundary_and_unknown_road_are_not_crossed`)은 그대로 유지하면서, **`__ego__`와 직접 겹친 이동 가능 추정 차량에 한해** 기존 `cap`(`<=0.75m`)과 속도 연속성(`<=65 m/s`) 범위 내에서 자차와 분리되도록 수정했다.
+3. **교차로·횡단보도 구간의 1차로 찌그러짐(차선 오인) 및 측면 차량 누락 수정 (`src/ct_scene/road_geometry.py`, `src/ct_scene/surrounding.py`)**:
+   - `junction`의 앞뒤 구간(`sec 0·1·2`)이 모두 2차로인데, 구간 사이 교차로·횡단보도 공백에서 전역 1차로 기본값(`[1.47, -1.75]`)으로 떨어져 2차로가 갑자기 1차로로 좁아지던 문제를 인접 동차로 구간 간 `boundaries_at()` 선형 보간으로 수정했다(`supported()`는 교차로 내부에서 계속 `False` 유지).
+   - `--contact-adapter` 사용 시 `left_repeater`/`right_repeater`도 차체 높이 가정(`project_vehicle_height`) 대신 학습된 `v6` 지면 접점(`max_depth=35m`)을 우선 사용하도록 개선해, 기존에 도로 밖 8~9m로 밀려 누락되던 좌측 인접 차량(`t=47.5s` 좌측 후방 SUV 등)이 좌측 1차로에 정상 표시되도록 복원했다(`actors 12 → 13`, `numerical_gate=PASS`, 충돌 0프레임).
+   - 단, `t=17.5s` 교차로 횡단 차량 중 두 번째 차량(`front-0014`)의 코리더 밖 제외 및 4거리 직교 교차로 도로 형상 자체는 향후 과제로 남아 있다.
 
 ## 2. 실제 60초 3D 장면 4건 전/후 비교 (`models/contact-adapter-v6` + 교차로 자차 분리)
 

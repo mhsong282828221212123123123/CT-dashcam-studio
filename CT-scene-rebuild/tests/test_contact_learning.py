@@ -81,3 +81,16 @@ class ContactLearningTests(unittest.TestCase):
         p_shift=project_contact(box,opt['cameras']['front'],proto['cameras']['front'],contact_uv=[0.4,0.97])
         np.testing.assert_allclose(p_def,p_same)
         self.assertGreater(np.linalg.norm(p_shift[:2]-p_def[:2]),0.1)
+
+    def test_boundaries_at_interpolates_matching_lane_sections_across_gap(self):
+        from ct_scene.road_geometry import boundaries_at,supported
+        road=dict(
+            boundaries_y=[1.5,-1.7],
+            junctions=[dict(road_station_range_m=[100.,140.])],
+            lane_sections=[
+                dict(id='s0',station_range_m=[0.,100.],boundaries_y=[5.3,1.8,-1.6],supported=True),
+                dict(id='s1',station_range_m=[140.,300.],boundaries_y=[5.5,1.8,-1.8],supported=True),
+            ],
+        )
+        self.assertFalse(supported(road,120.))
+        np.testing.assert_allclose(boundaries_at(road,120.),[5.4,1.8,-1.7])
