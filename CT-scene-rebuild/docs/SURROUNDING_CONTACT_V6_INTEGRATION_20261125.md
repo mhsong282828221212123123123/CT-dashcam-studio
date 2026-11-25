@@ -12,6 +12,10 @@
    - `junction`의 앞뒤 구간(`sec 0·1·2`)이 모두 2차로인데, 구간 사이 교차로·횡단보도 공백에서 전역 1차로 기본값(`[1.47, -1.75]`)으로 떨어져 2차로가 갑자기 1차로로 좁아지던 문제를 인접 동차로 구간 간 `boundaries_at()` 선형 보간으로 수정했다(`supported()`는 교차로 내부에서 계속 `False` 유지).
    - `--contact-adapter` 사용 시 `left_repeater`/`right_repeater`도 차체 높이 가정(`project_vehicle_height`) 대신 학습된 `v6` 지면 접점(`max_depth=35m`)을 우선 사용하도록 개선해, 기존에 도로 밖 8~9m로 밀려 누락되던 좌측 인접 차량(`t=47.5s` 좌측 후방 SUV 등)이 좌측 1차로에 정상 표시되도록 복원했다(`actors 12 → 13`, `numerical_gate=PASS`, 충돌 0프레임).
    - 단, `t=17.5s` 교차로 횡단 차량 중 두 번째 차량(`front-0014`)의 코리더 밖 제외 및 4거리 직교 교차로 도로 형상 자체는 향후 과제로 남아 있다.
+4. **OSM 도로망 ↔ 3D 렌더링 도로 대조 검증 및 중복 T자 분기 수정 (`src/ct_scene/junctions.py`)**:
+   - `2026-10-18_11-22-43.osm`(junction)과 `2026-10-02_14-58-03.osm`(oct02)을 실제 3D 렌더링 도로에 직접 정합해 대조 검증했다(GPS-3D 회전차 `0.0°~0.1°`, 정합 RMS `junction 3.35m` / `oct02 6.43m`).
+   - 대조 결과 `junction`의 OSM T자 교차로(`node 2702419960`, 1개)가 `straight_openings()`의 `25m` 병합 임계값(실제 두 피크 간격 `25.3m`) 때문에 2개의 중복 분기 도로(`camera-map-opening-0`, `camera-map-opening-1`)로 잘못 그려지고 있음을 확인해, 동일 OSM 노드를 공유하는 피크의 병합 기준을 `35m`로 수정했다. 재렌더(`runs/gemini-3d-v6-junction-004`)에서 단일 T자 분기로 정리되었고 `numerical_gate=PASS`(충돌 0프레임, 13대)를 유지했다.
+   - 참고: `t=17.5s` 우회전 지점은 캐시된 `.osm` 파일에서 `금월로` 남서쪽 연결이 경계 밖으로 잘려 `degree=2`로만 기록되어 있어 OSM 노드 0건으로 남는다.
 
 ## 2. 실제 60초 3D 장면 4건 전/후 비교 (`models/contact-adapter-v6` + 교차로 자차 분리)
 

@@ -84,7 +84,7 @@ def straight_openings(times,ego,road,segments,map_records):
     groups=[]
     for p in peaks:
         common=set.intersection(*(set(row['nodes']) for row in groups[-1])) if groups else set()
-        if not groups or p['s']-groups[-1][-1]['s']>25 or not common.intersection(p['nodes']):groups.append([p])
+        if not groups or p['s']-groups[-1][-1]['s']>35 or not common.intersection(p['nodes']):groups.append([p])
         else:groups[-1].append(p)
     result=[]
     for group in groups:
