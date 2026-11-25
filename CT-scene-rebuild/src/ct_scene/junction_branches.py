@@ -64,7 +64,10 @@ def hints(road,map_records,times,ego_yaws,length_m=25.,observed_end_station=None
         else:
             display_s=display_station(junction);display_b=display_bounds(road,display_s)
             centre=np.asarray(world(road,display_s,(display_b[0]+display_b[-1])/2),float)
-        bounds=boundaries_at(road,a-.1);width=float(np.clip((bounds[0]-bounds[-1])*.5,3.5,10.));accepted=[];forward_supported=False
+        bounds=boundaries_at(road,a-.1)
+        own_w=float(bounds[0]-bounds[-1])
+        width=float(np.clip(own_w,5.5,10.)) if is_turning_junction(junction) else float(np.clip(own_w*.85,5.0,9.0))
+        accepted=[];forward_supported=False
         for group in clusters:
             support={p['node'] for p in group}
             if len(support)<min_support:continue
