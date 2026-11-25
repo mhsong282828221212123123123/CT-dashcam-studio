@@ -3,7 +3,7 @@ from pathlib import Path
 import hashlib,json
 import numpy as np
 from PIL import Image
-from .contact_learning import metadata,DIRECTIONS
+from .contact_learning import metadata,rich_metadata,flip_record,flip_contact_uv,DIRECTIONS
 
 
 def preprocess(crop):
@@ -23,6 +23,30 @@ class LearnedContact:
         self.encoder=ort.InferenceSession(str(directory/'contact-encoder.onnx'),options,providers=['CPUExecutionProvider'])
 
     def predict(self,crop,record):
+        if self.report.get('schema')=='ct_scene.experimental_contact_adapter_v3':
+            cfg=self.report['adapter_config']
+            batch=np.concatenate([preprocess(crop),preprocess(crop[:,::-1,:])],axis=0)
+            feats=self.encoder.run(None,{'rgb_normalized':batch})[0].astype(float)
+            z=np.clip((feats-self.weights['feature_mean'])/self.weights['feature_scale'],-6,6)
+            rec_f=flip_record(record)
+            c0,c1=cfg['contact_slice'];d0,d1=cfg['direction_slice']
+            zc=z[:,c0:c1]/np.sqrt(c1-c0);zd=z[:,d0:d1]/np.sqrt(d1-d0)
+            mc_fn=rich_metadata if cfg.get('rich_meta_contact',True) else metadata
+            mc=np.vstack([mc_fn(record),mc_fn(rec_f)])
+            md=np.vstack([metadata(record),metadata(rec_f)])
+            sc=self.report['selected']['contact']['feature_strength']
+            sd=self.report['selected']['direction']['feature_strength']
+            pc=np.c_[zc*sc,mc]@self.weights['contact_w']+self.weights['contact_b']
+            pd=np.c_[zd*sd,md]@self.weights['direction_w']+self.weights['direction_b']
+            if cfg.get('height_space_contact',True):
+                b=np.asarray(record['bbox_xyxy'],float);ratio=(b[2]-b[0])/(b[3]-b[1])
+                pc=np.c_[pc[:,0]/ratio,pc[:,1]]
+            c_o=pc[0]+[.5,1.0];c_f=flip_contact_uv(pc[1]+[.5,1.0])
+            contact=0.5*(c_o+c_f) if cfg.get('flip_tta',True) else c_o
+            d_logits=0.5*(pd[0]+pd[1][[0,1,3,2]]) if cfg.get('flip_tta',True) else pd[0]
+            return dict(contact_uv=contact.tolist(),direction=DIRECTIONS[int(np.argmax(d_logits))],
+                applied=False,status='experimental_not_approved',metric_position_available=False,
+                reason=self.report['adoption_gate'],confidence_calibrated=False)
         f=self.encoder.run(None,{'rgb_normalized':preprocess(crop)})[0][0].astype(float)
         z=np.clip((f-self.weights['feature_mean'])/self.weights['feature_scale'],-6,6)/np.sqrt(len(f))
         predictions={}

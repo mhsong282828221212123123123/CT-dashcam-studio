@@ -36,6 +36,32 @@ def metadata(r):
     return np.r_[[float(r['camera']==c) for c in CAMERAS],(b[:2]+b[2:])/[2560,1920],w/1280,h/960,w/h]
 
 
+def rich_metadata(r):
+    b=np.array(r['bbox_xyxy'],float);w,h=b[2:]-b[:2]
+    cx,cy=(b[0]+b[2])/2560.0-0.5,(b[1]+b[3])/1920.0-0.5
+    ar=w/h;cams=[float(r['camera']==c) for c in CAMERAS]
+    inter=[v for c in cams for v in (c*cx,c*cy,c*ar)]
+    return np.r_[cams,cx,cy,w/1280.0,h/960.0,ar,inter]
+
+
+def flip_record(r):
+    cam_map={'front':'front','left_repeater':'right_repeater','right_repeater':'left_repeater'}
+    b=r['bbox_xyxy']
+    return dict(camera=cam_map[r['camera']],bbox_xyxy=[1280.0-b[2],b[1],1280.0-b[0],b[3]])
+
+
+def flip_contact_uv(uv):
+    arr=np.asarray(uv,float)
+    if arr.ndim==1:return np.array([1.0-arr[0],arr[1]],float)
+    return np.c_[1.0-arr[:,0],arr[:,1]]
+
+
+def flip_direction_index(d):
+    swap=np.array([0,1,3,2])
+    arr=np.asarray(d,int);out=arr.copy();valid=arr>=0;out[valid]=swap[arr[valid]]
+    return out
+
+
 def ridge(x,y,alpha):
     mx=x.mean(0);my=y.mean(0);a=x-mx;b=y-my
     weights=a.T@np.linalg.solve(a@a.T+np.eye(len(a))*alpha,b)

@@ -1,0 +1,123 @@
+{
+  "status": "trained_experimental_image_heads",
+  "adapter_version": "v3",
+  "adapter_config": {
+    "contact_slice": [
+      2304,
+      5760
+    ],
+    "direction_slice": [
+      0,
+      2304
+    ],
+    "flip_tta": true,
+    "height_space_contact": true,
+    "rich_meta_contact": true
+  },
+  "runtime_adopted": false,
+  "metric_xyz_accuracy": "NOT_EVALUATED",
+  "new_supervised_weights": true,
+  "full_backbone_finetuned": false,
+  "source_split_unit": "recorded drive date/session",
+  "samples": {
+    "train": 63,
+    "validation": 43,
+    "test": 36
+  },
+  "selected": {
+    "contact": {
+      "feature_strength": 0.5,
+      "alpha": 0.1,
+      "validation_selection_score": 0.12725499349079702
+    },
+    "direction": {
+      "feature_strength": 1.0,
+      "alpha": 0.1,
+      "validation_selection_score": 0.10127552796432185
+    }
+  },
+  "results": {
+    "train": {
+      "contact_model": {
+        "samples": 37,
+        "mean_error_vehicle_height": 0.0675631609289656,
+        "median_error_vehicle_height": 0.050598988957971255,
+        "p90_error_vehicle_height": 0.16233568418997876
+      },
+      "bbox_bottom_baseline": {
+        "samples": 37,
+        "mean_error_vehicle_height": 0.1878697338299808,
+        "median_error_vehicle_height": 0.08578049342160791,
+        "p90_error_vehicle_height": 0.48566472105168557
+      },
+      "contact_count_by_camera": {
+        "front": 14,
+        "left_repeater": 15,
+        "right_repeater": 8
+      },
+      "direction_samples": 61,
+      "direction_accuracy": 1.0,
+      "training_majority_baseline": 0.39344262295081966
+    },
+    "validation": {
+      "contact_model": {
+        "samples": 25,
+        "mean_error_vehicle_height": 0.12725499349079702,
+        "median_error_vehicle_height": 0.11479501908820748,
+        "p90_error_vehicle_height": 0.2739287747073766
+      },
+      "bbox_bottom_baseline": {
+        "samples": 25,
+        "mean_error_vehicle_height": 0.15634658222020342,
+        "median_error_vehicle_height": 0.154453847774331,
+        "p90_error_vehicle_height": 0.3096429244068806
+      },
+      "contact_count_by_camera": {
+        "front": 8,
+        "left_repeater": 12,
+        "right_repeater": 5
+      },
+      "direction_samples": 41,
+      "direction_accuracy": 0.8048780487804879,
+      "training_majority_baseline": 0.3170731707317073
+    },
+    "test": {
+      "contact_model": {
+        "samples": 16,
+        "mean_error_vehicle_height": 0.18962759462720857,
+        "median_error_vehicle_height": 0.17255290084812636,
+        "p90_error_vehicle_height": 0.33750863927819186
+      },
+      "bbox_bottom_baseline": {
+        "samples": 16,
+        "mean_error_vehicle_height": 0.188348402917276,
+        "median_error_vehicle_height": 0.1492423603128227,
+        "p90_error_vehicle_height": 0.40319110735274083
+      },
+      "contact_count_by_camera": {
+        "front": 4,
+        "left_repeater": 8,
+        "right_repeater": 4
+      },
+      "direction_samples": 36,
+      "direction_accuracy": 0.4444444444444444,
+      "training_majority_baseline": 0.3055555555555556
+    }
+  },
+  "contact_2d_candidate_pass": false,
+  "all_cameras_have_three_test_contacts": true,
+  "direction_candidate_pass": false,
+  "annotation_provenance": {
+    "reviewers": [
+      "Codex direct source inspection",
+      "Codex image inspection; not independent human ground truth",
+      "Gemini"
+    ],
+    "independent_human_review": false,
+    "source": "visual image labels; no surveyed XYZ"
+  },
+  "adoption_rule": "Keep disabled: pilot labels only; 2D contact and coarse image direction do not validate metric 3D centre or world yaw",
+  "cuda": false,
+  "annotations_sha256": "192874f4f4ee74810403b9d611e97c21c3b4c18417195c2de3153ec1ec1acad9",
+  "encoder_sha256": "534f369473f29158ead32e3542b275749df1e4ebcb3b6bc2ded3106b5f40ec7c"
+}

@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
-from ct_scene.contact_learning import guard_splits,contact_target,ridge
-from ct_scene.learned_contact import preprocess
+from ct_scene.contact_learning import guard_splits,contact_target,ridge,rich_metadata,flip_record,flip_contact_uv,flip_direction_index
+from ct_scene.learned_contact import preprocess,LearnedContact
 
 class ContactLearningTests(unittest.TestCase):
     def test_same_recorded_date_cannot_be_training_and_test(self):
@@ -46,3 +46,25 @@ class ContactLearningTests(unittest.TestCase):
         guard_splits(rows)
         rows[0]['annotation_status']='unreviewed'
         with self.assertRaises(ValueError):guard_splits(rows)
+
+    def test_horizontal_flip_symmetry_helpers_and_rich_metadata(self):
+        rec=dict(camera='left_repeater',bbox_xyxy=[100.0,200.0,300.0,300.0])
+        flipped=flip_record(rec)
+        self.assertEqual(flipped['camera'],'right_repeater')
+        np.testing.assert_allclose(flipped['bbox_xyxy'],[980.0,200.0,1180.0,300.0])
+        self.assertEqual(rich_metadata(rec).shape,(17,))
+        np.testing.assert_allclose(flip_contact_uv([0.3,0.95]),[0.7,0.95])
+        np.testing.assert_array_equal(flip_direction_index([0,1,2,3,-1]),[0,1,3,2,-1])
+
+    def test_v2_and_v3_packaged_models_remain_unadopted(self):
+        from pathlib import Path
+        crop=np.ones((64,96,3),np.uint8)*128
+        rec=dict(camera='front',bbox_xyxy=[200.0,300.0,400.0,450.0])
+        for name in ['contact-adapter-v2','contact-adapter-v3']:
+            path=Path('models')/name
+            if not path.exists():continue
+            out=LearnedContact(path).predict(crop,rec)
+            self.assertFalse(out['applied'])
+            self.assertFalse(out['metric_position_available'])
+            self.assertEqual(len(out['contact_uv']),2)
+            self.assertIn(out['direction'],('away','toward','left','right'))
