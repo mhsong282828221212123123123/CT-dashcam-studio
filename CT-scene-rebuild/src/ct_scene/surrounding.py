@@ -1297,10 +1297,12 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                            'rear_appearance':rear_lamp_trace.at(actor['global_id'],t,ghost),
                            'collision_cap_m':.75 if not actor.get('frozen_lead') and samples[nearest].get('camera_id') in ('left_repeater','right_repeater') else 0.})
             row=samples[nearest]
-            if not actor.get('frozen_lead') and row.get('camera_id')=='front' and row.get('projection_support') in ('estimated_ground_contact','far_ground_contact_low_confidence','observed_height_prior_after_unresolved_contact') and row.get('support') in ('detector_observation','offline_two_endpoint_gap') and not lane_observation_usable(row):
+            front_uncertain_obs=(row.get('camera_id')=='front' and row.get('projection_support') in ('estimated_ground_contact','far_ground_contact_low_confidence','observed_height_prior_after_unresolved_contact') and row.get('support') in ('detector_observation','flow_observation','offline_two_endpoint_gap') and not lane_observation_usable(row))
+            front_reconstructed_gap=(actor.get('camera_id')=='front' and row.get('camera_id')=='reconstructed' and row.get('support')=='offline_two_endpoint_gap')
+            if not actor.get('frozen_lead') and (front_uncertain_obs or front_reconstructed_gap):
                 ray=pos[:2]-ep[:2];distance=np.linalg.norm(ray)
-                if distance>20:
-                    active[-1].update(collision_cap_m=2.,collision_axis_W=(ray/distance).tolist())
+                if distance>8:
+                    active[-1].update(collision_cap_m=float(min(2.,0.1*distance)),collision_axis_W=(ray/distance).tolist())
         for prediction in blindspot_coasts_at(blindspot_coasts,t):
             old=next((a for a in active if a['id']==prediction['id']),None)
             override=prediction.pop('override_unobserved',False)

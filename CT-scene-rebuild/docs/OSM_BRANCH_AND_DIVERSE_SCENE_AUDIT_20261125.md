@@ -29,23 +29,25 @@ Visual top-down overlays aligning cached OSM ways/junction nodes against 3D rend
 Auditing dense urban queues and untouched scenes (`aug25`, `oct26`, `aug20`, `aug28`) revealed why `collision_constraints.constrain()` was unable to resolve front-front monocular depth overlaps:
 1. **Unresolved-lane ray-axis rejection (`collision_constraints.py`)**: Front vehicles inside junctions or curved approaches (`lane is None`) were blocked from moving even strictly along their 1D observed camera viewing ray (`collision_axis_W`). Because 1D ray movement only adjusts monocular depth and never invents a lateral lane, `allow_ray_depth = lane is None and a.get('collision_axis_W') is not None` now permits bounded ray-only depth separation (while keeping free 2D `collision_axis_W is None` actors locked on unknown roads).
 2. **Angled-ray lane-boundary discard (`collision_constraints.py`)**: When a front vehicle near a lane edge stepped along an angled viewing ray, lateral clipping pushed the candidate off-ray and triggered the collinearity guard to discard the entire step. Replaced with 1D scalar binary-search clamping strictly along `collision_axis_W` inside `[lower + 0.02, upper - 0.02]`.
-3. **Missing uncertain front supports (`surrounding.py`)**: Added `'observed_height_prior_after_unresolved_contact'` and `'offline_two_endpoint_gap'` to the existing `distance > 20 m` front ray-depth constraint eligibility.
+3. **Missing uncertain front supports & near-range/gap ray-depth (`surrounding.py`)**: Added `'observed_height_prior_after_unresolved_contact'`, `'flow_observation'`, `'offline_two_endpoint_gap'` (including reconstructed front gap samples), and extended the ray-depth cap to `distance > 8 m` with a distance-proportional bound `min(2.0, 0.1 * distance)`.
 - Added 2 unit tests in `tests/test_collision_constraints.py` (`437 tests OK`).
 
-## 5. Multi-Scene Verification Summary (10 Diverse 60s Scenes, CPU-only)
+## 5. Multi-Scene Verification Summary (12 Diverse 60s Scenes, CPU-only, Opt-in `v6`)
 
 | Scene | GPS-3D RMS | OSM Branch Arms (Before -> After) | Overlap Frames (Before -> After) | `numerical_gate` | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `highway` (`curb-steering-highway-002`) | — | — | `22 -> 0` (raw `91 -> 1`) | `FAIL -> PASS` | Opt-in `v6` front contact |
-| `junction` (`curb-steering-junction-001`) | `3.35 m` | `2 -> 1` | `4 -> 0` | `FAIL -> PASS` | Duplicate T-arm removed; ego overlap & gap pinch fixed |
+| `highway` (`curb-steering-highway-002`) | — | — | `22 -> 0` (raw `91 -> 1`) | `FAIL -> PASS` | Final check confirmed `PASS` (`max_corr=0.20 m`) |
+| `junction` (`curb-steering-junction-001`) | `3.35 m` | `2 -> 1` | `4 -> 0` | `FAIL -> PASS` | Duplicate T-arm removed; final check confirmed `PASS` |
 | `ramp` (`curb-steering-ramp-001`) | — | — | `0 -> 0` | `PASS -> PASS` | Preserved |
+| `nov01-city` (`fresh-nov01-city-road-002`, untouched) | — | — | `4 -> 0` | `FAIL -> PASS` | Reconstructed front gap resolved (`max_corr=0.55 m`) |
+| `nov01-curve` (`fresh-nov01-curve-011`, untouched) | — | — | `0 -> 0` | `PASS -> PASS` | Final check confirmed `PASS` (`max_corr=0.00 m`) |
 | `oct02` (`curb-steering-oct02-002`) | `6.43 m` | — | `10 -> 10` | `FAIL` | 9 frames are 84.6 m distant ghost `front-0001/0002` |
-| `oct22` (`blindspot-junction-oct22-003`) | `2.29 m` | `9 -> 9` | `14 -> 3` | `FAIL` | All 11 `__ego__` vs `left_repeater-0035` overlaps resolved |
+| `oct22` (`blindspot-junction-oct22-003`) | `2.29 m` | `9 -> 9` | `14 -> 3` (-78.6%) | `FAIL` | All 11 `__ego__` vs `left_repeater-0035` overlaps resolved |
 | `aug25` (`practical-fresh-aug25-pipeline-001`, untouched) | `3.04 m` | `3 -> 3` | `8 -> 1` (-87.5%) | `FAIL` | Ray-depth separation at junction (`failures=1`) |
-| `oct26` (`blindspot-junction-oct26-004`) | `1.07 m` | `2 -> 2` | `137 -> 11` (-92.0%) | `FAIL` | Dense front-queue failures reduced `21 -> 3` |
-| `aug20` (`blindspot-junction-aug20-010`, untouched) | `5.25 m` | `2 -> 2` | `153 -> 29` (-81.0%) | `FAIL` | Arterial curve & gap-interpolated overlaps resolved |
+| `oct26` (`blindspot-junction-oct26-004`) | `1.07 m` | `2 -> 2` | `137 -> 4` (-97.1%) | `FAIL` | Dense front-queue failures reduced `21 -> 2` |
+| `aug20` (`blindspot-junction-aug20-010`, untouched) | `5.25 m` | `2 -> 2` | `153 -> 20` (-86.9%) | `FAIL` | Arterial curve & near/gap front overlaps resolved |
 | `aug28` (`blindspot-junction-aug28-004`) | `4.56 m` | `6 -> 6` | `16 -> 20` | `FAIL` | `front-0007/0014` (`2.85 m`) resolved; `front-0001/0033` (`0.33 m`) remains |
-| `aug26` (`blindspot-junction-aug26-003`) | `1.87 m` | `2 -> 3` | `81 -> 83` | `FAIL` | Shallow `22°` main-road arm removed; staggered 4-way north/south arms recovered |
+| `aug26` (`blindspot-junction-aug26-003`) | `1.87 m` | `2 -> 3` | `81 -> 79` | `FAIL` | Shallow `22°` main-road arm removed; staggered 4-way north/south arms recovered |
 
 ## 6. Verification
 - Full unit test suite: `437 tests` (`python -m unittest discover -s tests -q`) — **OK**.
