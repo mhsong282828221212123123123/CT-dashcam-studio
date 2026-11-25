@@ -42,6 +42,9 @@ def hints(road,map_records,times,ego_yaws,length_m=25.,observed_end_station=None
         usable={n for n,t in node_times.items() if len(t)>=3}
         if len(levels)!=1 or not usable:
             junction['branch_display_hints']=[];review.append(dict(junction_id=junction['id'],status='ambiguous_grade_or_insufficient_repeated_topology'));continue
+        # Connected staggered/divided-carriageway 2-node intersections split left/right cross-arms across the two adjacent nodes.
+        staggered_pair=len(usable)==2 and any((a,b) in observations or (b,a) in observations for a in usable for b in usable if a!=b)
+        min_support=1 if staggered_pair else math.ceil(len(usable)*.6)
         arms=[]
         for (node,neighbor),rows in observations.items():
             if node not in usable or len({t for t,y in rows})<3:continue
@@ -58,10 +61,10 @@ def hints(road,map_records,times,ego_yaws,length_m=25.,observed_end_station=None
         bounds=boundaries_at(road,a-.1);width=float(np.clip((bounds[0]-bounds[-1])*.5,3.5,10.));accepted=[];forward_supported=False
         for group in clusters:
             support={p['node'] for p in group}
-            if len(support)<math.ceil(len(usable)*.6):continue
+            if len(support)<min_support:continue
             angle=float(np.angle(np.mean(np.exp(1j*np.array([p['angle'] for p in group])))))
             if abs(angle_delta(angle,main_end))<math.radians(20):forward_supported=True
-            if min(abs(angle_delta(angle,main_start)),abs(angle_delta(angle,main_end)))<math.radians(20):continue
+            if min(abs(angle_delta(angle,main_start)),abs(angle_delta(angle,main_end)))<math.radians(30):continue
             direction=np.array([math.cos(angle),math.sin(angle)]);normal=np.array([-direction[1],direction[0]])
             polygon=[centre+direction*s+normal*d for s,d in [(0,-width/2),(length_m,-width/2),(length_m,width/2),(0,width/2)]]
             accepted.append(dict(polygon_W_xy=np.asarray(polygon).tolist(),heading_W_rad=angle,

@@ -978,18 +978,9 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         for row in rows:
             f=by_frame[row['frame_id']];t=f['camera_time_s'];yaw=float(np.interp(t,times,eyaw));ep=np.array([np.interp(t,times,ego[:,k]) for k in range(3)])
             learned_uv=predict_learned_uv(row,f,camera) if camera=='front' else None
-            side_uv=predict_learned_uv(row,f,camera) if camera in ('left_repeater','right_repeater') else None
             try:
                 if camera in ('left_repeater','right_repeater'):
-                    used_side_contact=False
-                    if side_uv is not None:
-                        try:
-                            cand=project_contact(row['bbox_xyxy'],profiles[camera],cfg['cameras'][camera],max_depth=35.,contact_uv=side_uv)
-                            relative=cand;projection_support='learned_side_ground_contact';used_side_contact=True
-                            contact_stats['applied_side']+=1
-                        except ValueError:pass
-                    if not used_side_contact:
-                        relative=project_vehicle_height(row['bbox_xyxy'],profiles[camera],cfg['cameras'][camera],float(dimensions[model][2]));projection_support='apparent_vehicle_height_prior'
+                    relative=project_vehicle_height(row['bbox_xyxy'],profiles[camera],cfg['cameras'][camera],float(dimensions[model][2]));projection_support='apparent_vehicle_height_prior'
                 else:
                     relative,projection_support=project_front(row,profiles[camera],cfg['cameras'][camera],float(dimensions[model][2]),f['width'],f['height'],contact_uv=learned_uv)
                     if learned_uv is not None:contact_stats['applied_front']+=1
@@ -1007,7 +998,9 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             box=row['bbox_xyxy']
             if camera in ('left_repeater','right_repeater') and row['support']=='detector_observation' and 'truncated' not in row.get('quality_flags',[]) and box[2]-box[0]>=60 and box[3]-box[1]>=45 and min(box[0],box[1],f['width']-box[2],f['height']-box[3])>8:
                 try:
+                    side_uv=predict_learned_uv(row,f,camera)
                     contact=project_contact(box,profiles[camera],cfg['cameras'][camera],contact_uv=side_uv)
+                    if side_uv is not None:contact_stats['applied_side']+=1
                     samples[-1]['side_ground_contact_W']=(ep+rotation(yaw)@contact).tolist()
                 except ValueError:pass
         if len(samples)<(3 if short else 8):excluded.append({'id':key,'reason':'insufficient_ground_contacts'});continue

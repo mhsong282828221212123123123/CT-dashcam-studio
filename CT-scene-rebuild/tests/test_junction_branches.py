@@ -63,3 +63,24 @@ class BranchHintTests(unittest.TestCase):
         self.assertGreater(len(polygons),10)
         self.assertTrue(all(len(p)==4 for p in polygons))
         self.assertFalse(any(min(v[0] for v in p)<40 and max(v[1] for v in p)>15 for p in polygons))
+
+    def test_staggered_two_node_crossing_keeps_both_perpendicular_arms(self):
+        road,_,t,yaw=fixture()
+        road['junctions'][0]['camera_station_peaks']=[dict(s=50.,nodes=[10,11],times=[3.,5.])]
+        b10=[dict(neighbor_node_id=1,relative_bearing_deg=0),dict(neighbor_node_id=11,relative_bearing_deg=180),dict(neighbor_node_id=2,relative_bearing_deg=-90)]
+        b11=[dict(neighbor_node_id=10,relative_bearing_deg=0),dict(neighbor_node_id=3,relative_bearing_deg=180),dict(neighbor_node_id=4,relative_bearing_deg=90)]
+        maps=[dict(time_s=tm,junction_candidates=[
+            dict(node_id=10,level=['0',False,False],distance_m=10,degree=3,branches=b10),
+            dict(node_id=11,level=['0',False,False],distance_m=14,degree=3,branches=b11),
+        ]) for tm in [3.,4.,5.]]
+        out,_=hints(road,maps,t,yaw)
+        angles=sorted(round(a['heading_W_rad'],5) for a in out[0]['branch_display_hints'])
+        self.assertEqual(angles,[round(-math.pi/2,5),round(math.pi/2,5)])
+
+    def test_shallow_main_road_split_is_not_drawn_as_cross_branch(self):
+        road,maps,t,yaw=fixture()
+        for row in maps:
+            row['junction_candidates'][0]['branches'].append(dict(neighbor_node_id=99,relative_bearing_deg=22))
+        out,_=hints(road,maps,t,yaw)
+        angles=[round(a['heading_W_rad'],5) for a in out[0]['branch_display_hints']]
+        self.assertEqual(angles,[round(math.pi/2,5)])
