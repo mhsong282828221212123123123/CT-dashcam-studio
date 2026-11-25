@@ -14,7 +14,7 @@ def guard_splits(records):
         for values,key in [(seen,r['session']),(images,r['source_image_sha256'])]:
             if key in values and values[key]!=r['split']: raise ValueError('Source/session leakage across splits')
             values[key]=r['split']
-        if r['annotation_status']!='visual_review_by_codex': raise ValueError('Unreviewed annotation')
+        if r['annotation_status'] not in ('visual_review_by_codex','visual_reviewed'): raise ValueError('Unreviewed annotation')
         pair=r.get('wheel_contacts_tile_xy')
         if pair is not None:
             points=np.asarray(pair,float)

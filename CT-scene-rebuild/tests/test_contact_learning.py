@@ -40,3 +40,9 @@ class ContactLearningTests(unittest.TestCase):
             records=[dict(split=s,session=str(i),source_image_sha256=str(i),annotation_status='visual_review_by_codex') for i,s in enumerate(['train','validation','test'])]
             records[0].update(wheel_contacts_tile_xy=pair,contact_tile_xy=[20,30])
             with self.assertRaises(ValueError):guard_splits(records)
+
+    def test_neutral_review_status_accepts_gemini_without_claiming_codex_review(self):
+        rows=[dict(split=s,session=str(i),source_image_sha256=str(i),annotation_status='visual_reviewed',reviewer='Gemini') for i,s in enumerate(['train','validation','test'])]
+        guard_splits(rows)
+        rows[0]['annotation_status']='unreviewed'
+        with self.assertRaises(ValueError):guard_splits(rows)

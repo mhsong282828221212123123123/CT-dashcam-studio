@@ -1,3 +1,5 @@
+다른 AI 인계: [실행·정답 작성·모델 학습 안내](docs/GEMINI_TRAINING_GUIDE.md). 현재 학습 v2는 새 날짜 접점 검증 실패로 기본3D에 미적용입니다.
+
 # CT Scene Rebuild
 
 최신: [영상 목록](docs/LATEST_RESULTS.md) · [입력 검사·장면 재렌더 작업](docs/WORKFLOW_EXECUTION_20261115.md). 화면 설정으로 확대/도로 밝기만 바꿀 때는 저장된 좌표를 재사용하며 추론하지 않습니다.
