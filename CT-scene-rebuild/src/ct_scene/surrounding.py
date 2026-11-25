@@ -45,6 +45,7 @@ from .handoff_appearance import review as review_handoff_appearance
 from .observed_surface import extract as observed_road_surface
 from .context_surface import extract as context_road_surface
 from .side_contact_recovery import recover as recover_side_contacts
+from .side_contact_fusion import fuse_side_sample,calibrate_side_height_tails
 from .collision_constraints import constrain as constrain_collisions, omit_conflicting_predictions
 from .side_paint_geometry import extract as extract_side_paint,apply as apply_side_paint,extend_calibrated_tail
 from .inside_median_pockets import extend as inside_median_approach_bands
@@ -212,9 +213,10 @@ def actor_corridor_lane(actor,boundaries,road_slope,road=None):
             t=np.array([r['time_s'] for r,q in inside]);s=np.array([q[0] for r,q in inside])
             velocity=float(np.linalg.lstsq(np.c_[t-t[0],np.ones(len(t))],s,rcond=None)[0][0])
             if velocity>=-1.5:return -1,'dominant_known_membership_in_local_left_pocket',y
-    if road and actor['camera_id']=='front' and road.get('left_boundary_role')=='camera_observed_yellow_divider_estimated_geometry':
+    if road and actor['camera_id'] in ('front','left_repeater') and road.get('left_boundary_role')=='camera_observed_yellow_divider_estimated_geometry':
         beyond=np.array([d-boundaries_at(road,float(s))[0] for s,d,h in local])
-        if float(np.median(beyond))>.25:
+        thresh=.25 if actor['camera_id']=='front' else .0
+        if float(np.median(beyond))>thresh:
             return None,'beyond_observed_divider_without_supported_auxiliary_membership',y
     if road and road.get('lane_sections'):
         lanes=[lane_at(road,float(s),float(d)) for s,d,_ in local]
@@ -992,7 +994,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     def predict_learned_uv(row,f,camera):
         if contact_model is None or row['support']!='detector_observation' or 'truncated' in row.get('quality_flags',[]):return None
         b=row['bbox_xyxy'];w,h=b[2]-b[0],b[3]-b[1]
-        if w<85 or h<55 or min(b[0],b[1],f['width']-b[2],f['height']-b[3])<8:return None
+        min_w,min_h,min_m=(60,42,6) if camera=='front' else (34,28,5)
+        if w<min_w or h<min_h or min(b[0],b[1],f['width']-b[2],f['height']-b[3])<min_m:return None
         fid=f['frame_id']
         if fid not in contact_img_cache:
             if len(contact_img_cache)>64:contact_img_cache.clear()
@@ -1043,10 +1046,16 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         samples=[];hist=[]
         for row in rows:
             f=by_frame[row['frame_id']];t=f['camera_time_s'];yaw=float(np.interp(t,times,eyaw));ep=np.array([np.interp(t,times,ego[:,k]) for k in range(3)])
-            learned_uv=predict_learned_uv(row,f,camera) if camera=='front' else None
+            learned_uv=predict_learned_uv(row,f,camera)
+            side_fusion=None
             try:
                 if camera in ('left_repeater','right_repeater'):
-                    relative=project_vehicle_height(row['bbox_xyxy'],profiles[camera],cfg['cameras'][camera],float(dimensions[model][2]));projection_support='apparent_vehicle_height_prior'
+                    side_fusion=fuse_side_sample(row,f['width'],f['height'],profiles[camera],cfg['cameras'][camera],
+                                                 dimensions[model],project_contact,project_vehicle_height,
+                                                 contact_uv=learned_uv,camera=camera)
+                    relative=side_fusion['relative_ego_m'].copy()
+                    projection_support=side_fusion['projection_support']
+                    if learned_uv is not None and side_fusion['contact_fusion_weight']>0:contact_stats['applied_side']+=1
                 else:
                     relative,projection_support=project_front(row,profiles[camera],cfg['cameras'][camera],float(dimensions[model][2]),f['width'],f['height'],contact_uv=learned_uv)
                     if learned_uv is not None:contact_stats['applied_front']+=1
@@ -1056,17 +1065,29 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                 relative[0]+=float(dimensions[model][1] if side_body else lengths[model])/2
             position=ep+rotation(yaw)@relative
             if not -45<relative[0]<(143 if camera=='front' else 70):continue
-            quality=.3 if camera!='front' or 'truncated' in row['quality_flags'] else 1.
-            if projection_support=='observed_height_prior_after_unresolved_contact':quality=.2
-            samples.append({'time_s':float(t),'position_W':position.tolist(),'unrefined_position_W':position.tolist(),'frame_id':f['frame_id'],'support':row['support'],'quality':quality,
+            if side_fusion is not None:
+                quality= .22 if 'truncated' in row['quality_flags'] else side_fusion['quality']
+            else:
+                quality=.3 if camera!='front' or 'truncated' in row['quality_flags'] else 1.
+                if projection_support=='observed_height_prior_after_unresolved_contact':quality=.2
+            sample_entry={'time_s':float(t),'position_W':position.tolist(),'unrefined_position_W':position.tolist(),'frame_id':f['frame_id'],'support':row['support'],'quality':quality,
                 'bbox_xyxy':row['bbox_xyxy'],'image_width':f['width'],'image_height':f['height'],'camera_id':camera,
-                'projection_support':projection_support})
+                'projection_support':projection_support}
+            if side_fusion is not None:
+                sample_entry['position_sigma_m']=side_fusion['position_sigma_m']
+                sample_entry['contact_fusion_weight']=side_fusion['contact_fusion_weight']
+                sample_entry['_rel_fused_ego']=side_fusion['relative_ego_m'].tolist()
+                sample_entry['_rel_height_ego']=side_fusion['relative_height_m'].tolist()
+                sample_entry['_is_truncated']='truncated' in row.get('quality_flags',[])
+            samples.append(sample_entry)
             box=row['bbox_xyxy']
             if camera in ('left_repeater','right_repeater') and row['support']=='detector_observation' and 'truncated' not in row.get('quality_flags',[]) and box[2]-box[0]>=60 and box[3]-box[1]>=45 and min(box[0],box[1],f['width']-box[2],f['height']-box[3])>8:
                 try:
                     contact=project_contact(box,profiles[camera],cfg['cameras'][camera])
                     samples[-1]['side_ground_contact_W']=(ep+rotation(yaw)@contact).tolist()
                 except ValueError:pass
+        if camera in ('left_repeater','right_repeater') and samples:
+            calibrate_side_height_tails(samples,times,ego,eyaw,cfg['cameras'][camera],rotation)
         if len(samples)<(3 if short else 8):excluded.append({'id':key,'reason':'insufficient_ground_contacts'});continue
         actors.append({'id':key,'camera_id':camera,'model':model,'asset_class_support':class_support,'frozen_lead':False,'samples':samples,'short_crossing_candidate':short})
     left_median_membership=left_median_membership_review(package,frames,observations)
@@ -1432,7 +1453,16 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             side_cam=samples[nearest].get('camera_id') in ('left_repeater','right_repeater')
             side_dist=float(np.linalg.norm(pos[:2]-ep[:2]))
             side_height=samples[nearest].get('projection_support')=='apparent_vehicle_height_prior'
-            side_cap=float(min(2.5,max(.75,0.15*side_dist)) if side_height else min(1.5,max(.75,0.075*side_dist))) if not actor.get('frozen_lead') and side_cam else 0.
+            side_sigma=samples[nearest].get('position_sigma_m')
+            if not actor.get('frozen_lead') and side_cam:
+                if side_height:
+                    side_cap=float(min(2.5,max(.75,0.15*side_dist)))
+                elif side_sigma is not None:
+                    side_cap=float(min(1.5,max(.75,0.85*float(side_sigma))))
+                else:
+                    side_cap=float(min(1.5,max(.75,0.075*side_dist)))
+            else:
+                side_cap=0.
             active.append({'id':actor['global_id'],'position_W':pos,'yaw_rad':heading,'model':actor['model'],'ghost':ghost,'source_visible':source_visible,'position_support':position_support,
                            'rear_appearance':rear_lamp_trace.at(actor['global_id'],t,ghost),
                            'collision_cap_m':side_cap})

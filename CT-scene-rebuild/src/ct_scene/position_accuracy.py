@@ -21,6 +21,7 @@ from .junctions import inside as inside_junction
 from .learned_contact import LearnedContact
 from .road_frame import coordinates as road_coordinates
 from .road_geometry import boundaries_at, pocket_width, supported as road_supported
+from .side_contact_fusion import fuse_side_sample
 from .surrounding import project_contact, project_vehicle_height
 
 DISTANCE_BINS = (
@@ -126,16 +127,38 @@ def evaluate_contact_labels(annotations_path, lens_config_path, prototype_config
                 preds[name] = p_ad[:2]
             except ValueError:
                 preds[name] = None
-        # 4. Current production pipeline simulation (front=v6 or bbox_bottom; side=apparent_height_prior)
+        # 4. Step 1 legacy pipeline (front=v6 or bbox_bottom; side=apparent_height_prior)
         w_box, h_box = box[2] - box[0], box[3] - box[1]
-        gate_ok = w_box >= 85 and h_box >= 55 and min(box[0], box[1], 1280 - box[2], 960 - box[3]) >= 8
+        gate_v6 = w_box >= 85 and h_box >= 55 and min(box[0], box[1], 1280 - box[2], 960 - box[3]) >= 8
         if cam == 'front':
-            if 'contact-adapter-v6' in preds and gate_ok and preds['contact-adapter-v6'] is not None:
-                preds['current_pipeline'] = preds['contact-adapter-v6']
+            if 'contact-adapter-v6' in preds and gate_v6 and preds['contact-adapter-v6'] is not None:
+                preds['step1_baseline_pipeline'] = preds['contact-adapter-v6']
             else:
-                preds['current_pipeline'] = preds['bbox_bottom']
+                preds['step1_baseline_pipeline'] = preds['bbox_bottom']
         else:
-            preds['current_pipeline'] = preds['apparent_height_prior']
+            preds['step1_baseline_pipeline'] = preds['apparent_height_prior']
+
+        # 5. Current Step 2 pipeline (front=v7/v6 gated or bbox_bottom; side=gated contact + height-prior fusion)
+        if cam == 'front':
+            gate_f = w_box >= 60 and h_box >= 42 and min(box[0], box[1], 1280 - box[2], 960 - box[3]) >= 6
+            chosen_f = preds.get('contact-adapter-v7') if 'contact-adapter-v7' in preds else preds.get('contact-adapter-v6')
+            preds['current_pipeline'] = chosen_f if (gate_f and chosen_f is not None) else preds['bbox_bottom']
+        else:
+            uv_side = None
+            if crop is not None and crop.size > 0:
+                side_model = adapters.get('contact-adapter-v7') or adapters.get('contact-adapter-v6')
+                if side_model is not None:
+                    uv_side = side_model.predict(crop, dict(camera=cam, bbox_xyxy=box, crop_rect_xyxy=crop_rect))['contact_uv']
+            syn_row = dict(bbox_xyxy=box, support='detector_observation', quality_flags=[])
+            try:
+                # Evaluate raw contact fusion (zero body-center shift when comparing directly against tire-contact GT)
+                fused = fuse_side_sample(
+                    syn_row, 1280, 960, profile, mount, [4.6, 0.0, default_vehicle_height_m],
+                    project_contact, project_vehicle_height, contact_uv=uv_side, camera=cam
+                )
+                preds['current_pipeline'] = fused['relative_ego_m'][:2]
+            except ValueError:
+                preds['current_pipeline'] = preds['apparent_height_prior']
 
         rows.append(dict(
             id=rec['id'],
@@ -148,7 +171,7 @@ def evaluate_contact_labels(annotations_path, lens_config_path, prototype_config
             predictions={k: (v.tolist() if v is not None else None) for k, v in preds.items()},
         ))
 
-    methods = ['current_pipeline', 'bbox_bottom', 'apparent_height_prior', *adapters.keys()]
+    methods = ['step1_baseline_pipeline', 'current_pipeline', 'bbox_bottom', 'apparent_height_prior', *adapters.keys()]
     subsets = {
         'all_visible': lambda r: True,
         'holdout_val_test': lambda r: r['split'] in ('validation', 'test'),
