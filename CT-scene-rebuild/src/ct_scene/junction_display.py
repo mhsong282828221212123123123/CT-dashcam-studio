@@ -46,14 +46,22 @@ def mouth_edges(road,station):
     return left,right
 
 
+def opposing_width(road):
+    opp=road.get('opposing_display') or {}
+    if not opp.get('enabled'):return 0.
+    return float(opp.get('lanes',1))*float(opp.get('lane_width_m',road.get('lane_width_m_prior',3.5)))
+
+
 def branch_edges(road):
-    segments=[]
+    segments=[];opp_w=opposing_width(road)
     for junction in road.get('junctions',[]):
         for arm in junction.get('branch_display_hints',[]):
             centre=np.asarray(arm['origin_W_xy']);angle=arm['heading_W_rad'];direction=np.array([math.cos(angle),math.sin(angle)]);normal=np.array([-direction[1],direction[0]])
             station=float(coordinates(road,centre)[0]);bounds=display_bounds(road,station);tangent=float(coordinates(road,centre)[2]);sine=abs(math.sin(angle-tangent))
             if sine<.2:continue
-            start=(bounds[0]-bounds[-1])/(2*sine)+arm['width_m']*.5+1.
+            is_left=math.sin(angle-tangent)>0
+            extra=opp_w if is_left else 0.
+            start=(bounds[0]-bounds[-1]+2*extra)/(2*sine)+arm['width_m']*.5+1.
             if start>=arm['length_m']:continue
             for sign in [-1,1]:
                 offset=normal*arm['width_m']*.5*sign
@@ -69,47 +77,53 @@ def junction_markings(road):
     """
     hubs=[];stop_bars=[];crosswalks=[];branch_centers=[]
     extent=road.get('reference_line',{}).get('supported_extent_m')
+    opp_w=opposing_width(road)
     for junction in road.get('junctions',[]):
         arms=junction.get('branch_display_hints',[])
         peaks=junction.get('camera_station_peaks',[])
         if not arms and not peaks:continue
         station=float(np.median([p['s'] for p in peaks])) if peaks else sum(junction['road_station_range_m'])/2
         bounds=display_bounds(road,station)
-        corridor_w=max(3.5,bounds[0]-bounds[-1])
-        half=min(9.,max(4.,corridor_w*.5+1.5))
-        centre=np.asarray(world(road,station,(bounds[0]+bounds[-1])/2),float)
-        if arms:
+        full_left=bounds[0]+opp_w;full_right=bounds[-1]
+        corridor_w=max(3.5,full_left-full_right)
+        half=min(9.,max(4.,(bounds[0]-bounds[-1])*.5+1.5))
+        tangent=float(coordinates(road,world(road,station,0))[2])
+        has_left_arm=any(math.sin(float(a['heading_W_rad'])-tangent)>.2 for a in arms)
+        has_right_arm=any(math.sin(float(a['heading_W_rad'])-tangent)<-.2 for a in arms)
+        if arms and (has_left_arm and has_right_arm):
+            centre=np.asarray(world(road,station,(full_left+full_right)/2),float)
             max_arm_w=max(float(a.get('width_m',5.)) for a in arms)
-            radius=min(12.,max(corridor_w*.55+1.2,max_arm_w*.75+1.2))
+            radius=min(12.,max(corridor_w*.52+.8,max_arm_w*.75+1.0))
             angles=np.linspace(0,2*math.pi,16,endpoint=False)
             hubs.append((centre+np.c_[np.cos(angles),np.sin(angles)]*radius).tolist())
-        # Approach stop bar + zebra crosswalk on main corridor (entry & exit if inside supported extent)
+        # Approach stop bar (own lanes only) + zebra crosswalk (full two-way width)
         for sign in (-1,1):
             cw_s=station+sign*(half+1.6)
             sb_s=station+sign*(half+3.4)
             if extent and not (extent[0]+2.<=sb_s<=extent[1]-2.):continue
             b_sb=display_bounds(road,sb_s)
-            p_l1,p_r1=world(road,sb_s-.20,b_sb[0]-.15),world(road,sb_s-.20,b_sb[-1]+.15)
-            p_l2,p_r2=world(road,sb_s+.20,b_sb[0]-.15),world(road,sb_s+.20,b_sb[-1]+.15)
+            # Stop bar spans our driving direction on entry (sign==-1), opposing side on exit if two-way
+            sb_hi,sb_lo=(b_sb[0]-.15,b_sb[-1]+.15) if sign==-1 or opp_w<=0 else (b_sb[0]+opp_w-.15,b_sb[0]+.15)
+            p_l1,p_r1=world(road,sb_s-.20,sb_hi),world(road,sb_s-.20,sb_lo)
+            p_l2,p_r2=world(road,sb_s+.20,sb_hi),world(road,sb_s+.20,sb_lo)
             stop_bars.append([p_l1.tolist(),p_r1.tolist(),p_r2.tolist(),p_l2.tolist()])
             b_cw=display_bounds(road,cw_s)
             d_cur=b_cw[-1]+.45
-            while d_cur+.45<=b_cw[0]-.35:
+            while d_cur+.45<=b_cw[0]+opp_w-.35:
                 c1,c2=world(road,cw_s-1.2,d_cur),world(road,cw_s+1.2,d_cur)
                 c3,c4=world(road,cw_s+1.2,d_cur+.45),world(road,cw_s-1.2,d_cur+.45)
                 crosswalks.append([c1.tolist(),c2.tolist(),c3.tolist(),c4.tolist()])
                 d_cur+=.95
         # Branch arm yellow centerlines + branch entry crosswalks
-        tangent=float(coordinates(road,world(road,station,0))[2])
         for arm in arms:
             orig=np.asarray(arm['origin_W_xy'],float);angle=float(arm['heading_W_rad'])
             direction=np.array([math.cos(angle),math.sin(angle)]);normal=np.array([-direction[1],direction[0]])
             sine=abs(math.sin(angle-tangent))
             if sine<.2:continue
+            is_left=math.sin(angle-tangent)>0
             arm_w=float(arm.get('width_m',5.));arm_len=float(arm.get('length_m',25.))
-            start=(corridor_w)/(2*sine)+arm_w*.45+1.
+            start=(bounds[0]-bounds[-1]+(2*opp_w if is_left else 0.))/(2*sine)+arm_w*.45+1.
             if start+1.5>=arm_len:continue
-            # Dashed yellow centerline along the cross-street arm
             if arm_w>=4.2:
                 s_cur=start+2.5
                 while s_cur+2.2<=arm_len:
@@ -117,7 +131,6 @@ def junction_markings(road):
                     p0,p1=orig+direction*s_cur,orig+direction*s_end
                     branch_centers.append([(p0-normal*.06).tolist(),(p1-normal*.06).tolist(),(p1+normal*.06).tolist(),(p0+normal*.06).tolist()])
                     s_cur+=5.0
-            # Crosswalk stripes across the branch mouth
             cw_orig=orig+direction*(start+1.1)
             d_cur=-arm_w*.42
             while d_cur+.4<=arm_w*.42:

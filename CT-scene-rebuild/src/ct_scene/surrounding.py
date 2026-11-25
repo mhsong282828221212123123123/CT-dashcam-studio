@@ -36,7 +36,7 @@ from .local_solid_corridor import fit as fit_local_solid_corridor,unresolved_sid
 from .source_strip import status as source_strip_status
 from .right_edge_profile import refine as refine_right_edge_profile
 from .blindspot_continuity import build as build_blindspot_coasts,at as blindspot_coasts_at
-from .junction_display import display_bounds,corridor_gaps,mouth_edges,branch_edges,junction_markings
+from .junction_display import display_bounds,corridor_gaps,mouth_edges,branch_edges,junction_markings,opposing_width
 from .camera_junction_roads import supplement as camera_crossing_roads
 from .static_actor_refine import refine_actor as refine_static_actor
 from .left_median_membership import review as left_median_membership_review
@@ -722,18 +722,29 @@ class SurroundRenderer(Renderer):
         terminals=[j['terminal_display_station_m'] for j in road.get('junctions',[]) if 'terminal_display_station_m' in j]
         if terminals:road_end=min(road_end,min(terminals))
         zones=[(s['station_range_m'][0],s['station_range_m'][1],s['boundaries_y']) for s in road['lane_sections'] if not s.get('boundary_profile')] if road.get('lane_sections') else [(-100,road_end,bounds)] if mark is None else [(-100,mark-2,bounds),(mark+12,road_end,post)]
+        opp_w=opposing_width(road)
+        opp_lanes=int((road.get('opposing_display') or {}).get('lanes',0)) if opp_w>0 else 0
+        opp_lw=opp_w/max(1,opp_lanes) if opp_lanes else 0.
         for x1,x2,zone_bounds in zones:
             x2=min(x2,road_end)
             if x2<=x1:continue
             left,right=zone_bounds[0],zone_bounds[-1]
             rect(x1,x2,right,left,-.02,road_color)
-            left_lines=(left-.04,) if road.get('left_boundary_role')=='inferred_extent_not_confirmed_centreline' else (left-.04,left-.18)
-            left_color=lane_color if road.get('left_boundary_role')=='inferred_extent_not_confirmed_centreline' else [.85,.68,.22]
+            has_yellow=opp_w>0 or road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline'
+            left_lines=(left-.04,left-.18) if has_yellow else (left-.04,)
+            left_color=[.85,.68,.22] if has_yellow else lane_color
             pockets=road.get('left_pockets',[])
             cuts=sorted({x1,x2,*[float(x) for x in np.arange(-100,road_end,3) if x1<x<x2],*[k[0] for p in pockets for k in p['width_knots'] if x1<k[0]<x2]})
             for a,b in zip(cuts,cuts[1:]):
                 wa,wb=pocket_width(pockets,a),pocket_width(pockets,b)
                 if max(wa,wb)>0:quad(a,b,left,left+wa,left,left+wb,-.02,road_color)
+                if opp_w>0:
+                    quad(a,b,left+wa,left+wa+opp_w,left+wb,left+wb+opp_w,-.0205,road_color)
+                    quad(a,b,left+wa+opp_w-.045,left+wa+opp_w+.045,left+wb+opp_w-.045,left+wb+opp_w+.045,-.012,lane_color)
+                    if opp_lanes>=2 and int(np.floor((a+100)/3))%2==0:
+                        for ol in range(1,opp_lanes):
+                            oy=ol*opp_lw
+                            quad(a,b,left+wa+oy-.055,left+wa+oy+.055,left+wb+oy-.055,left+wb+oy+.055,-.012,lane_color)
                 for y in left_lines:quad(a,b,y+wa-.035,y+wa+.035,y+wb-.035,y+wb+.035,-.012,left_color)
                 if max(wa,wb)>.3 and int(np.floor((a+100)/3))%2==0:
                     rect(a,b,left-.045,left+.045,-.012,lane_color)
@@ -749,8 +760,20 @@ class SurroundRenderer(Renderer):
             for a,b in zip(cuts,cuts[1:]):
                 ba,bb=profile_boundaries(section,a),profile_boundaries(section,b)
                 quad(a,b,ba[-1],ba[0],bb[-1],bb[0],-.02,road_color)
-                color=lane_color if road.get('left_boundary_role')=='inferred_extent_not_confirmed_centreline' else [.85,.68,.22]
-                quad(a,b,ba[0]-.05,ba[0]+.05,bb[0]-.05,bb[0]+.05,-.012,color)
+                if opp_w>0:
+                    quad(a,b,ba[0],ba[0]+opp_w,bb[0],bb[0]+opp_w,-.0205,road_color)
+                    quad(a,b,ba[0]+opp_w-.045,ba[0]+opp_w+.045,bb[0]+opp_w-.045,bb[0]+opp_w+.045,-.012,lane_color)
+                    if opp_lanes>=2 and int(np.floor(((a+b)/2+100)/3))%2==0:
+                        for ol in range(1,opp_lanes):
+                            oy=ol*opp_lw
+                            quad(a,b,ba[0]+oy-.055,ba[0]+oy+.055,bb[0]+oy-.055,bb[0]+oy+.055,-.012,lane_color)
+                has_yellow=opp_w>0 or road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline'
+                color=[.85,.68,.22] if has_yellow else lane_color
+                if has_yellow:
+                    quad(a,b,ba[0]-.075,ba[0]-.005,bb[0]-.075,bb[0]-.005,-.012,color)
+                    quad(a,b,ba[0]-.215,ba[0]-.145,bb[0]-.215,bb[0]-.145,-.012,color)
+                else:
+                    quad(a,b,ba[0]-.05,ba[0]+.05,bb[0]-.05,bb[0]+.05,-.012,color)
                 quad(a,b,ba[-1]-.045,ba[-1]+.045,bb[-1]-.045,bb[-1]+.045,-.012,lane_color)
                 if int(np.floor(((a+b)/2+100)/3))%2==0:
                     for k in range(1,len(ba)-1):
@@ -766,9 +789,9 @@ class SurroundRenderer(Renderer):
             cuts=np.r_[np.arange(start,end,2.),end]
             for a,b in zip(cuts,cuts[1:]):
                 ba,bb=display_bounds(road,a+1e-5),display_bounds(road,b-1e-5)
-                quad(a,b,ba[-1],ba[0],bb[-1],bb[0],-.02,road_color,True)
+                quad(a,b,ba[-1],ba[0]+opp_w,bb[-1],bb[0]+opp_w,-.02,road_color,True)
                 show_left,show_right=mouth_edges(road,(a+b)/2)
-                if show_left:quad(a,b,ba[0]-.045,ba[0]+.045,bb[0]-.045,bb[0]+.045,-.011,lane_color,True)
+                if show_left:quad(a,b,ba[0]+opp_w-.045,ba[0]+opp_w+.045,bb[0]+opp_w-.045,bb[0]+opp_w+.045,-.011,lane_color,True)
                 if show_right:quad(a,b,ba[-1]-.045,ba[-1]+.045,bb[-1]-.045,bb[-1]+.045,-.011,lane_color,True)
         for junction in road.get('junctions',[]):
             for outline in opening_display_polygons(road,junction):
@@ -1276,6 +1299,11 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         context_surface=context_road_surface(map_manifest,telemetry,times,ego,map_records,
                                              [Path.cwd()/'map-cache',Path(__file__).parents[2]/'map-cache'],road=road,osm_path=map_osm_path)
         road['context_surface']=context_surface
+    same_dir_lanes=max(1,len(road.get('boundaries_y',[0,0]))-1)
+    two_way_display=(road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline') or bool((context_surface or {}).get('main_way_two_way'))
+    if two_way_display and road.get('lane_geometry_status')!='unknown_route_display_only':
+        road['opposing_display']=dict(enabled=True,lanes=max(1,min(3,same_dir_lanes)),lane_width_m=float(road.get('lane_width_m_prior',3.5)),
+                                      role='visual_opposing_carriageway_only; no_vehicle_or_lane_scope_change')
     blindspot_policy=dict(cfg.get('blindspot_policy',{}),observation_half_step_s=min(.15,float(np.median(np.diff([f['camera_time_s'] for f in front])))/2)+1e-6)
     blindspot_coasts,blindspot_review=build_blindspot_coasts(global_actors,road,times,ego,eyaw,blindspot_policy)
     renderer=SurroundRenderer(assets,road,cfg.get('render_style'));work=destination.parent/(destination.name+'-work');work.mkdir(parents=True,exist_ok=False)

@@ -32,7 +32,11 @@ class JunctionDisplayTests(unittest.TestCase):
         self.assertLessEqual(max(lateral)-min(lateral),7.01)
 
     def test_procedural_junction_markings_builds_hub_crosswalks_stops_and_branch_centerlines(self):
-        road=self.fixture();road['junctions'][0]['branch_display_hints']=[dict(origin_W_xy=[50,-5.25],heading_W_rad=-math.pi/2,width_m=6.0,length_m=25)]
+        road=self.fixture()
+        road['junctions'][0]['branch_display_hints']=[
+            dict(origin_W_xy=[50,-5.25],heading_W_rad=-math.pi/2,width_m=6.0,length_m=25),
+            dict(origin_W_xy=[50,-5.25],heading_W_rad=math.pi/2,width_m=6.0,length_m=25),
+        ]
         before=copy.deepcopy(road)
         marks=junction_markings(road)
         self.assertEqual(road,before)
@@ -40,3 +44,7 @@ class JunctionDisplayTests(unittest.TestCase):
         self.assertEqual(len(marks['stop_bars']),2)
         self.assertGreater(len(marks['crosswalks']),6)
         self.assertGreater(len(marks['branch_centers']),1)
+        # Opposing carriageway expands crosswalk count across the two-way width
+        road_2way=dict(road,opposing_display=dict(enabled=True,lanes=2,lane_width_m=3.5))
+        marks_2way=junction_markings(road_2way)
+        self.assertGreater(len(marks_2way['crosswalks']),len(marks['crosswalks']))
