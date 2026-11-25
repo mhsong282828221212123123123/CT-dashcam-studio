@@ -62,8 +62,12 @@ from .actor_heading import estimate as motion_headings,resolve_axis_flips
 from .ego_lamps import LampTrace,role as lamp_role
 
 
-def project_contact(box,profile,mount,max_depth=70.,minimum_ray_y=.015):
-    K,D=camera_matrix(profile);pixel=np.array([[[(box[0]+box[2])/2,box[3]]]],float)
+def project_contact(box,profile,mount,max_depth=70.,minimum_ray_y=.015,contact_uv=None):
+    K,D=camera_matrix(profile)
+    if contact_uv is None:
+        pixel=np.array([[[(box[0]+box[2])/2,box[3]]]],float)
+    else:
+        pixel=np.array([[[box[0]+float(contact_uv[0])*(box[2]-box[0]),box[1]+float(contact_uv[1])*(box[3]-box[1])]]],float)
     ray=cv2.undistortPoints(pixel,K,D).reshape(2)
     if ray[1]<=minimum_ray_y:raise ValueError('horizon_or_invalid_contact')
     depth=mount['height_m']/ray[1]
@@ -88,11 +92,11 @@ def project_vehicle_height(box,profile,mount,vehicle_height):
     return rotation(np.radians(mount['yaw_deg']))@np.array([depth,-depth*float(rays[:,0].mean()),0])+mount['offset_W_ego_m']
 
 
-def project_front(row,profile,mount,vehicle_height,image_width=1280,image_height=960):
+def project_front(row,profile,mount,vehicle_height,image_width=1280,image_height=960,contact_uv=None):
     b=row['bbox_xyxy']
     clear=row['support']=='detector_observation' and 'truncated' not in row.get('quality_flags',[]) and b[3]-b[1]>=25 and b[2]-b[0]>=25 and min(b[0],b[1],image_width-b[2],image_height-b[3])>=6
     try:
-        p=project_contact(b,profile,mount,max_depth=140.,minimum_ray_y=.003)
+        p=project_contact(b,profile,mount,max_depth=140.,minimum_ray_y=.003,contact_uv=contact_uv)
         if p[0]>70 and not clear:raise ValueError('far_contact_requires_clear_direct_observation')
         return p,'estimated_ground_contact' if p[0]<=70 else 'far_ground_contact_low_confidence'
     except ValueError as error:
@@ -804,7 +808,7 @@ class SurroundRenderer(Renderer):
         return Image.fromarray(np.frombuffer(self.fbo.read(components=3,alignment=1),np.uint8).reshape(720,1280,3)[::-1].copy())
 
 
-def run(package,tracks,base,lens_config,prototype_config,assets,destination,road_masks=None,osm_context=None,preview_times=None,telemetry=None,image_headings=None):
+def run(package,tracks,base,lens_config,prototype_config,assets,destination,road_masks=None,osm_context=None,preview_times=None,telemetry=None,image_headings=None,contact_adapter=None):
     revision_names=['surrounding.py','prototype_front.py','identity_graph.py','scene_audit.py','rear_reference.py','offline_paths.py','actor_lane_motion.py','pocket_lane.py','rear_view_cue.py','image_median_gate.py','surrounding_lamps.py','unresolved_road.py','actor_rear_axis.py','image_heading_refine.py','clear_handoff.py','lane_state.py','pocket_actor_motion.py','junction_branches.py','road_geometry.py','road_sections.py','road_continuation.py','ego_maneuver.py','road_frame.py','curved_road.py','junctions.py','actor_heading.py','ego_lamps.py']
     revision=lambda:digest(b''.join(Path(__file__).with_name(name).read_bytes() for name in revision_names))
     revision_names.append('static_actor_refine.py')
@@ -915,6 +919,28 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                 curve_review['unresolved_route_display']='ego_route_only; no_lane_priors_or_paint_claim'
     dimensions={name:np.ptp(model_vertices(path)[:,:3],axis=0) for name,path in assets.items()}
     lengths={name:float(d[0]) for name,d in dimensions.items()}
+    contact_model=None;contact_img_cache={};contact_stats={'enabled':bool(contact_adapter),'model_dir':str(contact_adapter) if contact_adapter else None,'applied_front':0,'applied_side':0,'du_abs':[],'dv_abs':[],'cuda':False}
+    if contact_adapter is not None:
+        from .learned_contact import LearnedContact
+        contact_model=LearnedContact(contact_adapter)
+    def predict_learned_uv(row,f,camera):
+        if contact_model is None or row['support']!='detector_observation' or 'truncated' in row.get('quality_flags',[]):return None
+        b=row['bbox_xyxy'];w,h=b[2]-b[0],b[3]-b[1]
+        if w<85 or h<55 or min(b[0],b[1],f['width']-b[2],f['height']-b[3])<8:return None
+        fid=f['frame_id']
+        if fid not in contact_img_cache:
+            if len(contact_img_cache)>64:contact_img_cache.clear()
+            contact_img_cache[fid]=np.array(Image.open(package/f['image']).convert('RGB'))
+        im=contact_img_cache[fid]
+        rect=np.array([b[0]-.12*w,b[1]-.12*h,b[2]+.12*w,b[3]+.16*h]).round().astype(int)
+        rect[[0,2]]=rect[[0,2]].clip(0,f['width']);rect[[1,3]]=rect[[1,3]].clip(0,f['height'])
+        x,y,X,Y=rect
+        if X-x<16 or Y-y<16:return None
+        out=contact_model.predict(im[y:Y,x:X],dict(camera=camera,bbox_xyxy=b,crop_rect_xyxy=rect.tolist()))
+        uv=out['contact_uv']
+        if not np.isfinite(uv).all():return None
+        contact_stats['du_abs'].append(abs(float(uv[0])-0.5));contact_stats['dv_abs'].append(abs(float(uv[1])-1.0))
+        return uv
     for key,rows in groups.items():
         camera=rows[0]['camera_id'];rows=sorted(rows,key=lambda r:r['camera_time_s'])
         if camera=='back':continue
@@ -951,10 +977,13 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         samples=[];hist=[]
         for row in rows:
             f=by_frame[row['frame_id']];t=f['camera_time_s'];yaw=float(np.interp(t,times,eyaw));ep=np.array([np.interp(t,times,ego[:,k]) for k in range(3)])
+            learned_uv=predict_learned_uv(row,f,camera) if camera=='front' else None
             try:
                 if camera in ('left_repeater','right_repeater'):
                     relative=project_vehicle_height(row['bbox_xyxy'],profiles[camera],cfg['cameras'][camera],float(dimensions[model][2]));projection_support='apparent_vehicle_height_prior'
-                else:relative,projection_support=project_front(row,profiles[camera],cfg['cameras'][camera],float(dimensions[model][2]),f['width'],f['height'])
+                else:
+                    relative,projection_support=project_front(row,profiles[camera],cfg['cameras'][camera],float(dimensions[model][2]),f['width'],f['height'],contact_uv=learned_uv)
+                    if learned_uv is not None:contact_stats['applied_front']+=1
             except ValueError:continue
             if camera=='front':
                 side_body=class_support=='two_clear_side_views_plus_repeated_high_confidence_truck'
@@ -969,7 +998,9 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             box=row['bbox_xyxy']
             if camera in ('left_repeater','right_repeater') and row['support']=='detector_observation' and 'truncated' not in row.get('quality_flags',[]) and box[2]-box[0]>=60 and box[3]-box[1]>=45 and min(box[0],box[1],f['width']-box[2],f['height']-box[3])>8:
                 try:
-                    contact=project_contact(box,profiles[camera],cfg['cameras'][camera])
+                    side_uv=predict_learned_uv(row,f,camera)
+                    contact=project_contact(box,profiles[camera],cfg['cameras'][camera],contact_uv=side_uv)
+                    if side_uv is not None:contact_stats['applied_side']+=1
                     samples[-1]['side_ground_contact_W']=(ep+rotation(yaw)@contact).tolist()
                 except ValueError:pass
         if len(samples)<(3 if short else 8):excluded.append({'id':key,'reason':'insufficient_ground_contacts'});continue
@@ -1346,6 +1377,10 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         'render_actor_count_range':[min(render_counts),max(render_counts)],'ego_and_lead_source':'frozen base ego and observed anchor arrays unchanged',
         'source_duration_s':base_report.get('source_duration_s'),'export_full_source':'source_duration_s' in base_report,
         'clock_status':'assumed_relative_container_alignment_not_sensor_sync','excluded_tracks':excluded,'metric_accuracy':'NOT_EVALUATED'}
+    report['learned_contact_adapter']={'enabled':contact_stats['enabled'],'model_dir':contact_stats['model_dir'],
+        'applied_front':contact_stats['applied_front'],'applied_side':contact_stats['applied_side'],
+        'mean_abs_du':float(np.mean(contact_stats['du_abs'])) if contact_stats['du_abs'] else 0.,
+        'mean_abs_dv':float(np.mean(contact_stats['dv_abs'])) if contact_stats['dv_abs'] else 0.,'cuda':False}
     report['collision_constraints']={k:v for k,v in collision_review.items() if k!='changed_samples'}
     report['prediction_display']={k:v for k,v in prediction_display_review.items() if k!='omitted_samples'}
     report['vehicle_dimensions_m']={k:v.tolist() for k,v in dimensions.items()}

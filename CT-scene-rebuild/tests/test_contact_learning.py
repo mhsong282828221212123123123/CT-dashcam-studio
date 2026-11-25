@@ -68,3 +68,16 @@ class ContactLearningTests(unittest.TestCase):
             self.assertFalse(out['metric_position_available'])
             self.assertEqual(len(out['contact_uv']),2)
             self.assertIn(out['direction'],('away','toward','left','right','disabled'))
+
+    def test_project_contact_accepts_optional_learned_uv_without_changing_default(self):
+        import json
+        from pathlib import Path
+        from ct_scene.surrounding import project_contact
+        proto=json.loads(Path('configs/surrounding-prototype.json').read_text())
+        opt=json.loads(Path('configs/multicam-optical-candidates.json').read_text())
+        box=[400.0,450.0,600.0,600.0]
+        p_def=project_contact(box,opt['cameras']['front'],proto['cameras']['front'])
+        p_same=project_contact(box,opt['cameras']['front'],proto['cameras']['front'],contact_uv=[0.5,1.0])
+        p_shift=project_contact(box,opt['cameras']['front'],proto['cameras']['front'],contact_uv=[0.4,0.97])
+        np.testing.assert_allclose(p_def,p_same)
+        self.assertGreater(np.linalg.norm(p_shift[:2]-p_def[:2]),0.1)

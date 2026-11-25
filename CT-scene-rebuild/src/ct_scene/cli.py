@@ -128,6 +128,7 @@ def main():
     surround.add_argument('--preview-times',nargs='+',type=float)
     surround.add_argument('--telemetry')
     surround.add_argument('--image-headings',help='Verified front image body-heading evidence artifact')
+    surround.add_argument('--contact-adapter',help='Opt-in experimental CPU learned ground-contact adapter directory')
     manual=commands.add_parser('manual-render',help='Separate human-assisted actor correction copy')
     for name in ('scene','base','corrections','assets-root','prototype-config','output'):
         manual.add_argument('--'+name,required=True)
@@ -253,7 +254,7 @@ def main():
         elif args.command == 'surrounding-prototype':
             from .surrounding import run
             assets={k:str(Path(args.assets_root)/('tesla_fsd_'+name+'.glb')) for k,name in [('ego','sedan'),('van','van'),('suv','suv'),('sedan','sedan'),('truck','small_truck'),('box_truck','box_truck'),('bus','bus')]}
-            manifest=run(args.package,args.tracks,args.base,args.lens_config,args.prototype_config,assets,args.output,args.road_masks,args.osm_context,args.preview_times,args.telemetry,args.image_headings)
+            manifest=run(args.package,args.tracks,args.base,args.lens_config,args.prototype_config,assets,args.output,args.road_masks,args.osm_context,args.preview_times,args.telemetry,args.image_headings,contact_adapter=args.contact_adapter)
         elif args.command == 'full-source-timeline':
             from .full_timeline import run
             manifest=run(args.package,args.tracks,args.telemetry,args.lens_config,args.source,args.actor_model,args.output,args.assets_root,args.ego_rotation)
