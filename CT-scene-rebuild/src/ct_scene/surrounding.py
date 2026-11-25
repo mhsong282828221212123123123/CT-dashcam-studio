@@ -36,7 +36,7 @@ from .local_solid_corridor import fit as fit_local_solid_corridor,unresolved_sid
 from .source_strip import status as source_strip_status
 from .right_edge_profile import refine as refine_right_edge_profile
 from .blindspot_continuity import build as build_blindspot_coasts,at as blindspot_coasts_at
-from .junction_display import display_bounds,corridor_gaps,mouth_edges,branch_edges
+from .junction_display import display_bounds,corridor_gaps,mouth_edges,branch_edges,junction_markings
 from .camera_junction_roads import supplement as camera_crossing_roads
 from .static_actor_refine import refine_actor as refine_static_actor
 from .left_median_membership import review as left_median_membership_review
@@ -783,6 +783,18 @@ class SurroundRenderer(Renderer):
             delta=np.asarray(end)-start;normal=np.array([-delta[1],delta[0]])/np.linalg.norm(delta)*.045
             for point in [start-normal,end-normal,end+normal,start-normal,end+normal,start+normal]:
                 vertices.append([*point,-.011,0,0,1,*lane_color])
+        jmarks=junction_markings(road)
+        yellow_line=[.85,.68,.22]
+        for hub in jmarks['hubs']:
+            poly=np.asarray(hub);c=poly.mean(axis=0)
+            for a,b in zip(poly,np.roll(poly,-1,axis=0)):
+                for x,y in (c,a,b):vertices.append([x,y,-.0195,0,0,1,*road_color])
+        for bar in jmarks['stop_bars']+jmarks['crosswalks']:
+            q=np.asarray(bar)
+            for x,y in (q[0],q[1],q[2],q[0],q[2],q[3]):vertices.append([x,y,-.0105,0,0,1,*lane_color])
+        for seg in jmarks['branch_centers']:
+            q=np.asarray(seg)
+            for x,y in (q[0],q[1],q[2],q[0],q[2],q[3]):vertices.append([x,y,-.0105,0,0,1,*yellow_line])
         self.road=self.mesh(np.asarray(vertices,'f4'))
     def frame_many(self,actors,ego_position,ego_yaw,view_position=None,view_yaw=None,lamps=None):
         self.fbo.use();self.ctx.enable(self.gl.DEPTH_TEST);self.fbo.clear(*self.background_rgb,1,depth=1);self.draw(self.ground)

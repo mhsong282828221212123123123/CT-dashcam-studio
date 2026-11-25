@@ -1,5 +1,5 @@
 import copy,math,unittest
-from ct_scene.junction_display import display_bounds,corridor_gaps,mouth_edges,branch_edges
+from ct_scene.junction_display import display_bounds,corridor_gaps,mouth_edges,branch_edges,junction_markings
 from ct_scene.junction_branches import hints,opening_display_polygons
 from ct_scene.road_frame import coordinates
 
@@ -30,3 +30,13 @@ class JunctionDisplayTests(unittest.TestCase):
         road=self.fixture();polygon=opening_display_polygons(road,road['junctions'][0])[0]
         lateral=[coordinates(road,p)[1] for p in polygon]
         self.assertLessEqual(max(lateral)-min(lateral),7.01)
+
+    def test_procedural_junction_markings_builds_hub_crosswalks_stops_and_branch_centerlines(self):
+        road=self.fixture();road['junctions'][0]['branch_display_hints']=[dict(origin_W_xy=[50,-5.25],heading_W_rad=-math.pi/2,width_m=6.0,length_m=25)]
+        before=copy.deepcopy(road)
+        marks=junction_markings(road)
+        self.assertEqual(road,before)
+        self.assertEqual(len(marks['hubs']),1)
+        self.assertEqual(len(marks['stop_bars']),2)
+        self.assertGreater(len(marks['crosswalks']),6)
+        self.assertGreater(len(marks['branch_centers']),1)
