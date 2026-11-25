@@ -84,3 +84,22 @@ class BranchHintTests(unittest.TestCase):
         out,_=hints(road,maps,t,yaw)
         angles=[round(a['heading_W_rad'],5) for a in out[0]['branch_display_hints']]
         self.assertEqual(angles,[round(math.pi/2,5)])
+
+    def test_turning_junction_uses_straight_entry_exit_apex_as_branch_origin(self):
+        angles=[-math.pi/2+math.pi/2*k/16 for k in range(17)]
+        arc=[[40.+20.*math.cos(a),20.+20.*math.sin(a)] for a in angles]
+        pts=[[0.,0.]]+arc+[[60.,80.]]
+        road=dict(boundaries_y=[3.5,0.,-3.5],reference_line=dict(points_W_xy=pts),
+                  junctions=[dict(id='turn-j',road_station_range_m=[38.,74.],turn_deg=90.,
+                                  polygon_W_xy=[[38,-5],[74,-5],[74,5],[38,5]],
+                                  camera_station_peaks=[dict(nodes=[10],times=[3,5])])])
+        branches=[dict(neighbor_node_id=i,relative_bearing_deg=b) for i,b in enumerate([0,180,-90,90])]
+        maps=[dict(time_s=tm,junction_candidates=[dict(node_id=10,level=['0',False,False],distance_m=10,branches=branches)]) for tm in [3.,4.,5.]]
+        out,_=hints(road,maps,np.arange(0,9.),np.zeros(9))
+        self.assertIn('turn_apex_W_xy',out[0])
+        self.assertAlmostEqual(out[0]['turn_apex_W_xy'][0],60.,delta=1.0)
+        self.assertAlmostEqual(out[0]['turn_apex_W_xy'][1],0.,delta=1.0)
+        self.assertEqual(len(out[0]['branch_display_hints']),2)
+        for arm in out[0]['branch_display_hints']:
+            self.assertAlmostEqual(arm['origin_W_xy'][0],60.,delta=1.0)
+            self.assertAlmostEqual(arm['origin_W_xy'][1],0.,delta=1.0)

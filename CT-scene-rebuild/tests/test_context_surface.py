@@ -118,3 +118,23 @@ class ContextSurfaceTests(unittest.TestCase):
         b,_=warp_context_points([[60,0],[30,0]],regions)
         np.testing.assert_allclose(a[-1],b[-1])
         self.assertLessEqual(abs(a[-1,1]),8.)
+
+    def test_dual_carriageway_opposing_way_is_detected_and_suppressed(self):
+        ways,rows,t,ego,records=self.data()
+        # Main way is northbound oneway=yes secondary; way 3 is southbound ~10m to its left (west); way 4 is a cross street
+        ways=[dict(id=1,geometry=[[37.,127.],[37.001,127.]],tags=dict(highway='secondary',oneway='yes',name='TestRd')),
+              dict(id=3,geometry=[[37.001,126.99988],[37.,126.99988]],tags=dict(highway='secondary',oneway='yes',name='TestRd')),
+              dict(id=4,geometry=[[37.0002,126.9997],[37.0002,127.0003]],tags=dict(highway='residential'))]
+        records=[dict(time_s=float(i),way_candidates=[dict(way_id=1)]) for i in range(10)]
+        road=dict(boundaries_y=[3.5,0.,-3.5])
+        result=build(ways,rows,t,ego,records,road)
+        self.assertTrue(result['main_way_dual_carriageway'])
+        self.assertTrue(result['main_way_explicit_oneway'])
+        self.assertEqual(result['suppressed_opposing_way_ids'],[3])
+        self.assertEqual(result['way_ids'],[4])
+        # Pure motorway must never be flagged as a dual-carriageway ordinary road
+        mw_ways=copy.deepcopy(ways)
+        mw_ways[0]['tags']['highway']='motorway';mw_ways[1]['tags']['highway']='motorway'
+        mw_res=build(mw_ways,rows,t,ego,records,road)
+        self.assertFalse(mw_res['main_way_dual_carriageway'])
+        self.assertEqual(mw_res['suppressed_opposing_way_ids'],[])

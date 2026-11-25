@@ -127,6 +127,65 @@ def align_main_road(ways,origin,R,offset,times,ego,records,road):
     return shift if accepted else np.zeros(2),review
 
 
+def _is_oneway_tag(tags):
+    return tags.get('oneway') in ('yes','1','true','-1') or tags.get('highway') in ('motorway','motorway_link','trunk_link')
+
+
+def detect_dual_carriageway_opposing_ways(ways,main_ids,grade,origin):
+    """Detect parallel opposite-direction carriageways (3–22 m left of oneway main ways).
+
+    Dual-carriageway roads (e.g. divided Korean secondary/primary roads and IC connectors)
+    are mapped in OSM as two separate parallel ``oneway=yes`` ways. Identifying the
+    opposing carriageway allows symmetric opposing lanes without drawing a duplicate
+    grey context strip on the left. Pure ``motorway`` decks are excluded.
+    """
+    by_id={w['id']:w for w in ways}
+    main_geom=[]
+    for wid in main_ids:
+        mw=by_id.get(wid)
+        if not mw or level(mw['tags'])!=grade:continue
+        mhw=mw['tags'].get('highway','')
+        if mhw=='motorway' or not _is_oneway_tag(mw['tags']):continue
+        mp=xy(mw['geometry'],origin)
+        if len(mp)<2:continue
+        if mw['tags'].get('oneway')=='-1':mp=mp[::-1]
+        a=mp[:-1];d=np.diff(mp,axis=0);l=np.linalg.norm(d,axis=1)
+        valid=l>.5
+        if not np.any(valid):continue
+        main_geom.append((mw,a[valid],d[valid],l[valid]))
+    if not main_geom:return set()
+    opp_ids=set()
+    for w in ways:
+        if w['id'] in main_ids or level(w['tags'])!=grade:continue
+        if not _is_oneway_tag(w['tags']):continue
+        whw=w['tags'].get('highway','')
+        if whw=='motorway':continue
+        wp=xy(w['geometry'],origin)
+        if len(wp)<2:continue
+        if w['tags'].get('oneway')=='-1':wp=wp[::-1]
+        wname=(w['tags'].get('name') or '').strip()
+        for mw,a,d,l in main_geom:
+            mhw=mw['tags'].get('highway','')
+            mname=(mw['tags'].get('name') or '').strip()
+            if whw!=mhw and not (wname and wname==mname and whw!='service' and mhw!='service'):continue
+            matched_len=0.;matched_segs=0
+            for s0,s1 in zip(wp[:-1],wp[1:]):
+                sd=s1-s0;sl=float(np.linalg.norm(sd))
+                if sl<.5:continue
+                st=sd/sl;smid=(s0+s1)/2
+                u=np.clip(np.einsum('ij,ij->i',smid-a,d)/np.maximum(l**2,1e-6),0,1)
+                proj=a+u[:,None]*d;dists=np.linalg.norm(proj-smid,axis=1)
+                bi=int(np.argmin(dists))
+                if dists[bi]>22.:continue
+                mt=d[bi]/l[bi];mn=np.array([-mt[1],mt[0]])
+                dot=float(st@mt);lat=float(mn@(smid-proj[bi]))
+                if dot<-.78 and 3.<=lat<=22.:
+                    matched_len+=sl;matched_segs+=1
+            if matched_len>=15. or matched_segs>=2:
+                opp_ids.add(w['id']);break
+    return opp_ids
+
+
 def build(ways,gps_rows,times,ego,records,road=None):
     valid=[r for r in gps_rows if all(r['fields'][k]['valid'] for k in ('latitude_deg','longitude_deg','heading_deg'))]
     if len(valid)<3:return dict(polygons_W_xy=[],status='insufficient_GPS_for_context_only')
@@ -141,7 +200,7 @@ def build(ways,gps_rows,times,ego,records,road=None):
     if not grades:return dict(polygons_W_xy=[],status='no_supported_map_grade')
     grade,count=grades.most_common(1)[0]
     if count/sum(grades.values())<.7:return dict(polygons_W_xy=[],status='ambiguous_map_grade')
-    alignment=None;main_ids=set()
+    alignment=None;main_ids=set();dual_opp_ids=set()
     if road is not None:
         shift,alignment=align_main_road([w for w in ways if level(w['tags'])==grade],origin,R,offset,times,ego,records,road)
         main_ids=set(alignment['main_way_ids'])
@@ -150,12 +209,13 @@ def build(ways,gps_rows,times,ego,records,road=None):
             return dict(polygons_W_xy=[],status='map_context_alignment_unresolved',main_road_alignment=alignment,
                         main_road_display='existing_camera_corridor',ego_actor_or_lane_modified=False)
         offset=offset+shift
+        dual_opp_ids=detect_dual_carriageway_opposing_ways(ways,main_ids,grade,origin)
     polygons=[];used=[]
     for way in ways:
         if level(way['tags'])!=grade:continue
-        # This is the road we already render from camera evidence, not a
-        # neighbouring asphalt strip. Keep its topology but do not draw it twice.
-        if way['id'] in main_ids:continue
+        # This is the road (or its parallel opposing carriageway) we already render
+        # from camera evidence, not a neighbouring asphalt strip. Keep topology only.
+        if way['id'] in main_ids or way['id'] in dual_opp_ids:continue
         p=xy(way['geometry'],origin)@R+offset
         regions=alignment.get('local_regions',[]) if alignment is not None else []
         if regions:
@@ -194,12 +254,13 @@ def build(ways,gps_rows,times,ego,records,road=None):
                 use='display_context_only; GPS_accuracy_does_not_assign_a_lane')
     if alignment is not None:
         valid_main=[by_id[wid]['tags'] for wid in main_ids if wid in by_id]
-        def _is_oneway(t):return t.get('oneway') in ('yes','1','true','-1') or t.get('highway') in ('motorway','motorway_link','trunk_link')
-        two_way=any((not _is_oneway(t)) and t.get('highway')!='service' for t in valid_main)
-        explicit_oneway=bool(valid_main) and all(_is_oneway(t) for t in valid_main)
+        two_way=any((not _is_oneway_tag(t)) and t.get('highway')!='service' for t in valid_main)
+        explicit_oneway=bool(valid_main) and all(_is_oneway_tag(t) for t in valid_main)
         result.update(main_road_alignment=alignment,main_road_display='fused_with_camera_corridor',
                       suppressed_duplicate_main_way_ids=sorted(main_ids),
-                      main_way_two_way=two_way,main_way_explicit_oneway=explicit_oneway)
+                      suppressed_opposing_way_ids=sorted(dual_opp_ids),
+                      main_way_two_way=two_way,main_way_explicit_oneway=explicit_oneway,
+                      main_way_dual_carriageway=bool(dual_opp_ids))
     if alignment is not None and alignment.get('local_regions'):result['registration']='local_camera_road_display_field; no_ego_actor_lane_or_metric_registration'
     return result
 

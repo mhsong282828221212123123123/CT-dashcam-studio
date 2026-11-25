@@ -1316,8 +1316,10 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                                              [Path.cwd()/'map-cache',Path(__file__).parents[2]/'map-cache'],road=road,osm_path=map_osm_path)
         road['context_surface']=context_surface
     same_dir_lanes=max(1,len(road.get('boundaries_y',[0,0]))-1)
-    explicit_1w=bool((context_surface or {}).get('main_way_explicit_oneway'))
-    two_way_display=(not explicit_1w) and ((road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline') or bool((context_surface or {}).get('main_way_two_way')))
+    cs=context_surface or {}
+    explicit_1w=bool(cs.get('main_way_explicit_oneway'))
+    dual_cw=bool(cs.get('main_way_dual_carriageway'))
+    two_way_display=dual_cw or ((not explicit_1w) and ((road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline') or bool(cs.get('main_way_two_way'))))
     if two_way_display and road.get('lane_geometry_status')!='unknown_route_display_only':
         road['opposing_display']=dict(enabled=True,lanes=max(1,min(3,same_dir_lanes)),
                                       lane_width_m=float(road.get('lane_width_m_prior',3.5)),
@@ -1398,18 +1400,25 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             vp,vy,vw=camera_view(t,ep,yaw,maneuver_windows,road)
             lamp_state=lamp_trace.at(t) if lamp_trace else None
             scene=renderer.frame_many(active,ep,yaw,vp,vy,lamp_state) if vw>0 else renderer.frame_many(active,ep,yaw,lamps=lamp_state)
-            canvas=Image.new('RGB',(1280,1000),(22,27,31));canvas.paste(scene,(0,0));d=ImageDraw.Draw(canvas)
-            station=float(road_coordinates(road,ep)[0]);current_lanes=len(boundaries_at(road,station))-1+int(pocket_width(road.get('left_pockets',[]),station)>=1.8)
-            lane_description='lane geometry unknown / route display only' if unresolved_lanes else f'estimated {current_lanes}-lane corridor'
-            d.text((18,12),f'SURROUNDING WORLD PROTOTYPE | {t:05.2f}s | {len(active)} vehicles | {lane_description}',font=font,fill=renderer.text_color);d.text((18,40),'Frozen ego/lead + front/repeater observations + offline trajectories',font=font,fill=renderer.secondary_text_color)
-            ls=lane_audit['records'][int(np.argmin(abs(times-t)))];lane_label='unknown' if ls['lane_id'] is None else 'P-L' if ls['lane_id']==-1 else 'C'+str(ls['lane_id'])
-            d.text((18,65),f'Ego corridor {lane_label} | {ls["phase"].replace("_"," ")} | visible, position unresolved: {len(unlocalized)}',font=font,fill=renderer.secondary_text_color)
+            canvas=Image.new('RGB',(1280,1000),(22,27,31));canvas.paste(scene,(0,0))
+            osm_hud_line=None
             if map_records:
                 context=min(map_records,key=lambda r:abs(r['time_s']-t))
                 candidates=context['junction_candidates'] if abs(context['time_s']-t)<1.5 else []
                 if candidates:
                     nearest=min(candidates,key=lambda r:r['distance_m'])
-                    d.text((18,91),f'OSM junction/merge candidate ~{nearest["distance_m"]:.0f}m | map reference only',font=font,fill=(190,185,130))
+                    osm_hud_line=f'OSM junction/merge candidate ~{nearest["distance_m"]:.0f}m | map reference only'
+            banner_h=116 if osm_hud_line else 92
+            banner_bg=Image.new('RGBA',(1280,banner_h),(16,20,24,195))
+            canvas.paste(Image.alpha_composite(canvas.crop((0,0,1280,banner_h)).convert('RGBA'),banner_bg).convert('RGB'),(0,0))
+            d=ImageDraw.Draw(canvas)
+            station=float(road_coordinates(road,ep)[0]);current_lanes=len(boundaries_at(road,station))-1+int(pocket_width(road.get('left_pockets',[]),station)>=1.8)
+            lane_description='lane geometry unknown / route display only' if unresolved_lanes else f'estimated {current_lanes}-lane corridor'
+            d.text((18,12),f'SURROUNDING WORLD PROTOTYPE | {t:05.2f}s | {len(active)} vehicles | {lane_description}',font=font,fill=renderer.text_color);d.text((18,40),'Frozen ego/lead + front/repeater observations + offline trajectories',font=font,fill=renderer.secondary_text_color)
+            ls=lane_audit['records'][int(np.argmin(abs(times-t)))];lane_label='unknown' if ls['lane_id'] is None else 'P-L' if ls['lane_id']==-1 else 'C'+str(ls['lane_id'])
+            d.text((18,65),f'Ego corridor {lane_label} | {ls["phase"].replace("_"," ")} | visible, position unresolved: {len(unlocalized)}',font=font,fill=renderer.secondary_text_color)
+            if osm_hud_line:
+                d.text((18,91),osm_hud_line,font=font,fill=(190,185,130))
             for k,(camera,seq) in enumerate(sequences.items()):
                 availability=source_strip_status(source_coverage,camera,t)
                 if availability in ('recording_ended','recording_not_started'):

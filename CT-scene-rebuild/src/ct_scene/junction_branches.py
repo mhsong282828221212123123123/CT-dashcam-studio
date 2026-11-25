@@ -8,7 +8,7 @@ import copy,math
 import numpy as np
 from .road_frame import world,coordinates
 from .road_geometry import boundaries_at
-from .junction_display import display_bounds
+from .junction_display import display_bounds,is_turning_junction,turn_apex
 
 
 def angle_delta(a,b):return float(np.arctan2(np.sin(a-b),np.cos(a-b)))
@@ -57,7 +57,13 @@ def hints(road,map_records,times,ego_yaws,length_m=25.,observed_end_station=None
             if group is None:clusters.append([arm])
             else:group.append(arm)
         main_start=float(coordinates(road,world(road,a,0))[2])+math.pi
-        main_end=float(coordinates(road,world(road,b,0))[2]);display_s=display_station(junction);display_b=display_bounds(road,display_s);centre=np.asarray(world(road,display_s,(display_b[0]+display_b[-1])/2),float)
+        main_end=float(coordinates(road,world(road,b,0))[2])
+        if is_turning_junction(junction):
+            centre=turn_apex(road,junction)
+            junction['turn_apex_W_xy']=centre.tolist()
+        else:
+            display_s=display_station(junction);display_b=display_bounds(road,display_s)
+            centre=np.asarray(world(road,display_s,(display_b[0]+display_b[-1])/2),float)
         bounds=boundaries_at(road,a-.1);width=float(np.clip((bounds[0]-bounds[-1])*.5,3.5,10.));accepted=[];forward_supported=False
         for group in clusters:
             support={p['node'] for p in group}
