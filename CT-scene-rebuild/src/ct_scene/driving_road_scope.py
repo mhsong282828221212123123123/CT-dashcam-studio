@@ -69,7 +69,19 @@ def exclusion_reason(actor,time,position,road):
         raw=nearest.get('unrefined_position_W',nearest['position_W'])
         # A camera-supported crossing must not be hidden by a displaced estimate.
         if point_scope(road,raw)=='junction':return None
-        if abs(nearest['time_s']-time)<=.45 and nearest.get('driving_road_scope')=='outside' and point_scope(road,raw)=='outside':
+        if (abs(nearest['time_s']-time)<=.45 and nearest.get('camera_id') in ('left_repeater','right_repeater')
+                and not actor.get('driving_road_scope_parallel_front_motion')
+                and road.get('reference_line') and road.get('lane_geometry_status')!='unknown_route_display_only'):
+            # Unknown localization is not permission to draw a side vehicle
+            # several metres off-road. Withhold the estimate, not the detection.
+            s,d,_=coordinates(road,raw[:2]);bounds=boundaries_at(road,float(s))
+            extent=road['reference_line'].get('supported_extent_m')
+            in_extent=extent is None or extent[0]<=s<=extent[1]
+            width=max(3.5,float(road.get('lane_width_m_prior',3.5)))
+            high=float(bounds[0])+pocket_width(road.get('left_pockets',[]),float(s))
+            if in_extent and (d<float(bounds[-1])-width or d>high+width):
+                return 'side_position_unlocalized_far_beyond_ego_carriageway'
+        if abs(nearest['time_s']-time)<=.45 and nearest.get('driving_road_scope')=='outside'  and point_scope(road,raw)=='outside':
             return 'persistent_raw_observation_outside_ego_carriageway'
     # A final estimate alone cannot prove an observed car is outside the road.
     # In particular, never conceal a normal road vehicle's calibration error.

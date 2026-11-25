@@ -61,3 +61,22 @@ class DrivingRoadScopeTests(unittest.TestCase):
         self.road['junctions']=[dict(polygon_W_xy=[[40,-30],[60,-30],[60,30],[40,30]],road_station_range_m=[40,60])]
         self.assertEqual(point_scope(self.road,[50,4,0]),'junction')
         self.assertEqual(point_scope(self.road,[50,20,0]),'outside')
+
+    def test_unlocalized_side_car_in_supported_extent_gap_is_not_drawn_offroad(self):
+        self.road['reference_line']['unsupported_intervals_m']=[[15,30]]
+        actor=self.actor(-12)
+        for r in actor['samples']:r['camera_id']='right_repeater';r['bbox_xyxy']=[0,400,200,600]
+        mark_raw_scope(actor,self.road)
+        self.assertTrue(all(r['driving_road_scope']=='unknown' for r in actor['samples']))
+        plan=[dict(time_s=.4,actors=[dict(id='car',position_W=[22,-9,0])])]
+        removed=filter_plan(plan,[actor],self.road)
+        self.assertEqual(len(removed),1)
+        self.assertEqual(removed[0]['reason'],'side_position_unlocalized_far_beyond_ego_carriageway')
+
+    def test_unknown_side_position_inside_road_is_retained(self):
+        self.road['reference_line']['unsupported_intervals_m']=[[15,30]]
+        actor=self.actor(0)
+        for r in actor['samples']:r['camera_id']='right_repeater'
+        mark_raw_scope(actor,self.road)
+        plan=[dict(time_s=.4,actors=[dict(id='car',position_W=[22,0,0])])]
+        self.assertFalse(filter_plan(plan,[actor],self.road))

@@ -98,6 +98,24 @@
       "basis": "Truck on opposite/separate road",
       "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
       "development_control": true
+    },
+    {
+      "scene": "oct22",
+      "id": "right_repeater-0058",
+      "time_s": 24.0,
+      "expected": "exclude",
+      "basis": "Actual delivered preview opening: side frontage car with unresolved off-road position; must not draw as spinning/free-moving world vehicle",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true
+    },
+    {
+      "scene": "oct22",
+      "id": "right_repeater-0061",
+      "time_s": 25.0,
+      "expected": "exclude",
+      "basis": "Actual delivered preview opening: side frontage car with unresolved off-road position; must not draw as spinning/free-moving world vehicle",
+      "source_artifact_id": "5247c64fef9f9ae0c14f396e5633119722a8a83ae026405325912ce5057c9395",
+      "development_control": true
     }
   ],
   "source_evidence": "runs/excluded-source-final-001.jpg and runs/source-scope-preflight-001/excluded-source-candidates.jpg; manual source inspection by Codex, not independent holdout",
