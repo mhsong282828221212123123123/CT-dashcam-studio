@@ -1,0 +1,44 @@
+{
+  "schema": "ct_scene.experimental_contact_adapter_v5",
+  "selected": {
+    "contact": {
+      "architecture": "14x14_fpn_u_soft_argmax_plus_bounded_v_residual",
+      "unfreeze_from": 8,
+      "best_epoch": 21,
+      "validation_3d_mean_m": 0.7884254177782519
+    }
+  },
+  "adapter_config": {
+    "contact_mode": "fpn14_u_crop_bounded_v_box",
+    "flip_tta": true,
+    "direction_enabled": false
+  },
+  "runtime_adopted": false,
+  "adoption_gate": "NOT_APPROVED: experimental packaging only; review held-out metrics and metric 3D evidence before any integration",
+  "annotation_source": "G:\\3d\\gemini\\CT-scene-rebuild\\configs\\contact-learning-annotations-v5.json",
+  "annotations_sha256": "48ec04ce76659a217ebf5df7fa89263d90ffc5d90d7f617823b11d267e16f35b",
+  "cuda": false,
+  "input_spec": {
+    "crop": "bbox plus 12 percent left/right/top and16 percent bottom; clip to1280x960 source",
+    "color": "RGB",
+    "resize": "PIL bicubic224x224",
+    "normalize_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "normalize_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "image_resolution": [
+      1280,
+      960
+    ]
+  },
+  "files_sha256": {
+    "adapter.npz": "e78e9c4e561d07dc457112f5338c57cbe069449aacff5313ff64047c5c519aad",
+    "contact-encoder.onnx": "7dfa0493b21353f65e54e96367ce4417d12f9c89367b83279f89c6e04a5cbd08"
+  }
+}

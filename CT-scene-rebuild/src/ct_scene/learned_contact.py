@@ -23,6 +23,17 @@ class LearnedContact:
         self.encoder=ort.InferenceSession(str(directory/'contact-encoder.onnx'),options,providers=['CPUExecutionProvider'])
 
     def predict(self,crop,record):
+        if self.report.get('schema')=='ct_scene.experimental_contact_adapter_v5':
+            cfg=self.report['adapter_config']
+            batch=np.concatenate([preprocess(crop),preprocess(crop[:,::-1,:])],axis=0)
+            out=self.encoder.run(None,{'rgb_normalized':batch})[0].astype(float)
+            u_crop=0.5*(out[0,0]+(1.0-out[1,0])) if cfg.get('flip_tta',True) else out[0,0]
+            v_box=0.5*(out[0,1]+out[1,1]) if cfg.get('flip_tta',True) else out[0,1]
+            cr=np.asarray(record['crop_rect_xyxy'],float);b=np.asarray(record['bbox_xyxy'],float)
+            u_box=((cr[0]+u_crop*(cr[2]-cr[0]))-b[0])/(b[2]-b[0])
+            return dict(contact_uv=[float(u_box),float(v_box)],direction='disabled',
+                applied=False,status='experimental_not_approved',metric_position_available=False,
+                reason=self.report['adoption_gate'],confidence_calibrated=False)
         if self.report.get('schema')=='ct_scene.experimental_contact_adapter_v4':
             cfg=self.report['adapter_config']
             batch=np.concatenate([preprocess(crop),preprocess(crop[:,::-1,:])],axis=0)

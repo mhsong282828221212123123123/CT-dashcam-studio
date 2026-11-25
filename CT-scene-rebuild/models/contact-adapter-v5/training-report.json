@@ -1,0 +1,139 @@
+{
+  "status": "trained_experimental_3d_ground_contact_head",
+  "adapter_version": "v5",
+  "adapter_config": {
+    "contact_mode": "fpn14_u_crop_bounded_v_box",
+    "flip_tta": true,
+    "direction_enabled": false
+  },
+  "runtime_adopted": false,
+  "metric_xyz_accuracy": "PROTOTYPE_RIG_GROUND_PROJECTION_ONLY_NOT_SURVEYED_XYZ",
+  "new_supervised_weights": true,
+  "full_backbone_finetuned": false,
+  "partial_backbone_finetuned": "mobilenetv3_features_8_to_12",
+  "source_split_unit": "recorded drive date/session",
+  "samples": {
+    "train": 178,
+    "validation": 35,
+    "test": 29
+  },
+  "selected": {
+    "contact": {
+      "architecture": "14x14_fpn_u_soft_argmax_plus_bounded_v_residual",
+      "unfreeze_from": 8,
+      "best_epoch": 21,
+      "validation_3d_mean_m": 0.7884254177782519
+    }
+  },
+  "results": {
+    "train": {
+      "contact_2d_model": {
+        "samples": 97,
+        "mean_error_vehicle_height": 0.057624889401827535,
+        "median_error_vehicle_height": 0.04483701697391759,
+        "p90_error_vehicle_height": 0.11486442023880183
+      },
+      "contact_2d_baseline": {
+        "samples": 97,
+        "mean_error_vehicle_height": 0.1769057883268844,
+        "median_error_vehicle_height": 0.134287005986607,
+        "p90_error_vehicle_height": 0.4217116151677003
+      },
+      "projected_3d_ground_m_model": {
+        "samples": 97,
+        "mean_error_m": 0.7500021998167121,
+        "median_error_m": 0.3076526411072217,
+        "p90_error_m": 1.0408698117160584
+      },
+      "projected_3d_ground_m_baseline": {
+        "samples": 97,
+        "mean_error_m": 1.4244938554867004,
+        "median_error_m": 0.6729280787678513,
+        "p90_error_m": 2.5148617999255776
+      },
+      "contact_count_by_camera": {
+        "front": 34,
+        "left_repeater": 40,
+        "right_repeater": 23
+      }
+    },
+    "validation": {
+      "contact_2d_model": {
+        "samples": 22,
+        "mean_error_vehicle_height": 0.14654513744582556,
+        "median_error_vehicle_height": 0.1078912192331211,
+        "p90_error_vehicle_height": 0.3072329408759084
+      },
+      "contact_2d_baseline": {
+        "samples": 22,
+        "mean_error_vehicle_height": 0.17539467985311225,
+        "median_error_vehicle_height": 0.14051453372040468,
+        "p90_error_vehicle_height": 0.4709761840692743
+      },
+      "projected_3d_ground_m_model": {
+        "samples": 22,
+        "mean_error_m": 0.7884254177782519,
+        "median_error_m": 0.5220658840634729,
+        "p90_error_m": 1.5314345362140482
+      },
+      "projected_3d_ground_m_baseline": {
+        "samples": 22,
+        "mean_error_m": 0.9620642861945043,
+        "median_error_m": 0.8207847314678249,
+        "p90_error_m": 1.7179630787208442
+      },
+      "contact_count_by_camera": {
+        "front": 9,
+        "left_repeater": 8,
+        "right_repeater": 5
+      }
+    },
+    "test": {
+      "contact_2d_model": {
+        "samples": 12,
+        "mean_error_vehicle_height": 0.14935662897453486,
+        "median_error_vehicle_height": 0.07899330547190253,
+        "p90_error_vehicle_height": 0.223804132778969
+      },
+      "contact_2d_baseline": {
+        "samples": 12,
+        "mean_error_vehicle_height": 0.1261664765817313,
+        "median_error_vehicle_height": 0.10077527282399112,
+        "p90_error_vehicle_height": 0.1949974596983234
+      },
+      "projected_3d_ground_m_model": {
+        "samples": 12,
+        "mean_error_m": 1.9125207964300113,
+        "median_error_m": 0.5334375765361009,
+        "p90_error_m": 2.9169882137075223
+      },
+      "projected_3d_ground_m_baseline": {
+        "samples": 12,
+        "mean_error_m": 2.0845465688569687,
+        "median_error_m": 0.6959820985383931,
+        "p90_error_m": 2.0252688207307923
+      },
+      "contact_count_by_camera": {
+        "front": 5,
+        "left_repeater": 4,
+        "right_repeater": 3
+      }
+    }
+  },
+  "contact_2d_candidate_pass": false,
+  "projected_3d_ground_m_candidate_pass": false,
+  "all_cameras_have_three_test_contacts": true,
+  "annotation_provenance": {
+    "reviewers": [
+      "Codex direct source inspection",
+      "Codex image inspection; not independent human ground truth",
+      "Gemini"
+    ],
+    "independent_human_review": false,
+    "source": "visual image tire-pair labels; projected with prototype camera rig (no LiDAR/GPS ground truth)"
+  },
+  "adoption_rule": "Keep disabled until camera rig calibration and multi-frame 3D track continuity are separately validated",
+  "cuda": false,
+  "annotations_sha256": "48ec04ce76659a217ebf5df7fa89263d90ffc5d90d7f617823b11d267e16f35b",
+  "encoder_sha256": "7dfa0493b21353f65e54e96367ce4417d12f9c89367b83279f89c6e04a5cbd08"
+}

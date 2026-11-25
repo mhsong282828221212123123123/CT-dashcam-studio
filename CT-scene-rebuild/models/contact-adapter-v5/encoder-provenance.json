@@ -1,0 +1,11 @@
+{
+  "source_weights": "G:\\3d\\scene-models\\orientation-review\\regressor_mobilenetv3.pt",
+  "source_weights_sha256": "a1e4a12870566967d248c28e9dcc6f40945142d1b0ecc3d11636668becbdae80",
+  "annotations_sha256": "48ec04ce76659a217ebf5df7fa89263d90ffc5d90d7f617823b11d267e16f35b",
+  "encoder_version": "v5",
+  "torch": "2.5.1+cpu",
+  "device": "cpu",
+  "cuda_used": false,
+  "backbone": "KITTI mobilenet_v3_small partial fine-tune (>=8) + 14x14 FPN u_crop + bounded v_box; trained with prototype 3D ground meter Jacobian loss",
+  "target": "ego-relative 3D ground-projected tire-contact position (no angle head)"
+}

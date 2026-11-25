@@ -1,0 +1,5 @@
+[
+  ["aug22", "test", "G:/3d/CT-scene-rebuild/runs/aug22-junction-002"],
+  ["aug30", "test", "G:/3d/CT-scene-rebuild/runs/aug30-actor-lanes-001"],
+  ["pilotext", "test", "G:/3d/CT-scene-rebuild/runs/pilot-clay-regression-001"]
+]

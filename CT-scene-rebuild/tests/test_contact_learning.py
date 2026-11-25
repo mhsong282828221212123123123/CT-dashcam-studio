@@ -60,11 +60,11 @@ class ContactLearningTests(unittest.TestCase):
         from pathlib import Path
         crop=np.ones((64,96,3),np.uint8)*128
         rec=dict(camera='front',bbox_xyxy=[200.0,300.0,400.0,450.0],crop_rect_xyxy=[176.0,282.0,424.0,474.0])
-        for name in ['contact-adapter-v2','contact-adapter-v3','contact-adapter-v4']:
+        for name in ['contact-adapter-v2','contact-adapter-v3','contact-adapter-v4','contact-adapter-v5']:
             path=Path('models')/name
             if not path.exists():continue
             out=LearnedContact(path).predict(crop,rec)
             self.assertFalse(out['applied'])
             self.assertFalse(out['metric_position_available'])
             self.assertEqual(len(out['contact_uv']),2)
-            self.assertIn(out['direction'],('away','toward','left','right'))
+            self.assertIn(out['direction'],('away','toward','left','right','disabled'))
