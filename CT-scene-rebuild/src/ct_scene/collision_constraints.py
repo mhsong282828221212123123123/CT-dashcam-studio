@@ -112,10 +112,18 @@ def constrain(frames,road,dimensions,max_iterations=16):
         q=frame.project(origin) if frame is not None else coordinates(road,origin)
         lanes[key]=lane_at(road,float(q[0]),float(q[1]))
 
+    ego_conflict_keys=set()
+    for i,f in enumerate(result):
+        bs=bodies(f);ego_body=next((b for b in bs if b['id']=='__ego__'),None)
+        if ego_body is None:continue
+        for a in bs:
+            if a['id']!='__ego__' and overlap(ego_body,a,dimensions):ego_conflict_keys.add(a['id'])
+
     def project(i,a,candidate):
         origin=original[i,a['id']];cap=float(a.get('collision_cap_m',0))
         lane=lanes[i,a['id']]
-        if cap<=0 or lane is None:return origin.copy()
+        allow_unresolved_ego=lane is None and a['id'] in ego_conflict_keys
+        if cap<=0 or (lane is None and not allow_unresolved_ego):return origin.copy()
         delta=np.asarray(candidate)-origin;delta[2]=0
         if a.get('collision_axis_W') is not None:
             axis=np.asarray(a['collision_axis_W'],float);axis/=np.linalg.norm(axis)
@@ -123,12 +131,14 @@ def constrain(frames,road,dimensions,max_iterations=16):
         norm=np.linalg.norm(delta[:2])
         if norm<1e-10:return origin.copy()
         if norm>cap:delta*=cap/norm
-        point=origin+delta;local=frame.project(point) if frame is not None else coordinates(road,point)
-        upper,lower=lane_bounds(road,float(local[0]),lane)
-        # Preserve the original centre's lane. No new lane or road is introduced.
-        d=np.clip(local[1],lower+.02,upper-.02)
-        if abs(d-local[1])>1e-8:
-            point[:2]=frame.world(float(local[0]),float(d))[:2] if frame is not None else world(road,float(local[0]),float(d))[:2]
+        point=origin+delta
+        if lane is not None:
+            local=frame.project(point) if frame is not None else coordinates(road,point)
+            upper,lower=lane_bounds(road,float(local[0]),lane)
+            # Preserve the original centre's lane. No new lane or road is introduced.
+            d=np.clip(local[1],lower+.02,upper-.02)
+            if abs(d-local[1])>1e-8:
+                point[:2]=frame.world(float(local[0]),float(d))[:2] if frame is not None else world(road,float(local[0]),float(d))[:2]
         offset=point[:2]-origin[:2]
         if a.get('collision_axis_W') is not None and abs(axis[0]*offset[1]-axis[1]*offset[0])>1e-6:return origin.copy()
         if np.linalg.norm(point[:2]-origin[:2])>cap+1e-6:return origin.copy()

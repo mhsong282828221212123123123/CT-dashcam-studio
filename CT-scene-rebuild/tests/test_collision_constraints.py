@@ -98,6 +98,14 @@ class CollisionTests(unittest.TestCase):
         fixed,r=constrain([f],{'boundaries_y':[4,-4]},self.dims)
         self.assertEqual(fixed[0]['ego_position_W'],[0,0,0]);self.assertEqual(r['after']['gate'],'PASS')
 
+    def test_ego_overlap_at_unresolved_junction_separates_within_cap(self):
+        f=dict(time_s=0,ego_position_W=[0,10,0],ego_yaw_rad=0,actors=[actor('side',[-1.2,11.8,0],cap=.75)])
+        self.assertEqual(audit([f],self.dims)['gate'],'FAIL')
+        fixed,r=constrain([f],self.road,self.dims)
+        self.assertEqual(fixed[0]['ego_position_W'],[0,10,0])
+        self.assertEqual(r['after']['gate'],'PASS')
+        self.assertLessEqual(r['max_correction_m'],.750001)
+
     def test_real_contact_is_not_a_physics_bounce(self):
         f=[dict(time_s=0,actors=[actor('a',[0,0,0],cap=0),actor('b',[4.6,0,0],cap=0)])]
         fixed,r=constrain(f,{'boundaries_y':[4,-4]},self.dims)
