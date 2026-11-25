@@ -25,12 +25,16 @@ for i,r in enumerate(records):
  draw.text((975,140),'방향 라벨: '+str(r['direction']),font=small,fill='white');draw.text((975,170),'모델 후보: '+prediction['direction'],font=small,fill='white');draw.text((975,610),'실험용 · 기본 기능 미적용',font=small,fill='#f4c756');draw.text((975,642),'거리·3D 각도 정답 없음',font=small,fill='#bbbbbb')
  patch=Image.fromarray(crop);patch.thumbnail((310,360));im.paste(patch,(965,230))
  package=source.parent.parent
- if str(package) not in cache:cache[str(package)]=json.loads((package/'frames.json').read_text())
- sourceframes=cache[str(package)];f=next(x for x in sourceframes if x['frame_id']==r['frame_id']);t=f['camera_time_s']
- for col,camera in enumerate(['front','back','left_repeater','right_repeater']):
-  rows=[x for x in sourceframes if x['camera_id']==camera]
-  if not rows:continue
-  q=min(rows,key=lambda x:abs(x['camera_time_s']-t));tile=Image.open(package/q['image']).convert('RGB').resize((320,240));im.paste(tile,(col*320,760));draw.text((col*320+4,740),camera+' '+str(round(q['camera_time_s'],2))+'s',font=small,fill='white')
+ frames_json=package/'frames.json'
+ if frames_json.exists():
+  if str(package) not in cache:cache[str(package)]=json.loads(frames_json.read_text())
+  sourceframes=cache[str(package)];f=next(x for x in sourceframes if x['frame_id']==r['frame_id']);t=f['camera_time_s']
+  for col,camera in enumerate(['front','back','left_repeater','right_repeater']):
+   rows=[x for x in sourceframes if x['camera_id']==camera]
+   if not rows:continue
+   q=min(rows,key=lambda x:abs(x['camera_time_s']-t));tile=Image.open(package/q['image']).convert('RGB').resize((320,240));im.paste(tile,(col*320,760));draw.text((col*320+4,740),camera+' '+str(round(q['camera_time_s'],2))+'s',font=small,fill='white')
+ else:
+  draw.text((15,820),'E:/tesla 직접 추출 원본 정지 프레임 (4채널 패키지 미생성)',font=small,fill='#bbbbbb')
  frames.append(im)
 video=a.output/'heldout-contact-review.mp4'
 with av.open(str(video),'w',options={'movflags':'+faststart'}) as out:

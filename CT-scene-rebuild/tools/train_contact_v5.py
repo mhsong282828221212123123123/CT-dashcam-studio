@@ -54,17 +54,18 @@ def contact_jacobian_m(uv_gt, r, opt, proto, eps=1e-3):
 
 
 def ground_3d_metrics(pred_uv, gt_uv, rows, opt, proto):
-    errs = []
+    errs = []; skipped = 0
     for pu, gu, r in zip(pred_uv, gt_uv, rows):
         try:
             pg = project_uv_3d(gu, r, opt, proto)[:2]
             pp = project_uv_3d(pu, r, opt, proto)[:2]
             errs.append(float(np.linalg.norm(pp - pg)))
         except Exception:
-            errs.append(15.0)
+            skipped += 1
     arr = np.asarray(errs, float)
     return dict(
         samples=len(arr),
+        skipped_out_of_range=skipped,
         mean_error_m=float(np.mean(arr)),
         median_error_m=float(np.median(arr)),
         p90_error_m=float(np.quantile(arr, 0.9)),
@@ -250,9 +251,10 @@ def main():
                 v_b = 0.5 * (po[:, 1] + pf[:, 1])
                 uv_b = np.c_[u_crop_to_u_box(u_c, rects[va_idx], boxes[va_idx]), v_b]
             m3 = ground_3d_metrics(uv_b, c_box[va_idx], va_rows, opt, proto)
-            # Select strictly on validation 3D ego-relative mean meter error
-            if m3['mean_error_m'] < best_val[0]:
-                best_val = (m3['mean_error_m'], ep, copy.deepcopy(net.state_dict()))
+            # Select strictly on validation 3D ego-relative mean + p90 meter error
+            sel_score = m3['mean_error_m'] + 0.15 * m3['p90_error_m']
+            if sel_score < best_val[0]:
+                best_val = (sel_score, ep, copy.deepcopy(net.state_dict()))
         if ep % 15 == 0:
             print(f'3D-MeterNet epoch {ep}/{a.epochs} best_val_3d_m={best_val[0]:.3f}m (ep {best_val[1]})', flush=True)
 
