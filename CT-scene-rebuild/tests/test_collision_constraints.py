@@ -110,3 +110,21 @@ class CollisionTests(unittest.TestCase):
         f=[dict(time_s=0,actors=[actor('a',[0,0,0],cap=0),actor('b',[4.6,0,0],cap=0)])]
         fixed,r=constrain(f,{'boundaries_y':[4,-4]},self.dims)
         self.assertEqual(r['after']['gate'],'PASS');self.assertEqual(r['max_correction_m'],0)
+
+    def test_ray_depth_front_estimate_separates_at_unresolved_junction_strictly_along_ray(self):
+        a=actor('front_a',[10,10.,0],cap=2.);a['collision_axis_W']=[1.,0.]
+        b=actor('front_b',[13.5,10.,0],cap=2.);b['collision_axis_W']=[1.,0.]
+        fixed,r=constrain([dict(time_s=0,actors=[a,b])],self.road,self.dims)
+        self.assertEqual(r['after']['gate'],'PASS')
+        for act in fixed[0]['actors']:
+            self.assertAlmostEqual(act['position_W'][1],10.,places=6)
+
+    def test_angled_ray_depth_clamps_inside_lane_without_discarding_step(self):
+        axis=np.array([1.,0.15]);axis/=np.linalg.norm(axis)
+        a=actor('front_a',[10,3.85,0],cap=2.);a['collision_axis_W']=axis.tolist()
+        b=actor('fixed',[13.8,3.85,0],cap=0)
+        fixed,r=constrain([dict(time_s=0,actors=[a,b])],self.road,self.dims)
+        moved=np.asarray(fixed[0]['actors'][0]['position_W'][:2])-np.array([10.,3.85])
+        self.assertGreater(np.linalg.norm(moved),0.5)
+        self.assertLessEqual(fixed[0]['actors'][0]['position_W'][1],3.980001)
+        self.assertAlmostEqual(axis[0]*moved[1]-axis[1]*moved[0],0.,places=5)

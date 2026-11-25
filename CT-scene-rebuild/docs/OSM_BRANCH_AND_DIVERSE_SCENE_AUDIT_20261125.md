@@ -25,7 +25,14 @@ Visual top-down overlays aligning cached OSM ways/junction nodes against 3D rend
 - Replacing `project_vehicle_height` with `project_contact` unconditionally on `left_repeater`/`right_repeater`, or lowering the side ground-contact recovery threshold inside `lane is None`, caused mixed-projection collisions on dense urban/junction scenes (`oct22` `right_repeater-0058/0061`, `aug28` `left_repeater-0026/0056`, and `junction` `left_repeater-0029/0037`).
 - Both experiments were honestly reverted. Side cameras remain on `project_vehicle_height` + the existing `recover_side_contacts` (fed with `v6` `side_ground_contact_W` when `--contact-adapter` is explicitly passed), while `front` uses `v6` `project_front(..., contact_uv=learned_uv)`.
 
-## 4. Multi-Scene Verification Summary (8 Diverse 60s Scenes, CPU-only)
+## 4. Ray-Axis Front Depth Constraint Fixes (`src/ct_scene/collision_constraints.py`, `src/ct_scene/surrounding.py`)
+Auditing dense urban queues and untouched scenes (`aug25`, `oct26`, `aug20`, `aug28`) revealed why `collision_constraints.constrain()` was unable to resolve front-front monocular depth overlaps:
+1. **Unresolved-lane ray-axis rejection (`collision_constraints.py`)**: Front vehicles inside junctions or curved approaches (`lane is None`) were blocked from moving even strictly along their 1D observed camera viewing ray (`collision_axis_W`). Because 1D ray movement only adjusts monocular depth and never invents a lateral lane, `allow_ray_depth = lane is None and a.get('collision_axis_W') is not None` now permits bounded ray-only depth separation (while keeping free 2D `collision_axis_W is None` actors locked on unknown roads).
+2. **Angled-ray lane-boundary discard (`collision_constraints.py`)**: When a front vehicle near a lane edge stepped along an angled viewing ray, lateral clipping pushed the candidate off-ray and triggered the collinearity guard to discard the entire step. Replaced with 1D scalar binary-search clamping strictly along `collision_axis_W` inside `[lower + 0.02, upper - 0.02]`.
+3. **Missing uncertain front supports (`surrounding.py`)**: Added `'observed_height_prior_after_unresolved_contact'` and `'offline_two_endpoint_gap'` to the existing `distance > 20 m` front ray-depth constraint eligibility.
+- Added 2 unit tests in `tests/test_collision_constraints.py` (`437 tests OK`).
+
+## 5. Multi-Scene Verification Summary (10 Diverse 60s Scenes, CPU-only)
 
 | Scene | GPS-3D RMS | OSM Branch Arms (Before -> After) | Overlap Frames (Before -> After) | `numerical_gate` | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -34,13 +41,15 @@ Visual top-down overlays aligning cached OSM ways/junction nodes against 3D rend
 | `ramp` (`curb-steering-ramp-001`) | — | — | `0 -> 0` | `PASS -> PASS` | Preserved |
 | `oct02` (`curb-steering-oct02-002`) | `6.43 m` | — | `10 -> 10` | `FAIL` | 9 frames are 84.6 m distant ghost `front-0001/0002` |
 | `oct22` (`blindspot-junction-oct22-003`) | `2.29 m` | `9 -> 9` | `14 -> 3` | `FAIL` | All 11 `__ego__` vs `left_repeater-0035` overlaps resolved |
-| `aug28` (`blindspot-junction-aug28-004`) | `4.56 m` | `6 -> 6` | `16 -> 21` | `FAIL` | `front-0007/0014` (`2.85 m`) resolved; `front-0001/0033` (`0.33 m`) +8 frames |
+| `aug25` (`practical-fresh-aug25-pipeline-001`, untouched) | `3.04 m` | `3 -> 3` | `8 -> 1` (-87.5%) | `FAIL` | Ray-depth separation at junction (`failures=1`) |
+| `oct26` (`blindspot-junction-oct26-004`) | `1.07 m` | `2 -> 2` | `137 -> 11` (-92.0%) | `FAIL` | Dense front-queue failures reduced `21 -> 3` |
+| `aug20` (`blindspot-junction-aug20-010`, untouched) | `5.25 m` | `2 -> 2` | `153 -> 29` (-81.0%) | `FAIL` | Arterial curve & gap-interpolated overlaps resolved |
+| `aug28` (`blindspot-junction-aug28-004`) | `4.56 m` | `6 -> 6` | `16 -> 20` | `FAIL` | `front-0007/0014` (`2.85 m`) resolved; `front-0001/0033` (`0.33 m`) remains |
 | `aug26` (`blindspot-junction-aug26-003`) | `1.87 m` | `2 -> 3` | `81 -> 83` | `FAIL` | Shallow `22°` main-road arm removed; staggered 4-way north/south arms recovered |
-| `oct26` (`blindspot-junction-oct26-004`) | `1.07 m` | `2 -> 2` | `137 -> 138` | `FAIL` | Dense front-front queue overlaps remain; honest `FAIL` |
 
-## 5. Verification
-- Full unit test suite: `435 tests` (`python -m unittest discover -s tests -q`) — **OK**.
+## 6. Verification
+- Full unit test suite: `437 tests` (`python -m unittest discover -s tests -q`) — **OK**.
 - Visual OSM-vs-3D overlay artifacts saved locally under `G:\3d\gemini\CT-scene-rebuild\runs\gemini-3d-audit-001\`:
   - `overlay-osm-3d-aug26.jpg` vs `overlay-osm-3d-aug26-after.jpg`
-  - `overlay-osm-3d-junction-after.jpg`
+  - `overlay-osm-3d-junction-after.jpg`, `overlay-osm-3d-aug25.jpg`, `overlay-osm-3d-aug20.jpg`
   - `overlay-osm-3d-oct22.jpg`, `overlay-osm-3d-aug28.jpg`, `overlay-osm-3d-oct26-after.jpg`
