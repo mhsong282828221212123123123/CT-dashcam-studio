@@ -59,8 +59,8 @@ class ContactLearningTests(unittest.TestCase):
     def test_v2_and_v3_packaged_models_remain_unadopted(self):
         from pathlib import Path
         crop=np.ones((64,96,3),np.uint8)*128
-        rec=dict(camera='front',bbox_xyxy=[200.0,300.0,400.0,450.0])
-        for name in ['contact-adapter-v2','contact-adapter-v3']:
+        rec=dict(camera='front',bbox_xyxy=[200.0,300.0,400.0,450.0],crop_rect_xyxy=[176.0,282.0,424.0,474.0])
+        for name in ['contact-adapter-v2','contact-adapter-v3','contact-adapter-v4']:
             path=Path('models')/name
             if not path.exists():continue
             out=LearnedContact(path).predict(crop,rec)

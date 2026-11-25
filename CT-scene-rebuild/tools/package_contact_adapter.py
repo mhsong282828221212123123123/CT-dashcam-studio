@@ -21,11 +21,13 @@ def package(trained,features,annotations,output):
     if list(encoded['ids'])!=ids:raise ValueError('Feature sample order mismatch')
     predictions=json.loads((trained/'predictions.json').read_text())
     if [r['id'] for r in predictions]!=ids:raise ValueError('Prediction sample order mismatch')
+    ver=report.get('adapter_version','v1')
+    req_weights=['feature_mean','feature_scale','direction_w','direction_b'] if ver=='v4' else ['feature_mean','feature_scale','contact_w','contact_b','direction_w','direction_b']
     with np.load(trained/'adapter.npz',allow_pickle=False) as weights:
-        for name in ['feature_mean','feature_scale','contact_w','contact_b','direction_w','direction_b']:
+        for name in req_weights:
             if name not in weights or not np.isfinite(weights[name]).all():raise ValueError('Invalid learned weight '+name)
-    is_v3=report.get('adapter_version')=='v3'
-    manifest=dict(schema='ct_scene.experimental_contact_adapter_v3' if is_v3 else 'ct_scene.experimental_contact_adapter_v1',selected=report['selected'],adapter_config=report.get('adapter_config'),runtime_adopted=False,
+    schema=f'ct_scene.experimental_contact_adapter_{ver}' if ver in ('v3','v4') else 'ct_scene.experimental_contact_adapter_v1'
+    manifest=dict(schema=schema,selected=report['selected'],adapter_config=report.get('adapter_config'),runtime_adopted=False,
         adoption_gate='NOT_APPROVED: experimental packaging only; review held-out metrics and metric 3D evidence before any integration',
         annotation_source=str(annotations.resolve()),annotations_sha256=sha(annotations),cuda=False,
         input_spec=dict(crop='bbox plus 12 percent left/right/top and16 percent bottom; clip to1280x960 source',color='RGB',resize='PIL bicubic224x224',normalize_mean=[.485,.456,.406],normalize_std=[.229,.224,.225],image_resolution=[1280,960]),

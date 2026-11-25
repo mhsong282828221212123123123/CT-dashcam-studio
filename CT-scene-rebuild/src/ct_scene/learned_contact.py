@@ -23,6 +23,23 @@ class LearnedContact:
         self.encoder=ort.InferenceSession(str(directory/'contact-encoder.onnx'),options,providers=['CPUExecutionProvider'])
 
     def predict(self,crop,record):
+        if self.report.get('schema')=='ct_scene.experimental_contact_adapter_v4':
+            cfg=self.report['adapter_config']
+            batch=np.concatenate([preprocess(crop),preprocess(crop[:,::-1,:])],axis=0)
+            uv_c,feats=self.encoder.run(None,{'rgb_normalized':batch})
+            uv_c=uv_c.astype(float);feats=feats.astype(float)
+            uv_crop=0.5*(uv_c[0]+flip_contact_uv(uv_c[1])) if cfg.get('flip_tta',True) else uv_c[0]
+            cr=np.asarray(record['crop_rect_xyxy'],float);b=np.asarray(record['bbox_xyxy'],float)
+            xy=cr[:2]+uv_crop*(cr[2:]-cr[:2])
+            contact=(xy-b[:2])/(b[2:]-b[:2])
+            z=np.clip((feats-self.weights['feature_mean'])/self.weights['feature_scale'],-6,6)/np.sqrt(feats.shape[1])
+            md=np.vstack([metadata(record),metadata(flip_record(record))])
+            sd=self.report['selected']['direction']['feature_strength']
+            pd=np.c_[z*sd,md]@self.weights['direction_w']+self.weights['direction_b']
+            d_logits=0.5*(pd[0]+pd[1][[0,1,3,2]]) if cfg.get('flip_tta',True) else pd[0]
+            return dict(contact_uv=contact.tolist(),direction=DIRECTIONS[int(np.argmax(d_logits))],
+                applied=False,status='experimental_not_approved',metric_position_available=False,
+                reason=self.report['adoption_gate'],confidence_calibrated=False)
         if self.report.get('schema')=='ct_scene.experimental_contact_adapter_v3':
             cfg=self.report['adapter_config']
             batch=np.concatenate([preprocess(crop),preprocess(crop[:,::-1,:])],axis=0)

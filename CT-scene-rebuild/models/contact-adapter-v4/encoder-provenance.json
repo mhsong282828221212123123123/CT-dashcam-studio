@@ -1,0 +1,11 @@
+{
+  "source_weights": "G:\\3d\\scene-models\\orientation-review\\regressor_mobilenetv3.pt",
+  "source_weights_sha256": "a1e4a12870566967d248c28e9dcc6f40945142d1b0ecc3d11636668becbdae80",
+  "annotations_sha256": "2e55e4a3f30bbc31a4d19f8f123ac59b55ed5d475631aa7c4f914d1dd5e9782c",
+  "encoder_version": "v4",
+  "torch": "2.5.1+cpu",
+  "device": "cpu",
+  "cuda_used": false,
+  "backbone": "KITTI mobilenet_v3_small; contact branch partial fine-tune (>=8) + 14x14 FPN soft-argmax; direction branch frozen",
+  "target": "image contacts only, not metric XYZ"
+}

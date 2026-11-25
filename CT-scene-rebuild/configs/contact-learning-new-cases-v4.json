@@ -1,0 +1,8 @@
+[
+  ["aug16", "train", "G:/3d/CT-scene-rebuild/runs/aug16-image-heading-evidence-001"],
+  ["aug17", "train", "G:/3d/CT-scene-rebuild/runs/aug17-junction-repair-001"],
+  ["sep07", "train", "G:/3d/CT-scene-rebuild/runs/sep07-inside-median-band-preview-001"],
+  ["aug25", "test", "G:/3d/CT-scene-rebuild/runs/aug25-image-heading-full-001"],
+  ["sep17", "test", "G:/3d/CT-scene-rebuild/runs/sep17-actor-lanes-001"],
+  ["sep20", "test", "G:/3d/CT-scene-rebuild/runs/sep20-road-repair-001"]
+]
