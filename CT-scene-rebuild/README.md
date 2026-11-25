@@ -1,3 +1,5 @@
+3D 재현 본체 인계: [편집기 연결·실행·파이프라인·소스 지도](docs/GEMINI_3D_MODULE_GUIDE.md)를 먼저 읽으세요. 다중 카메라 3D 엔진은 이미 구현되어 있으며 접점 학습은 그 보조 실험입니다.
+
 다른 AI 인계: [실행·정답 작성·모델 학습 안내](docs/GEMINI_TRAINING_GUIDE.md). 현재 학습 v2는 새 날짜 접점 검증 실패로 기본3D에 미적용입니다.
 
 # CT Scene Rebuild
