@@ -372,8 +372,18 @@ def evaluate_scene_surrogates(scene_dir):
     collision_shifts = []
     coobserved_close_conflicts = []
 
-    # Map actor primary camera for simultaneous front-vs-side split-track detection
-    actor_cams = {a['global_id']: {r.get('camera_id') for r in a['samples'] if r.get('camera_id') in ('front', 'left_repeater', 'right_repeater')} for a in actors}
+    # Map each actor's active camera at sample timestamps for true simultaneous front-vs-side split-track detection
+    actor_sample_cams = {
+        a['global_id']: [(float(r['time_s']), r.get('camera_id')) for r in a['samples'] if r.get('camera_id') in ('front', 'left_repeater', 'right_repeater')]
+        for a in actors
+    }
+
+    def _active_cam_at(gid, t_query):
+        rows_c = actor_sample_cams.get(gid, [])
+        if not rows_c:
+            return None
+        best_t, best_c = min(rows_c, key=lambda x: abs(x[0] - t_query))
+        return best_c if abs(best_t - t_query) <= 0.25 else None
 
     for st in states:
         t = st['time_s']
@@ -385,20 +395,24 @@ def evaluate_scene_surrogates(scene_dir):
                 if c_shift > 0.05:
                     collision_shifted_frames += 1
                     collision_shifts.append(c_shift)
-        # Detect simultaneous unmerged front-only vs side-only tracks within 4.5m XY (split-track / co-observation disagreement)
+        # Detect simultaneous unmerged front vs side observations of the same physical slot (<3.0m XY, narrower than 3.5m adjacent lane spacing)
         for i, a in enumerate(st_actors):
             if a.get('ghost'):
                 continue
-            ca = actor_cams.get(a['id'], set())
+            ca = _active_cam_at(a['id'], t)
+            if ca is None:
+                continue
             for b in st_actors[i + 1:]:
                 if b.get('ghost'):
                     continue
-                cb = actor_cams.get(b['id'], set())
-                if ('front' in ca and cb <= {'left_repeater', 'right_repeater'}) or ('front' in cb and ca <= {'left_repeater', 'right_repeater'}):
+                cb = _active_cam_at(b['id'], t)
+                if cb is None or ca == cb:
+                    continue
+                if {ca, cb} & {'front'} and {ca, cb} & {'left_repeater', 'right_repeater'}:
                     pa = np.asarray(a.get('position_before_collision_W', a['position_W'])[:2], float)
                     pb = np.asarray(b.get('position_before_collision_W', b['position_W'])[:2], float)
                     dist_ab = float(np.linalg.norm(pa - pb))
-                    if dist_ab < 5.5:
+                    if dist_ab < 3.0:
                         coobserved_close_conflicts.append(dist_ab)
 
     rendered_jitter_all = []

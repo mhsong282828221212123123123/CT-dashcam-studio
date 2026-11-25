@@ -109,9 +109,30 @@ def constrain(frames,road,dimensions,max_iterations=16):
             a['position_W']=np.asarray(a['position_W'],float).copy()
             original[i,a['id']]=a['position_W'].copy();tracks[a['id']].append((i,a))
     before=audit(result,dimensions);frame=frame_for(road);lanes={}
+    ext_line=(road.get('reference_line') or {}).get('supported_extent_m')
+    unsup_iv=(road.get('reference_line') or {}).get('unsupported_intervals_m',[])
+    def _effective_station(s_val,allow_ext=False):
+        if not allow_ext or not ext_line:return float(s_val)
+        if any(j['road_station_range_m'][0]<s_val<j['road_station_range_m'][1] for j in road.get('junctions',[])):return float(s_val)
+        if any(a<s_val<b for a,b in unsup_iv):return float(s_val)
+        if ext_line[0]-90.<=s_val<ext_line[0] or ext_line[1]<s_val<=ext_line[1]+90.:
+            return float(np.clip(s_val,ext_line[0]+1e-3,ext_line[1]-1e-3))
+        return float(s_val)
     for key,origin in original.items():
         q=frame.project(origin) if frame is not None else coordinates(road,origin)
         lanes[key]=lane_at(road,float(q[0]),float(q[1]))
+    # Vehicles ahead of ego at clip start/end keep corridor lane continuity instead of snapping to None at ego_end+40m
+    if ext_line:
+        for aid,rows_a in tracks.items():
+            if not any(lanes[i_r,aid] is not None for i_r,_ in rows_a):continue
+            for i_r,_ in rows_a:
+                if lanes[i_r,aid] is None:
+                    origin=original[i_r,aid]
+                    q=frame.project(origin) if frame is not None else coordinates(road,origin)
+                    s_eff=_effective_station(float(q[0]),True)
+                    if s_eff!=float(q[0]):
+                        lanes[i_r,aid]=lane_at(road,s_eff,float(q[1]))
+    corridor_ext_ids={aid for aid,rows_a in tracks.items() if ext_line and any(lanes[i_r,aid] is not None for i_r,_ in rows_a)}
 
     ego_conflict_keys=set()
     for i,f in enumerate(result):
@@ -137,7 +158,8 @@ def constrain(frames,road,dimensions,max_iterations=16):
         point=origin+delta
         if lane is not None:
             local=frame.project(point) if frame is not None else coordinates(road,point)
-            upper,lower=lane_bounds(road,float(local[0]),lane)
+            s_proj=_effective_station(float(local[0]),a['id'] in corridor_ext_ids)
+            upper,lower=lane_bounds(road,s_proj,lane)
             if a.get('collision_axis_W') is not None and not (lower+.02<=local[1]<=upper-.02):
                 # Keep ray-constrained depth adjustment strictly on the viewing ray and inside the original lane.
                 lo,hi=0.,1.
@@ -145,7 +167,7 @@ def constrain(frames,road,dimensions,max_iterations=16):
                     mid=(lo+hi)/2
                     cand=origin+delta*mid
                     ql=frame.project(cand) if frame is not None else coordinates(road,cand)
-                    u_m,l_m=lane_bounds(road,float(ql[0]),lane)
+                    u_m,l_m=lane_bounds(road, _effective_station(float(ql[0]),a['id'] in corridor_ext_ids),lane)
                     if l_m+.02<=ql[1]<=u_m-.02:lo=mid
                     else:hi=mid
                 point=origin+delta*lo

@@ -135,3 +135,13 @@ class CollisionTests(unittest.TestCase):
         fixed,r=constrain(f,jroad,self.dims)
         self.assertEqual(r['after']['gate'],'PASS')
         self.assertLessEqual(r['max_correction_m'],.750001)
+
+    def test_corridor_actor_crossing_clip_end_extent_separates_smoothly(self):
+        croad={'boundaries_y':[4.,0.,-4.],
+               'reference_line':{'points_W_xy':[[0.,0.],[100.,0.]],'supported_extent_m':[0.,100.]},
+               'junctions':[]}
+        f=[dict(time_s=i*.05,actors=[actor('lead',[95.+i*.5,0.6,0],cap=0.),
+                                     actor('adj',[95.+i*.5,1.8,0],cap=1.5)]) for i in range(20)]
+        fixed,r=constrain(f,croad,self.dims)
+        self.assertEqual(r['after']['gate'],'PASS')
+        self.assertEqual(r['rejected_correction_intervals'],[])

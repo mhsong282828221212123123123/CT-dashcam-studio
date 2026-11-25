@@ -1,0 +1,344 @@
+"""Step 4 unified per-vehicle road-frame Kalman filter & RTS smoother.
+
+Fuses multi-camera observations (including simultaneous front + side overlap and
+cross-camera handoffs) using each observation's physical covariance ``R_k``,
+incorporates soft lane-center likelihoods, and outputs posterior uncertainty
+``kalman_sigma_m`` so downstream collision avoidance operates strictly within
+each vehicle's Bayesian posterior confidence region (replacing ad-hoc boundary
+clamps and distance-multiplier ``collision_cap`` heuristics).
+"""
+from collections import defaultdict
+import math
+import numpy as np
+from .actor_lane_motion import observation_usable
+from .junctions import inside as inside_junction
+from .road_frame import coordinates as road_coordinates, world as road_world
+from .road_geometry import boundaries_at, lane_at, lane_bounds, pocket_width, supported as road_supported
+
+
+def _transition(dt, tau_d=1.8):
+    decay = math.exp(-dt / tau_d) if tau_d > 0 else 1.0
+    d_int = tau_d * (1.0 - decay) if tau_d > 0 else dt
+    F = np.array([
+        [1.0, 0.0, dt,    0.0],
+        [0.0, 1.0, 0.0, d_int],
+        [0.0, 0.0, 1.0,   0.0],
+        [0.0, 0.0, 0.0, decay],
+    ], float)
+    return F
+
+
+def _process_cov(dt, sigma_as=2.8, sigma_ad=1.15):
+    dt = max(float(dt), 1e-3)
+    qs = sigma_as * sigma_as
+    qd = sigma_ad * sigma_ad
+    dt2 = dt * dt
+    dt3 = dt2 * dt
+    Q = np.array([
+        [qs * dt3 / 3.0, 0.0,            qs * dt2 / 2.0, 0.0],
+        [0.0,            qd * dt3 / 3.0, 0.0,            qd * dt2 / 2.0],
+        [qs * dt2 / 2.0, 0.0,            qs * dt,        0.0],
+        [0.0,            qd * dt2 / 2.0, 0.0,            qd * dt],
+    ], float)
+    return Q
+
+
+def observation_cov_sd(row, dist_to_ego_m):
+    """Anisotropic (sigma_s, sigma_d) in road frame from camera, range, and occlusion."""
+    cam = row.get('camera_id')
+    base_sig = row.get('position_sigma_m')
+    sup = row.get('projection_support', '')
+    trunc = 'truncated' in (row.get('quality_flags') or []) or row.get('_is_truncated', False)
+
+    if cam == 'reconstructed' or sup == 'offline_two_endpoint_gap':
+        return 2.2, 1.4
+
+    if base_sig is not None and np.isfinite(base_sig):
+        sig = float(base_sig)
+    else:
+        if cam == 'front':
+            sig = 0.25 + 0.0022 * (dist_to_ego_m ** 2)
+        else:
+            sig = (1.3 + 0.25 * dist_to_ego_m) if sup == 'apparent_vehicle_height_prior' else (0.35 + 0.004 * (dist_to_ego_m ** 2))
+
+    if cam == 'front':
+        # Front camera has very tight angular bearing (|ray_x| ~ 0.05..0.15) and softer depth
+        sig_s = max(0.28, sig)
+        sig_d = max(0.18, min(1.35, 0.14 * sig + 0.16))
+    elif cam in ('left_repeater', 'right_repeater'):
+        if sup == 'apparent_vehicle_height_prior':
+            sig_s = max(1.2, 0.85 * sig)
+            sig_d = max(1.1, 0.75 * sig)
+        else:
+            sig_s = max(0.35, 0.85 * sig)
+            sig_d = max(0.28, 0.65 * sig)
+    else:
+        sig_s = max(0.5, sig)
+        sig_d = max(0.4, 0.7 * sig)
+
+    if trunc:
+        sig_s *= 1.8
+        sig_d *= 1.6
+    return float(sig_s), float(sig_d)
+
+
+def _kalman_update_2d(x, P, z_sd, var_s, var_d):
+    H = np.array([[1.0, 0.0, 0.0, 0.0],
+                  [0.0, 1.0, 0.0, 0.0]], float)
+    R = np.array([[var_s, 0.0], [0.0, var_d]], float)
+    y = np.asarray(z_sd, float) - H @ x
+    S = H @ P @ H.T + R
+    K = P @ H.T @ np.linalg.inv(S)
+    I_KH = np.eye(4) - K @ H
+    x_new = x + K @ y
+    # Joseph stabilized covariance update
+    P_new = I_KH @ P @ I_KH.T + K @ R @ K.T
+    return x_new, 0.5 * (P_new + P_new.T)
+
+
+def _kalman_update_d_only(x, P, z_d, var_d):
+    H = np.array([[0.0, 1.0, 0.0, 0.0]], float)
+    y = float(z_d) - float(x[1])
+    S = float((H @ P @ H.T)[0, 0]) + float(var_d)
+    K = (P @ H.T)[:, 0] / max(S, 1e-9)
+    I_KH = np.eye(4) - np.outer(K, H[0])
+    x_new = x + K * y
+    P_new = I_KH @ P @ I_KH.T + np.outer(K, K) * float(var_d)
+    return x_new, 0.5 * (P_new + P_new.T)
+
+
+def _extended_corridor_station(road, s):
+    """Clamp station to supported_extent_m for vehicles ahead of ego at clip ends."""
+    if road_supported(road, s):
+        return float(s), True
+    if any(j['road_station_range_m'][0] < s < j['road_station_range_m'][1] for j in road.get('junctions', [])):
+        return float(s), False
+    line = road.get('reference_line')
+    if not line:
+        return float(s), False
+    if any(a < s < b for a, b in line.get('unsupported_intervals_m', [])):
+        return float(s), False
+    ext = line.get('supported_extent_m')
+    if ext and (ext[0] - 90.0 <= s < ext[0] or ext[1] < s <= ext[1] + 90.0):
+        s_clamped = float(np.clip(s, ext[0] + 1e-3, ext[1] - 1e-3))
+        if road_supported(road, s_clamped):
+            return s_clamped, True
+    return float(s), False
+
+
+def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None):
+    """Run multi-camera road-frame Kalman filter + RTS smoother on a global actor."""
+    if actor.get('frozen_lead'):
+        return dict(applied=False, reason='frozen_lead_preserved')
+    samples = actor.get('samples', [])
+    if len(samples) < 3:
+        return dict(applied=False, reason='too_few_samples')
+
+    use_road_frame = bool(road and road.get('reference_line'))
+    lane_idx_actor = actor.get('lane_index')
+    is_crossing = lane_idx_actor == -2
+
+    # Group all real camera observations by 20Hz/10Hz timestamp bin (0.05s)
+    obs_pool = [r for r in (raw_member_rows if raw_member_rows is not None else samples)
+                if r.get('camera_id') in ('front', 'left_repeater', 'right_repeater')]
+    if len(obs_pool) < 2:
+        return dict(applied=False, reason='no_camera_observations')
+
+    obs_by_bin = defaultdict(list)
+    for r in obs_pool:
+        key_t = round(float(r['time_s']) * 20.0) / 20.0
+        obs_by_bin[key_t].append(r)
+
+    grid_times = np.array([round(float(s['time_s']) * 20.0) / 20.0 for s in samples], float)
+    # Ensure strictly increasing unique grid matching samples
+    if np.any(np.diff(grid_times) <= 0):
+        grid_times = np.array([float(s['time_s']) for s in samples], float)
+
+    def to_frame(pts_xy):
+        arr = np.asarray(pts_xy, float)
+        if use_road_frame:
+            q = road_coordinates(road, np.c_[arr[:, :2], np.zeros(len(arr))])
+            return q[:, :2], q[:, 2]
+        return arr[:, :2], np.zeros(len(arr))
+
+    def from_frame(sd_arr):
+        sd_arr = np.asarray(sd_arr, float)
+        if use_road_frame:
+            return road_world(road, sd_arr[:, 0], sd_arr[:, 1])[:, :2]
+        return sd_arr[:, :2]
+
+    # Precompute observation (s, d) and (sigma_s, sigma_d)
+    step_obs = []
+    for k, s_row in enumerate(samples):
+        tk = float(s_row['time_s'])
+        bkey = round(tk * 20.0) / 20.0
+        cands = obs_by_bin.get(bkey, [])
+        if not cands and s_row.get('camera_id') in ('front', 'left_repeater', 'right_repeater'):
+            cands = [s_row]
+        ep = np.array([np.interp(tk, ego_times, ego_positions[:, 0]),
+                       np.interp(tk, ego_times, ego_positions[:, 1])], float)
+        parsed = []
+        for r in cands:
+            # Use raw unrefined camera observation so Kalman replaces ad-hoc clamps cleanly
+            p_raw = np.asarray(r.get('unrefined_position_W', r['position_W'])[:2], float)
+            sd, _ = to_frame(p_raw[None, :])
+            dist = float(np.linalg.norm(p_raw - ep))
+            sig_s, sig_d = observation_cov_sd(r, dist)
+            parsed.append((sd[0], sig_s * sig_s, sig_d * sig_d, r.get('camera_id')))
+        step_obs.append(parsed)
+
+    # Initialize state from first two observed steps
+    first_idx = next((i for i, o in enumerate(step_obs) if o), 0)
+    z0 = np.mean([o[0] for o in step_obs[first_idx]], axis=0) if step_obs[first_idx] else to_frame(np.array([samples[0]['position_W'][:2]]))[0][0]
+    second_idx = next((i for i in range(first_idx + 1, len(step_obs)) if step_obs[i] and samples[i]['time_s'] - samples[first_idx]['time_s'] >= 0.15), None)
+    if second_idx is not None:
+        z1 = np.mean([o[0] for o in step_obs[second_idx]], axis=0)
+        dt01 = float(samples[second_idx]['time_s'] - samples[first_idx]['time_s'])
+        v0 = np.clip((z1 - z0) / max(dt01, 0.1), [-35.0, -6.0], [45.0, 6.0])
+    else:
+        v0 = np.array([12.0 if not is_crossing else 0.0, 0.0], float)
+
+    n = len(samples)
+    x_pred = np.zeros((n, 4), float)
+    P_pred = np.zeros((n, 4, 4), float)
+    x_filt = np.zeros((n, 4), float)
+    P_filt = np.zeros((n, 4, 4), float)
+    F_list = [np.eye(4) for _ in range(n)]
+
+    x_cur = np.array([z0[0], z0[1], v0[0], v0[1]], float)
+    P_cur = np.diag([2.5, 1.5, 25.0, 6.0])
+    multi_cam_fused_steps = 0
+
+    for k in range(n):
+        tk = float(samples[k]['time_s'])
+        if k == 0:
+            x_p, P_p = x_cur.copy(), P_cur.copy()
+        else:
+            dt = max(1e-3, tk - float(samples[k - 1]['time_s']))
+            in_junc = use_road_frame and inside_junction(road, from_frame(x_cur[:2][None, :])[0], 4.0)
+            F = _transition(dt, tau_d=0.0 if (is_crossing or in_junc) else 1.8)
+            Q = _process_cov(dt, sigma_as=3.0, sigma_ad=2.4 if (is_crossing or in_junc) else 1.1)
+            F_list[k] = F
+            x_p = F @ x_cur
+            P_p = F @ P_cur @ F.T + Q
+
+        x_pred[k] = x_p
+        P_pred[k] = P_p
+        x_u, P_u = x_p.copy(), P_p.copy()
+
+        cams_at_k = {o[3] for o in step_obs[k]}
+        if len(cams_at_k) >= 2:
+            multi_cam_fused_steps += 1
+
+        # Fuse all camera measurements at timestamp tk
+        dt_step = max(0.05, tk - float(samples[k - 1]['time_s'])) if k > 0 else 0.05
+        for z_sd, var_s, var_d, _ in step_obs[k]:
+            # Chi-square (2-DOF 99% = 9.21) + kinematic jump gate against end-of-track ID glitches
+            innov = z_sd - x_u[:2]
+            mahal = (innov[0] ** 2) / max(P_u[0, 0] + var_s, 1.0) + (innov[1] ** 2) / max(P_u[1, 1] + var_d, 1.0)
+            kin_jump = k >= 3 and (abs(innov[0]) > max(12.0, 32.0 * dt_step) or abs(innov[1]) > max(3.2, 12.0 * dt_step))
+            if k >= 2 and (mahal > 9.21 or kin_jump):
+                scale_infl = min(400.0, max((mahal / 3.0) ** 2, 180.0 if kin_jump else 1.0))
+                var_s *= scale_infl
+                var_d *= scale_infl
+            x_u, P_u = _kalman_update_2d(x_u, P_u, z_sd, var_s, var_d)
+
+        # Soft lane-center likelihood for supported corridor vehicles outside junctions
+        s_row = samples[k]
+        sl = s_row.get('lane_index')
+        if sl is None and isinstance(lane_idx_actor, int) and lane_idx_actor >= -1:
+            sl = lane_idx_actor
+        s_eff, s_sup = _extended_corridor_station(road, float(x_u[0])) if use_road_frame else (float(x_u[0]), True)
+        if (not is_crossing and sl is not None and isinstance(sl, int) and sl >= -1
+                and use_road_frame and s_sup
+                and not inside_junction(road, from_frame(x_u[:2][None, :])[0], 3.0)):
+            b_here = boundaries_at(road, s_eff)
+            if sl == -1 and pocket_width(road.get('left_pockets', []), s_eff) >= 1.5:
+                l_hi, l_lo = lane_bounds(road, s_eff, -1)
+                d_center = 0.5 * (l_hi + l_lo)
+                var_lane = 0.95 ** 2
+                x_u, P_u = _kalman_update_d_only(x_u, P_u, d_center, var_lane)
+            elif 0 <= sl < len(b_here) - 1:
+                l_hi, l_lo = lane_bounds(road, s_eff, sl)
+                d_center = 0.5 * (l_hi + l_lo)
+                # Stronger lane prior when raw observation is weak/distant; gentle prior when clear
+                usable = observation_usable(s_row) if s_row.get('camera_id') in ('front', 'left_repeater', 'right_repeater') else False
+                var_lane = (1.15 ** 2) if usable else (0.72 ** 2)
+                x_u, P_u = _kalman_update_d_only(x_u, P_u, d_center, var_lane)
+
+        x_filt[k] = x_u
+        P_filt[k] = P_u
+        x_cur, P_cur = x_u, P_u
+
+    # Backward Rauch-Tung-Striebel (RTS) fixed-interval smoother
+    x_sm = x_filt.copy()
+    P_sm = P_filt.copy()
+    for k in range(n - 2, -1, -1):
+        P_p_next = P_pred[k + 1] + np.eye(4) * 1e-8
+        G = P_filt[k] @ F_list[k + 1].T @ np.linalg.inv(P_p_next)
+        x_sm[k] = x_filt[k] + G @ (x_sm[k + 1] - x_pred[k + 1])
+        P_k = P_filt[k] + G @ (P_sm[k + 1] - P_pred[k + 1]) @ G.T
+        P_sm[k] = 0.5 * (P_k + P_k.T)
+
+    # Covariance-bounded soft carriageway projection (continuous across clip-end horizon)
+    if not is_crossing and isinstance(lane_idx_actor, int) and lane_idx_actor >= -1 and use_road_frame:
+        for k in range(n):
+            sk = float(x_sm[k, 0])
+            dk = float(x_sm[k, 1])
+            s_eff, s_sup = _extended_corridor_station(road, sk)
+            if not s_sup:
+                continue
+            if inside_junction(road, from_frame(np.array([[sk, dk]]))[0], 3.0):
+                continue
+            b_k = boundaries_at(road, s_eff)
+            pw_k = pocket_width(road.get('left_pockets', []), s_eff)
+            lo_edge = float(b_k[-1]) + 0.82
+            hi_edge = float(b_k[0]) + pw_k - 0.82
+            if hi_edge <= lo_edge:
+                continue
+            sig_d_post = math.sqrt(max(float(P_sm[k, 1, 1]), 0.04))
+            max_move = max(0.65, 2.8 * sig_d_post)
+            if dk < lo_edge:
+                x_sm[k, 1] = min(lo_edge, dk + max_move)
+            elif dk > hi_edge:
+                x_sm[k, 1] = max(hi_edge, dk - max_move)
+
+    xy_sm = from_frame(x_sm[:, :2])
+    if use_road_frame:
+        headings_road = road_coordinates(road, np.c_[xy_sm, np.zeros(n)])[:, 2]
+    else:
+        headings_road = np.zeros(n)
+
+    last_yaw = float(samples[0].get('yaw_rad', headings_road[0]))
+    for k, s_row in enumerate(samples):
+        z_orig = float(s_row['position_W'][2]) if len(s_row['position_W']) >= 3 else 0.0
+        s_row['position_W'] = [float(xy_sm[k, 0]), float(xy_sm[k, 1]), z_orig]
+        sig_s_post = math.sqrt(max(float(P_sm[k, 0, 0]), 0.02))
+        sig_d_post = math.sqrt(max(float(P_sm[k, 1, 1]), 0.02))
+        s_row['kalman_sigma_s_m'] = float(sig_s_post)
+        s_row['kalman_sigma_d_m'] = float(sig_d_post)
+        s_row['kalman_sigma_m'] = float(math.hypot(sig_s_post, sig_d_post))
+
+        vs, vd = float(x_sm[k, 2]), float(x_sm[k, 3])
+        speed = math.hypot(vs, vd)
+        if use_road_frame and not is_crossing and not inside_junction(road, xy_sm[k], 3.0):
+            if vs > 1.2:
+                rel_ang = float(np.clip(math.atan2(vd, vs), -math.pi / 5.0, math.pi / 5.0))
+                last_yaw = float(headings_road[k] + rel_ang)
+            else:
+                last_yaw = float(headings_road[k])
+            s_row['yaw_rad'] = last_yaw
+            if road_supported(road, float(x_sm[k, 0])):
+                m_lane = lane_at(road, float(x_sm[k, 0]), float(x_sm[k, 1]))
+                if m_lane is not None:
+                    s_row['lane_index'] = int(m_lane)
+        elif speed > 1.8 and not use_road_frame:
+            last_yaw = float(math.atan2(vd, vs))
+            s_row['yaw_rad'] = last_yaw
+
+    return dict(
+        applied=True,
+        samples=n,
+        multi_camera_fused_steps=multi_cam_fused_steps,
+        median_posterior_sigma_m=float(np.median([s['kalman_sigma_m'] for s in samples])),
+    )

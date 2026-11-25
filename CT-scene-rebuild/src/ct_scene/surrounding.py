@@ -46,6 +46,8 @@ from .observed_surface import extract as observed_road_surface
 from .context_surface import extract as context_road_surface
 from .side_contact_recovery import recover as recover_side_contacts
 from .side_contact_fusion import fuse_side_sample,calibrate_side_height_tails
+from .front_pitch_fusion import estimate_front_pitch_profile,project_front_ray_and_depths,fuse_front_track_depths
+from .kalman_tracker import smooth_actor_rts
 from .collision_constraints import constrain as constrain_collisions, omit_conflicting_predictions
 from .side_paint_geometry import extract as extract_side_paint,apply as apply_side_paint,extend_calibrated_tail
 from .inside_median_pockets import extend as inside_median_approach_bands
@@ -455,10 +457,26 @@ def association_edges(actors,policy=None):
             if ('bus' in (a.get('model'),b.get('model'))) and a.get('model')!=b.get('model'):continue
             start=max(a['start_s'],b['start_s']);end=min(a['end_s'],b['end_s'])
             app=appearance_distance(a['appearance'],b['appearance']);original_app=app;appearance_review=None
-            if end-start>=.4:
-                # Co-visible similar vehicles cannot establish a shared ID
-                # with the uncalibrated front/side rig. Use actual handoffs.
+            fov=compatible_fov_exit(first,second)
+            # Allow bounded FOV-border transition overlap (up to 2.2s) ONLY when there is
+            # genuine lead-in and follow-through progression across cameras.
+            transition_overlap=(0.4<=end-start<=2.2 and fov and first['start_s']<second['start_s']-.8 and second['end_s']>first['end_s']+.8)
+            if end-start>=.4 and not transition_overlap:
+                # Co-visible similar vehicles without a border handoff progression
+                # cannot establish a shared ID.
                 continue
+            elif transition_overlap:
+                ov_a=[r for r in first['samples'] if start-.1<=r['time_s']<=end+.1]
+                ov_b=[r for r in second['samples'] if start-.1<=r['time_s']<=end+.1]
+                if not ov_a or not ov_b:continue
+                dists_ov=[float(np.linalg.norm(np.asarray(ra['position_W'][:2])-np.asarray(min(ov_b,key=lambda rb:abs(rb['time_s']-ra['time_s']))['position_W'][:2]))) for ra in ov_a]
+                distance=float(np.median(dists_ov));p95=float(np.quantile(dists_ov,.9))
+                clear_fit=None
+                if deferred_scope_link and distance>=2.5:continue
+                limit=4.8
+                eligible=distance<limit and p95<6.5 and app<.55
+                kind='future_reappearance_with_fov_boundary'
+                cost=distance/limit+app
             else:
                 first,second=(a,b) if a['start_s']<b['start_s'] else (b,a)
                 gap=second['start_s']-first['end_s']
@@ -466,7 +484,7 @@ def association_edges(actors,policy=None):
                 points=first['samples'];v=(np.array(points[-1]['position_W'])-np.array(points[max(0,len(points)-6)]['position_W']))/max(.2,points[-1]['time_s']-points[max(0,len(points)-6)]['time_s'])
                 expected=np.array(points[-1]['position_W'])+v*gap
                 moving_distance=float(np.linalg.norm(expected-second['samples'][0]['position_W']))
-                stopped_distance=float(np.linalg.norm(np.array(points[-1]['position_W'])-second['samples'][0]['position_W']))
+                stopped_distance=float(np.array(points[-1]['position_W'])-second['samples'][0]['position_W'] if False else np.linalg.norm(np.array(points[-1]['position_W'])-second['samples'][0]['position_W']))
                 # A vehicle may accelerate while crossing the pillar blind
                 # region. Use the next camera's future motion as well as the
                 # previous camera's truncated-box velocity.
@@ -474,7 +492,6 @@ def association_edges(actors,policy=None):
                 ft=np.array([r['time_s']-future[0]['time_s'] for r in future]);fp=np.array([r['position_W'] for r in future])
                 fv=np.linalg.lstsq(np.column_stack([ft,np.ones(len(ft))]),fp,rcond=None)[0][0] if len(future)>=3 else np.zeros(3)
                 backward_distance=float(np.linalg.norm(np.array(points[-1]['position_W'])-(fp[0]-fv*gap))) if np.linalg.norm(fv)<45 else float('inf')
-                fov=compatible_fov_exit(first,second)
                 clear_fit=clear_future_motion(first,second)
                 distance=clear_fit['distance_m'] if clear_fit else min(moving_distance,stopped_distance,backward_distance);p95=distance
                 bidirectional=fit_clear_handoff(first,second,identity_observation_usable) if fov else None
@@ -987,6 +1004,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                 curve_review['unresolved_route_display']='ego_route_only; no_lane_priors_or_paint_claim'
     dimensions={name:np.ptp(model_vertices(path)[:,:3],axis=0) for name,path in assets.items()}
     lengths={name:float(d[0]) for name,d in dimensions.items()}
+    front_pitch=estimate_front_pitch_profile(road_masks,front,observations,profiles['front']) if road_masks else {'status':'disabled_no_road_masks','by_frame_id':{}}
+    front_pitch_by_fid=front_pitch.get('by_frame_id',{})
     contact_model=None;contact_img_cache={};contact_stats={'enabled':bool(contact_adapter),'model_dir':str(contact_adapter) if contact_adapter else None,'applied_front':0,'applied_side':0,'du_abs':[],'dv_abs':[],'cuda':False}
     if contact_adapter is not None:
         from .learned_contact import LearnedContact
@@ -1043,11 +1062,11 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         if camera=='front' and unresolved_front_border_fragment(rows,f0['width']):
             excluded.append({'id':key,'reason':'border_sliver_without_clear_front_body_geometry; source_2D_tracking_preserved'});continue
         model,class_support=asset_class(rows,camera,assets,f0['width'],f0['height'])
-        samples=[];hist=[]
+        samples=[];hist=[];front_raw_entries=[]
         for row in rows:
             f=by_frame[row['frame_id']];t=f['camera_time_s'];yaw=float(np.interp(t,times,eyaw));ep=np.array([np.interp(t,times,ego[:,k]) for k in range(3)])
             learned_uv=predict_learned_uv(row,f,camera)
-            side_fusion=None
+            side_fusion=None;front_ray_info=None
             try:
                 if camera in ('left_repeater','right_repeater'):
                     side_fusion=fuse_side_sample(row,f['width'],f['height'],profiles[camera],cfg['cameras'][camera],
@@ -1057,12 +1076,19 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                     projection_support=side_fusion['projection_support']
                     if learned_uv is not None and side_fusion['contact_fusion_weight']>0:contact_stats['applied_side']+=1
                 else:
-                    relative,projection_support=project_front(row,profiles[camera],cfg['cameras'][camera],float(dimensions[model][2]),f['width'],f['height'],contact_uv=learned_uv)
+                    dpitch=float(front_pitch_by_fid.get(f['frame_id'],0.))
+                    front_ray_info=project_front_ray_and_depths(row,profiles[camera],cfg['cameras'][camera],
+                                                                float(dimensions[model][2]),f['width'],f['height'],
+                                                                contact_uv=learned_uv,delta_pitch_rad=dpitch)
+                    z_init=front_ray_info['z_contact'] if front_ray_info['z_contact'] is not None else front_ray_info['z_size']
+                    relative=rotation(np.radians(cfg['cameras'][camera]['yaw_deg']))@np.array([z_init,-z_init*front_ray_info['ray_x'],0.])+cfg['cameras'][camera]['offset_W_ego_m']
+                    projection_support='estimated_ground_contact' if (front_ray_info['z_contact'] is not None and z_init<=70.) else ('far_ground_contact_low_confidence' if front_ray_info['z_contact'] is not None else 'observed_height_prior_after_unresolved_contact')
                     if learned_uv is not None:contact_stats['applied_front']+=1
             except ValueError:continue
+            side_body=class_support=='two_clear_side_views_plus_repeated_high_confidence_truck'
+            front_half_len=float(dimensions[model][1] if side_body else lengths[model])/2
             if camera=='front':
-                side_body=class_support=='two_clear_side_views_plus_repeated_high_confidence_truck'
-                relative[0]+=float(dimensions[model][1] if side_body else lengths[model])/2
+                relative[0]+=front_half_len
             position=ep+rotation(yaw)@relative
             if not -45<relative[0]<(143 if camera=='front' else 70):continue
             if side_fusion is not None:
@@ -1080,12 +1106,19 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                 sample_entry['_rel_height_ego']=side_fusion['relative_height_m'].tolist()
                 sample_entry['_is_truncated']='truncated' in row.get('quality_flags',[])
             samples.append(sample_entry)
+            if front_ray_info is not None:
+                front_raw_entries.append({'ray_info':front_ray_info,'sample':sample_entry})
             box=row['bbox_xyxy']
             if camera in ('left_repeater','right_repeater') and row['support']=='detector_observation' and 'truncated' not in row.get('quality_flags',[]) and box[2]-box[0]>=60 and box[3]-box[1]>=45 and min(box[0],box[1],f['width']-box[2],f['height']-box[3])>8:
                 try:
                     contact=project_contact(box,profiles[camera],cfg['cameras'][camera])
                     samples[-1]['side_ground_contact_W']=(ep+rotation(yaw)@contact).tolist()
                 except ValueError:pass
+        if camera=='front' and front_raw_entries:
+            side_body=class_support=='two_clear_side_views_plus_repeated_high_confidence_truck'
+            front_half_len=float(dimensions[model][1] if side_body else lengths[model])/2
+            fuse_front_track_depths(front_raw_entries,cfg['cameras'][camera],front_half_len,rotation,times,ego,eyaw)
+            samples=[s for s in samples if np.linalg.norm(np.asarray(s['position_W'][:2])-np.array([np.interp(s['time_s'],times,ego[:,0]),np.interp(s['time_s'],times,ego[:,1])]))<143.]
         if camera in ('left_repeater','right_repeater') and samples:
             calibrate_side_height_tails(samples,times,ego,eyaw,cfg['cameras'][camera],rotation)
         if len(samples)<(3 if short else 8):excluded.append({'id':key,'reason':'insufficient_ground_contacts'});continue
@@ -1226,33 +1259,6 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             actor['lane_motion_evidence']=lane_review
             w=np.array([r['quality'] if lane_observation_usable(r) else .3 for r in rows])
             positions,prior_applied,measured_lanes=refine_lane_geometry(rows,road,sample_lanes,local_centres,w)
-            # Keep far-range noisy height-prior / low-confidence projections of admitted
-            # corridor vehicles inside their assigned corridor lane (and never floating
-            # outside the outer highway/road guardrail or colliding into an adjacent lane).
-            if road.get('reference_line') and actor['lane_index']>=0:
-                p_loc=road_coordinates(road,positions)
-                for idx_p,(row_p,(ps,pd,_)) in enumerate(zip(rows,p_loc)):
-                    if inside_junction(road,positions[idx_p],3.):continue
-                    if not road_supported(road,float(ps)):continue
-                    weak_proj=(not lane_observation_usable(row_p)) or row_p.get('projection_support') in ('apparent_vehicle_height_prior','far_ground_contact_low_confidence','observed_height_prior_after_unresolved_contact')
-                    if not weak_proj:continue
-                    b_p=boundaries_at(road,float(ps))
-                    lo_lim=b_p[-1]+.9;hi_lim=b_p[0]+pocket_width(road.get('left_pockets',[]),float(ps))-.9
-                    if hi_lim>lo_lim and (pd<lo_lim or pd>hi_lim):
-                        sl=int(sample_lanes[idx_p])
-                        if row_p.get('projection_support')=='apparent_vehicle_height_prior' and 0<=sl<len(b_p)-1:
-                            l_hi,l_lo=lane_bounds(road,float(ps),sl)
-                            clamped_d=float(np.clip(pd,l_lo+.45,l_hi-.45)) if l_hi-l_lo>.95 else (l_hi+l_lo)/2
-                        else:
-                            clamped_d=float(np.clip(pd,lo_lim,hi_lim))
-                        positions[idx_p,:2]=road_world(road,float(ps),clamped_d)[:2]
-                # Smooth any clamped discontinuities gently
-                if len(rows)>=3:
-                    p_after=road_coordinates(road,positions)
-                    if np.max(np.abs(p_after[:,1]-p_loc[:,1]))>.2:
-                        t_arr=np.array([r['time_s'] for r in rows])
-                        d_sm=np.array([np.median(p_after[np.abs(t_arr-tk)<=.6,1]) for tk in t_arr])
-                        positions[:,:2]=road_world(road,p_after[:,0],d_sm)[:,:2]
             velocity=np.gradient(positions,np.array([r['time_s'] for r in rows]),axis=0)
             headings=road_coordinates(road,positions)[:,2]
             # A stopped first observation has no velocity-derived heading.
@@ -1306,7 +1312,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         if edge['selected']:root[find(edge['b'])]=find(edge['a'])
     combined=defaultdict(list)
     for actor in actors:combined[find(actor['id'])].append(actor)
-    global_actors=[]
+    global_actors=[];kalman_review={}
     for gid,members in combined.items():
         if all(a.get('scope_pending') for a in members):
             for member in members:
@@ -1314,6 +1320,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                                      scope_support=member['pending_scope_reason'],identity_candidate_preserved=True))
             continue
         anchor=next((a for a in members if a['frozen_lead']),None)
+        all_member_rows=sorted([r for a in members for r in a['samples']],key=lambda r:r['time_s'])
         if anchor:
             for member in members:
                 if member is anchor or member['camera_id'] not in ('left_repeater','right_repeater') or member['lane_index']<0:continue
@@ -1329,13 +1336,15 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             # earlier camera observations when an ID is joined across cameras.
             result['samples']=merge_anchor_samples(anchor,members)
         else:
-            result=dict(next(a for a in members if not a.get('scope_pending')));all_rows=sorted([r for a in members for r in a['samples']],key=lambda r:r['time_s']);bins=defaultdict(list)
-            for row in all_rows:bins[round(by_frame[row['frame_id']]['relative_request_s'],3)].append(row)
+            result=dict(next(a for a in members if not a.get('scope_pending')));bins=defaultdict(list)
+            for row in all_member_rows:bins[round(by_frame[row['frame_id']]['relative_request_s'],3)].append(row)
             result['samples']=[dict(max(rs,key=lambda r:r.get('quality',1)),time_s=float(np.mean([r['time_s'] for r in rs]))) for _,rs in sorted(bins.items())]
         result.update(global_id=gid,local_ids=[original for a in members for k in a.get('local_ids',[a['id']]) for original in original_ids.get(k,[k])],start_s=min(a['start_s'] for a in members),end_s=max(a['end_s'] for a in members),
                       scope_pending=False,identity_supported_scope_members=[a['id'] for a in members if a.get('scope_pending')],
                       lane_motion_evidence_by_camera=[dict(local_id=a['id'],camera_id=a['camera_id'],**a['lane_motion_evidence']) for a in members if 'lane_motion_evidence' in a])
         fill_handoff_gaps(result,cfg['gap_budget_s'])
+        if not anchor:
+            kalman_review[gid]=smooth_actor_rts(result,road,times,ego,raw_member_rows=all_member_rows)
         calibrated_cameras=[a['camera_id'] for a in members if a.get('side_paint_geometry',{}).get('model_type')=='relative_station_shear']
         if calibrated_cameras:
             result['calibrated_tail_camera_ids']=calibrated_cameras
@@ -1450,34 +1459,16 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             if unresolved_side_height_position(road,actor,samples[nearest],pos):
                 local_scope_display_review.append(dict(time_s=t,global_id=actor['global_id'],reason='side_height_prior_conflicts_with_local_camera_road; source_visible_but_position_unlocalized',observation_modified=False))
                 continue
-            side_cam=samples[nearest].get('camera_id') in ('left_repeater','right_repeater')
-            side_dist=float(np.linalg.norm(pos[:2]-ep[:2]))
-            side_height=samples[nearest].get('projection_support')=='apparent_vehicle_height_prior'
-            side_sigma=samples[nearest].get('position_sigma_m')
-            if not actor.get('frozen_lead') and side_cam:
-                if side_height:
-                    side_cap=float(min(2.5,max(.75,0.15*side_dist)))
-                elif side_sigma is not None:
-                    side_cap=float(min(1.5,max(.75,0.85*float(side_sigma))))
-                else:
-                    side_cap=float(min(1.5,max(.75,0.075*side_dist)))
+            row=samples[nearest]
+            k_sig=row.get('kalman_sigma_m')
+            if not actor.get('frozen_lead') and k_sig is not None:
+                # Step 4: collision displacement bounded by RTS Kalman 99% posterior confidence radius
+                cap_post=float(np.clip(2.58*float(k_sig),0.55,4.50))
             else:
-                side_cap=0.
+                cap_post=0.
             active.append({'id':actor['global_id'],'position_W':pos,'yaw_rad':heading,'model':actor['model'],'ghost':ghost,'source_visible':source_visible,'position_support':position_support,
                            'rear_appearance':rear_lamp_trace.at(actor['global_id'],t,ghost),
-                           'collision_cap_m':side_cap})
-            row=samples[nearest]
-            front_uncertain_obs=(row.get('camera_id')=='front' and row.get('projection_support') in ('estimated_ground_contact','far_ground_contact_low_confidence','observed_height_prior_after_unresolved_contact') and row.get('support') in ('detector_observation','flow_observation','offline_two_endpoint_gap') and not lane_observation_usable(row))
-            front_reconstructed_gap=(actor.get('camera_id')=='front' and row.get('camera_id')=='reconstructed' and row.get('support')=='offline_two_endpoint_gap')
-            front_usable_obs=(row.get('camera_id')=='front' and row.get('projection_support')=='estimated_ground_contact' and row.get('support')=='detector_observation' and lane_observation_usable(row))
-            if not actor.get('frozen_lead') and (front_uncertain_obs or front_reconstructed_gap):
-                ray=pos[:2]-ep[:2];distance=np.linalg.norm(ray)
-                if distance>8:
-                    active[-1].update(collision_cap_m=float(min(2.,0.1*distance)),collision_axis_W=(ray/distance).tolist())
-            elif not actor.get('frozen_lead') and front_usable_obs:
-                ray=pos[:2]-ep[:2];distance=np.linalg.norm(ray)
-                if distance>15:
-                    active[-1].update(collision_cap_m=float(min(1.,0.04*distance)),collision_axis_W=(ray/distance).tolist())
+                           'collision_cap_m':cap_post})
         for prediction in blindspot_coasts_at(blindspot_coasts,t):
             old=next((a for a in active if a['id']==prediction['id']),None)
             override=prediction.pop('override_unobserved',False)
@@ -1565,6 +1556,8 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         'render_actor_count_range':[min(render_counts),max(render_counts)],'ego_and_lead_source':'frozen base ego and observed anchor arrays unchanged',
         'source_duration_s':base_report.get('source_duration_s'),'export_full_source':'source_duration_s' in base_report,
         'clock_status':'assumed_relative_container_alignment_not_sensor_sync','excluded_tracks':excluded,'metric_accuracy':'NOT_EVALUATED'}
+    report['front_pitch_compensation']={k:v for k,v in front_pitch.items() if k!='by_frame_id'}
+    report['kalman_rts_tracking']={'enabled':True,'smoothed_actors':sum(1 for v in kalman_review.values() if v.get('applied')),'multi_camera_fused_steps':sum(v.get('multi_camera_fused_steps',0) for v in kalman_review.values())}
     report['learned_contact_adapter']={'enabled':contact_stats['enabled'],'model_dir':contact_stats['model_dir'],
         'applied_front':contact_stats['applied_front'],'applied_side':contact_stats['applied_side'],
         'mean_abs_du':float(np.mean(contact_stats['du_abs'])) if contact_stats['du_abs'] else 0.,
