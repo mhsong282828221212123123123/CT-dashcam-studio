@@ -66,6 +66,34 @@ class KalmanTrackerTests(unittest.TestCase):
         true_x6 = 50.0 + 20.0 * (6 * 0.2)
         self.assertLess(abs(actor['samples'][6]['position_W'][0] - true_x6), 2.5)
 
+    def test_cross_street_vehicle_is_not_dragged_into_corridor_lane(self):
+        samples = []
+        for i in range(14):
+            t = i * 0.2
+            # Observed laterally 40..52 m away from the corridor, nearly stationary
+            y = 40.0 + 0.9 * t
+            samples.append({
+                'time_s': t, 'camera_id': 'front', 'support': 'detector_observation',
+                'position_W': [120.0, y, 0.0], 'unrefined_position_W': [120.0, y, 0.0],
+                'position_sigma_m': 1.5, 'lane_index': 0, 'bbox_xyxy': [500, 470, 600, 520], 'image_width': 1280,
+            })
+        actor = {'global_id': 'cross', 'lane_index': 0, 'samples': samples}
+        smooth_actor_rts(actor, self.road, self.ego_t, self.ego_xyz)
+        ys = np.array([s['position_W'][1] for s in actor['samples']])
+        self.assertGreater(ys.min(), 30.0)
+        steps = np.linalg.norm(np.diff([s['position_W'][:2] for s in actor['samples']], axis=0), axis=1) / 0.2
+        self.assertLess(steps.max(), 14.0)
+
+    def test_yaw_snap_is_rate_limited(self):
+        from ct_scene.kalman_tracker import limit_yaw_rate
+        rows = [{'time_s': i * 0.2, 'yaw_rad': 0.7 if i < 8 else 1.57} for i in range(16)]
+        actor = {'samples': rows}
+        self.assertGreater(limit_yaw_rate(actor, 1.4), 0)
+        y = np.array([r['yaw_rad'] for r in rows])
+        self.assertLessEqual(np.max(np.abs(np.diff(y)) / 0.2), 1.4 + 1e-6)
+        lead = {'frozen_lead': True, 'samples': [dict(r) for r in rows]}
+        self.assertEqual(limit_yaw_rate(lead), 0)
+
     def test_frozen_lead_is_never_modified(self):
         actor = {
             'global_id': 'lead', 'frozen_lead': True,

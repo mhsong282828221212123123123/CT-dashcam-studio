@@ -47,7 +47,7 @@ from .context_surface import extract as context_road_surface
 from .side_contact_recovery import recover as recover_side_contacts
 from .side_contact_fusion import fuse_side_sample,calibrate_side_height_tails
 from .front_pitch_fusion import estimate_front_pitch_profile,project_front_ray_and_depths,fuse_front_track_depths
-from .kalman_tracker import smooth_actor_rts
+from .kalman_tracker import smooth_actor_rts,limit_yaw_rate
 from .collision_constraints import constrain as constrain_collisions, omit_conflicting_predictions
 from .side_paint_geometry import extract as extract_side_paint,apply as apply_side_paint,extend_calibrated_tail
 from .inside_median_pockets import extend as inside_median_approach_bands
@@ -1386,6 +1386,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         state=lane_timeline([r['time_s'] for r in rs],[r['position_W'] for r in rs],[r['yaw_rad'] for r in rs],road,float(dimensions[a['model']][0]),float(dimensions[a['model']][1]))
         state.update(local_ids=a['local_ids'],scope='estimated surrounding lane state; source review required',evidence=a['lane_motion_evidence_by_camera'])
         actor_lane_audit[a['global_id']]=state
+    for a in global_actors:limit_yaw_rate(a)
     road['junctions'],branch_review=junction_branch_hints(road,map_records,times,eyaw,observed_end_station=float(road_coordinates(road,ego[-1])[0]))
     road['junctions'],camera_road_review=camera_crossing_roads(road,global_actors)
     surface=None

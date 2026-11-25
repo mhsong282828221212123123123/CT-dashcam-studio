@@ -126,6 +126,34 @@ def _extended_corridor_station(road, s):
     return float(s), False
 
 
+def limit_yaw_rate(actor, max_rate=1.4):
+    """Bidirectional yaw-rate limiter: removes 1-frame heading snaps (vehicles that visibly spin)."""
+    if actor.get('frozen_lead'):
+        return 0
+    rows = actor.get('samples', [])
+    if len(rows) < 3:
+        return 0
+    t = np.array([r['time_s'] for r in rows], float)
+    y = np.unwrap(np.array([r['yaw_rad'] for r in rows], float))
+    dt = np.maximum(np.diff(t), 1e-3)
+    f = y.copy()
+    for k in range(1, len(y)):
+        lim = max_rate * dt[k - 1]
+        f[k] = f[k - 1] + np.clip(y[k] - f[k - 1], -lim, lim)
+    b = y.copy()
+    for k in range(len(y) - 2, -1, -1):
+        lim = max_rate * dt[k]
+        b[k] = b[k + 1] + np.clip(y[k] - b[k + 1], -lim, lim)
+    out = 0.5 * (f + b)
+    changed = 0
+    for r, v0, v1 in zip(rows, y, out):
+        if abs(v1 - v0) > 1e-6:
+            r['yaw_before_rate_limit'] = float(r['yaw_rad'])
+            r['yaw_rad'] = float(v1)
+            changed += 1
+    return changed
+
+
 def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None):
     """Run multi-camera road-frame Kalman filter + RTS smoother on a global actor."""
     if actor.get('frozen_lead'):
@@ -135,6 +163,12 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
         return dict(applied=False, reason='too_few_samples')
 
     use_road_frame = bool(road and road.get('reference_line'))
+    # Physical speed ceiling from the ego's own speed in this clip (never a free-flying vehicle)
+    try:
+        ego_sp = np.linalg.norm(np.gradient(np.asarray(ego_positions, float)[:, :2], np.asarray(ego_times, float), axis=0), axis=1)
+        v_cap = float(np.clip(1.25 * float(np.percentile(ego_sp, 95)) + 6.0, 14.0, 36.0))
+    except Exception:
+        v_cap = 36.0
     lane_idx_actor = actor.get('lane_index')
     is_crossing = lane_idx_actor == -2
 
@@ -194,7 +228,7 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
     if second_idx is not None:
         z1 = np.mean([o[0] for o in step_obs[second_idx]], axis=0)
         dt01 = float(samples[second_idx]['time_s'] - samples[first_idx]['time_s'])
-        v0 = np.clip((z1 - z0) / max(dt01, 0.1), [-35.0, -6.0], [45.0, 6.0])
+        v0 = np.clip((z1 - z0) / max(dt01, 0.1), [-v_cap, -6.0], [v_cap, 6.0])
     else:
         v0 = np.array([12.0 if not is_crossing else 0.0, 0.0], float)
 
@@ -236,7 +270,7 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
             # Chi-square (2-DOF 99% = 9.21) + kinematic jump gate against end-of-track ID glitches
             innov = z_sd - x_u[:2]
             mahal = (innov[0] ** 2) / max(P_u[0, 0] + var_s, 1.0) + (innov[1] ** 2) / max(P_u[1, 1] + var_d, 1.0)
-            kin_jump = k >= 3 and (abs(innov[0]) > max(12.0, 32.0 * dt_step) or abs(innov[1]) > max(3.2, 12.0 * dt_step))
+            kin_jump = k >= 1 and (abs(innov[0]) > max(12.0, 32.0 * dt_step) or abs(innov[1]) > max(3.2, 12.0 * dt_step))
             if k >= 2 and (mahal > 9.21 or kin_jump):
                 scale_infl = min(400.0, max((mahal / 3.0) ** 2, 180.0 if kin_jump else 1.0))
                 var_s *= scale_infl
@@ -264,7 +298,17 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
                 # Stronger lane prior when raw observation is weak/distant; gentle prior when clear
                 usable = observation_usable(s_row) if s_row.get('camera_id') in ('front', 'left_repeater', 'right_repeater') else False
                 var_lane = (1.15 ** 2) if usable else (0.72 ** 2)
-                x_u, P_u = _kalman_update_d_only(x_u, P_u, d_center, var_lane)
+                # Gate: a lane prior never drags a vehicle the cameras place far from that lane
+                # (e.g. cross-street traffic mislabelled with a corridor lane).
+                gate = max(2.4, 3.0 * math.sqrt(max(float(P_u[1, 1]), 0.0) + var_lane))
+                if abs(d_center - float(x_u[1])) <= gate:
+                    x_u, P_u = _kalman_update_d_only(x_u, P_u, d_center, var_lane)
+
+        # Hard physical ceiling on state speed (prevents runaway velocity accumulation)
+        spd = math.hypot(float(x_u[2]), float(x_u[3]))
+        if spd > v_cap:
+            x_u[2] *= v_cap / spd
+            x_u[3] *= v_cap / spd
 
         x_filt[k] = x_u
         P_filt[k] = P_u
