@@ -40,3 +40,16 @@ class OSMTests(unittest.TestCase):
 
     def test_geometric_cross_without_shared_node_is_not_junction(self):
         w=fixture();w[1]['nodes']=[4,6,5];self.assertEqual(junctions(w),[])
+
+    def test_context_surface_extract_uses_direct_osm_path_when_cache_roots_empty(self):
+        import tempfile
+        from pathlib import Path
+        from ct_scene.artifacts import canonical,digest
+        from ct_scene.context_surface import extract
+        xml='<osm version="0.6"><node id="1" lat="37.0" lon="127.0"/><node id="2" lat="37.001" lon="127.0"/><way id="10"><nd ref="1"/><nd ref="2"/><tag k="highway" v="primary"/></way></osm>'
+        with tempfile.TemporaryDirectory() as td:
+            osm=Path(td)/'sample.osm';osm.write_text(xml,encoding='utf-8')
+            tel=Path(td)/'tel';tel.mkdir();(tel/'telemetry.jsonl').write_text('',encoding='utf-8')
+            manifest=dict(config_sha256=digest(canonical(dict(osm_sha256=digest(osm.read_bytes())))))
+            res=extract(manifest,tel,[0.,1.],[[0,0],[1,0]],[],cache_roots=[],osm_path=str(osm))
+            self.assertNotEqual(res['status'],'matching_cached_OSM_unavailable')

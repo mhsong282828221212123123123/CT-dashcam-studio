@@ -2,6 +2,7 @@
 from collections import defaultdict
 from pathlib import Path
 import json,math,xml.etree.ElementTree as ET
+from urllib.parse import urlencode
 from urllib.request import Request,urlopen
 import numpy as np
 from .artifacts import canonical,publish,digest,verify
@@ -100,6 +101,7 @@ def run(telemetry,osm,destination):
         if not (-90<=lat<=90 and -180<=lon<=180) or abs(lat)+abs(lon)<1e-6:continue
         records.append(dict(time_s=r['camera_time_s'],**candidates(ways,js,lat,lon,heading)))
     report=dict(ways=len(ways),junction_nodes=len(js),records=len(records),candidate_records=sum(bool(r['junction_candidates']) for r in records),
+                osm_path=str(Path(osm).resolve()),
                 role='topology_reference_only',ego_modified=False,lane_count_used=False,width_used=False,metric_registration='NOT_EVALUATED',
                 attribution='© OpenStreetMap contributors; ODbL; https://www.openstreetmap.org/copyright')
     return publish(Path(destination),stage='osm_topology_context',payloads={'context.json':canonical(records),'report.json':canonical(report)},
@@ -107,7 +109,19 @@ def run(telemetry,osm,destination):
                    code_revision=digest(Path(__file__).read_bytes()),runtime={'network_requests':0})
 
 
-def fetch(telemetry,cache):
+def _fetch_overpass(south,west,north,east,timeout=25):
+    query=f'[out:xml][timeout:{timeout}];(way["highway"]({south:.7f},{west:.7f},{north:.7f},{east:.7f}););(._;>;);out body;'
+    for endpoint in ('https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'):
+        try:
+            req=Request(endpoint,data=urlencode({'data':query}).encode('utf-8'),
+                        headers={'User-Agent':'CTSceneRebuild/0.1 (read-only local scene topology)','Accept':'application/xml'})
+            with urlopen(req,timeout=timeout) as response:data=response.read(32*1024*1024+1)
+            if len(data)<=32*1024*1024 and ET.fromstring(data).tag=='osm':return data,endpoint
+        except Exception:continue
+    return None,None
+
+
+def fetch(telemetry,cache,margin_deg=.0025):
     """Explicit user-authorized small bbox request, once; immutable local cache."""
     cache=Path(cache)
     if cache.exists():
@@ -120,12 +134,27 @@ def fetch(telemetry,cache):
             lat,lon=f['latitude_deg']['value'],f['longitude_deg']['value']
             if -85<lat<85 and -180<lon<180 and abs(lat)+abs(lon)>1:points.append([lat,lon])
     if not points:raise ValueError('No valid GPS bounds')
-    p=np.asarray(points);south,west=p.min(axis=0)-.001;north,east=p.max(axis=0)+.001
-    if (north-south)*(east-west)>.02:raise ValueError('Small-area API limit; split/cache regional source separately')
-    url=f'https://api.openstreetmap.org/api/0.6/map?bbox={west:.7f},{south:.7f},{east:.7f},{north:.7f}'
-    request=Request(url,headers={'User-Agent':'CTSceneRebuild/0.1 (read-only local scene topology)','Accept':'application/xml'})
-    with urlopen(request,timeout=25) as response:data=response.read(32*1024*1024+1)
-    if len(data)>32*1024*1024 or ET.fromstring(data).tag!='osm':raise ValueError('Invalid or oversized OSM response')
+    p=np.asarray(points);data=None;source_url=None;requests_made=0;last_error=None
+    margins=[margin_deg,.0015,.001] if margin_deg>.001 else [margin_deg]
+    for m_deg in margins:
+        south,west=p.min(axis=0)-m_deg;north,east=p.max(axis=0)+m_deg
+        if (north-south)*(east-west)>.02:continue
+        url=f'https://api.openstreetmap.org/api/0.6/map?bbox={west:.7f},{south:.7f},{east:.7f},{north:.7f}'
+        request=Request(url,headers={'User-Agent':'CTSceneRebuild/0.1 (read-only local scene topology)','Accept':'application/xml'})
+        requests_made+=1
+        try:
+            with urlopen(request,timeout=25) as response:candidate=response.read(32*1024*1024+1)
+            if len(candidate)<=32*1024*1024 and ET.fromstring(candidate).tag=='osm':
+                data=candidate;source_url=url;break
+        except Exception as exc:
+            last_error=exc
+    if data is None:
+        south,west=p.min(axis=0)-margin_deg;north,east=p.max(axis=0)+margin_deg
+        if (north-south)*(east-west)<=.05:
+            requests_made+=1
+            data,source_url=_fetch_overpass(south,west,north,east)
+    if data is None:
+        raise ValueError(f'OSM fetch failed ({last_error or "area_limit_or_endpoint_unavailable"})')
     cache.parent.mkdir(parents=True,exist_ok=True)
     with cache.open('xb') as stream:stream.write(data)
-    return dict(cache=str(cache),network_requests=1,status='downloaded',ways=len(load_roads(cache)))
+    return dict(cache=str(cache),network_requests=requests_made,status='downloaded',source=source_url,ways=len(load_roads(cache)))

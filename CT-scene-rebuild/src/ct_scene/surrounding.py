@@ -1259,8 +1259,10 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         road['display_surface']={k:v for k,v in surface.items() if k!='cells'}
     context_surface=None
     if map_manifest and telemetry and cfg.get('context_surface_policy',{}).get('enabled',True):
+        map_report_path=Path(osm_context)/'report.json' if osm_context else None
+        map_osm_path=json.loads(map_report_path.read_text(encoding='utf-8')).get('osm_path') if map_report_path and map_report_path.is_file() else None
         context_surface=context_road_surface(map_manifest,telemetry,times,ego,map_records,
-                                             [Path.cwd()/'map-cache',Path(__file__).parents[2]/'map-cache'],road=road)
+                                             [Path.cwd()/'map-cache',Path(__file__).parents[2]/'map-cache'],road=road,osm_path=map_osm_path)
         road['context_surface']=context_surface
     blindspot_policy=dict(cfg.get('blindspot_policy',{}),observation_half_step_s=min(.15,float(np.median(np.diff([f['camera_time_s'] for f in front])))/2)+1e-6)
     blindspot_coasts,blindspot_review=build_blindspot_coasts(global_actors,road,times,ego,eyaw,blindspot_policy)

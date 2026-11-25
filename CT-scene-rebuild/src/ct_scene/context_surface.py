@@ -197,13 +197,15 @@ def build(ways,gps_rows,times,ego,records,road=None):
     return result
 
 
-def extract(map_manifest,telemetry,times,ego,records,cache_roots,road=None):
+def extract(map_manifest,telemetry,times,ego,records,cache_roots,road=None,osm_path=None):
+    candidates_paths=[]
+    if osm_path and Path(osm_path).is_file():candidates_paths.append(Path(osm_path))
     for root in cache_roots:
-        if not Path(root).is_dir():continue
-        for path in Path(root).glob('*.osm'):
-            if digest(canonical(dict(osm_sha256=digest(path.read_bytes()))))!=map_manifest['config_sha256']:continue
-            rows=[json.loads(s) for s in (Path(telemetry)/'telemetry.jsonl').read_text().splitlines()]
-            result=build(load_roads(path),rows,times,ego,records,road)
-            result.update(osm_sha256=digest(path.read_bytes()),network_requests=0)
-            return result
+        if Path(root).is_dir():candidates_paths.extend(Path(root).glob('*.osm'))
+    for path in candidates_paths:
+        if digest(canonical(dict(osm_sha256=digest(path.read_bytes()))))!=map_manifest['config_sha256']:continue
+        rows=[json.loads(s) for s in (Path(telemetry)/'telemetry.jsonl').read_text().splitlines()]
+        result=build(load_roads(path),rows,times,ego,records,road)
+        result.update(osm_sha256=digest(path.read_bytes()),network_requests=0)
+        return result
     return dict(polygons_W_xy=[],status='matching_cached_OSM_unavailable',network_requests=0)
