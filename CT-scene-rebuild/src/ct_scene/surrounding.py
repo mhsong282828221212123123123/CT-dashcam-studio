@@ -722,36 +722,11 @@ class SurroundRenderer(Renderer):
         terminals=[j['terminal_display_station_m'] for j in road.get('junctions',[]) if 'terminal_display_station_m' in j]
         if terminals:road_end=min(road_end,min(terminals))
         zones=[(s['station_range_m'][0],s['station_range_m'][1],s['boundaries_y']) for s in road['lane_sections'] if not s.get('boundary_profile')] if road.get('lane_sections') else [(-100,road_end,bounds)] if mark is None else [(-100,mark-2,bounds),(mark+12,road_end,post)]
-        opp_cfg=road.get('opposing_display') or {}
-        opp_enabled=bool(opp_cfg.get('enabled'))
-        max_same_dir=opp_cfg.get('max_same_dir_lanes')
-        single_lane_total=opp_cfg.get('total_lanes')==1
+        opp_enabled=bool((road.get('opposing_display') or {}).get('enabled'))
         for x1,x2,zone_bounds in zones:
             x2=min(x2,road_end)
             if x2<=x1:continue
-            if single_lane_total and len(zone_bounds)>=3:
-                # Single-lane street (OSM lanes=1): keep only the ego-side lane and discard phantom outer sidewalk/curb bands.
-                zone_bounds=zone_bounds[-2:]
             left,right=zone_bounds[0],zone_bounds[-1]
-            # When OSM confirms a narrower per-direction lane count (e.g. 1+1 two-way street)
-            # and camera paint included the opposing lane beyond an unconfirmed centerline, split the
-            # section cleanly at the inner divider instead of mirroring the already-included opposing lane.
-            split_inside=(opp_enabled and max_same_dir is not None and road.get('left_boundary_role')=='inferred_extent_not_confirmed_centreline'
-                          and len(zone_bounds)-1>max_same_dir and len(zone_bounds)>=3)
-            if split_inside:
-                split_idx=len(zone_bounds)-1-max_same_dir
-                center_y=zone_bounds[split_idx]
-                rect(x1,x2,right,left,-.02,road_color)
-                rect(x1,x2,center_y-.075,center_y-.005,-.012,[.85,.68,.22])
-                rect(x1,x2,center_y-.215,center_y-.145,-.012,[.85,.68,.22])
-                rect(x1,x2,left-.045,left+.045,-.012,lane_color)
-                rect(x1,x2,right-.045,right+.045,-.012,lane_color)
-                for y in zone_bounds[1:-1]:
-                    if abs(y-center_y)<1e-6:continue
-                    for x in np.arange(-100,road_end,6):
-                        a,b=max(x,x1),min(x+3,x2)
-                        if b>a:rect(a,b,y-.055,y+.055,-.012,lane_color)
-                continue
             zone_opp_w=max(3.0,float(left-right)) if opp_enabled else 0.
             rect(x1,x2,right,left,-.02,road_color)
             has_yellow=opp_enabled or road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline'
@@ -1072,8 +1047,9 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
         source_ids=[r['frame_id'] for key in original_ids.get(actor['id'],[actor['id']]) for r in left_median_membership.get(key,{}).get('samples',[])]
         if source_ids:actor['inside_median_frame_ids']=source_ids
     raw_geometry_payload=canonical(actors)
+    paint_for_bounds=segments+side_candidates
     if road.get('reference_line') and road_masks and road.get('lane_geometry_status')!='unknown_route_display_only':
-        visual_bounds,bound_review=supported_boundaries(segments,road['reference_line'],width,actors,cfg['max_lanes'],ego_positions=ego)
+        visual_bounds,bound_review=supported_boundaries(paint_for_bounds,road['reference_line'],width,actors,cfg['max_lanes'],ego_positions=ego)
         curve_review['boundary_review']=bound_review
         if visual_bounds is None:
             visual_bounds,traffic_review=vehicle_supported_paint_gaps(bound_review,road['reference_line'],width,actors,ego,cfg['max_lanes'])
@@ -1086,7 +1062,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             road['boundary_support']='semantic_camera_paint_with_labelled_outer_vehicle_extent'
     road['junctions']=infer_junctions(times,ego,eyaw,road,map_records,sorted({r['time_s'] for r in segments if r['kind']=='crossbar'}))
     road['junctions'].extend(straight_openings(times,ego,road,segments,map_records))
-    sections,section_review=([],{'status':'lane_geometry_unresolved'}) if road.get('lane_geometry_status')=='unknown_route_display_only' else fit_road_sections(road,segments,actors,ego,width,cfg['max_lanes'])
+    sections,section_review=([],{'status':'lane_geometry_unresolved'}) if road.get('lane_geometry_status')=='unknown_route_display_only' else fit_road_sections(road,paint_for_bounds,actors,ego,width,cfg['max_lanes'])
     curve_review['section_review']=section_review
     solid_sections,solid_corridor_review=fit_local_solid_corridor(road,segments,actors,ego,width,cfg['max_lanes']) if not sections else ([],dict(status='existing_sections_retained',changes=[]))
     if solid_sections:sections=solid_sections
@@ -1133,6 +1109,19 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             excluded.append({'id':actor['id'],'reason':'repeated_raw_image_beyond_yellow_median_no_crossing_evidence'});continue
         if actor.get('short_crossing_candidate') and not crossing_motion(actor,road):
             excluded.append({'id':actor['id'],'reason':'short_track_without_supported_crossing_motion'});continue
+        if not actor.get('frozen_lead') and road.get('reference_line') and len(actor['samples'])>=4:
+            rs_p=actor['samples'];dt_span=rs_p[-1]['time_s']-rs_p[0]['time_s']
+            if dt_span>=1.0:
+                pts_w=np.asarray([r['position_W'][:2] for r in rs_p],float)
+                disp=float(np.linalg.norm(pts_w[-1]-pts_w[0]))
+                step_dt=np.diff([r['time_s'] for r in rs_p])
+                step_v=np.linalg.norm(np.diff(pts_w,axis=0),axis=1)/np.maximum(step_dt,1e-3)
+                if disp<2.5 and float(np.median(step_v))<0.8:
+                    ql=road_coordinates(road,pts_w)
+                    med_s,med_d=float(np.median(ql[:,0])),float(np.median(ql[:,1]))
+                    b_loc=boundaries_at(road,med_s)
+                    if med_d<b_loc[-1]-0.5 or med_d>b_loc[0]+0.5:
+                        excluded.append({'id':actor['id'],'reason':'parked_outside_carriageway_bounds'});continue
         lane,scope_support,y=actor_corridor_lane(actor,bounds,road_slope,road)
         if lane is None:
             recovered=recover_side_contacts(actor,road)
@@ -1327,13 +1316,11 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
                                              [Path.cwd()/'map-cache',Path(__file__).parents[2]/'map-cache'],road=road,osm_path=map_osm_path)
         road['context_surface']=context_surface
     same_dir_lanes=max(1,len(road.get('boundaries_y',[0,0]))-1)
-    osm_total=(context_surface or {}).get('main_way_total_lanes')
-    two_way_display=(osm_total!=1) and ((road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline') or bool((context_surface or {}).get('main_way_two_way')))
-    if road.get('lane_geometry_status')!='unknown_route_display_only' and (two_way_display or osm_total==1):
-        road['opposing_display']=dict(enabled=bool(two_way_display),lanes=max(1,min(3,same_dir_lanes)) if two_way_display else 0,
+    explicit_1w=bool((context_surface or {}).get('main_way_explicit_oneway'))
+    two_way_display=(not explicit_1w) and ((road.get('left_boundary_role')!='inferred_extent_not_confirmed_centreline') or bool((context_surface or {}).get('main_way_two_way')))
+    if two_way_display and road.get('lane_geometry_status')!='unknown_route_display_only':
+        road['opposing_display']=dict(enabled=True,lanes=max(1,min(3,same_dir_lanes)),
                                       lane_width_m=float(road.get('lane_width_m_prior',3.5)),
-                                      total_lanes=osm_total,
-                                      max_same_dir_lanes=(context_surface or {}).get('main_way_lanes_per_dir'),
                                       role='visual_opposing_carriageway_only; no_vehicle_or_lane_scope_change')
     blindspot_policy=dict(cfg.get('blindspot_policy',{}),observation_half_step_s=min(.15,float(np.median(np.diff([f['camera_time_s'] for f in front])))/2)+1e-6)
     blindspot_coasts,blindspot_review=build_blindspot_coasts(global_actors,road,times,ego,eyaw,blindspot_policy)

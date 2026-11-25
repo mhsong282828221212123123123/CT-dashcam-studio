@@ -49,8 +49,10 @@ def paint_segments(package,frames,observations,times,ego,yaws,profile,mount,road
             allowed[max(0,y-8):min(h,Y+8),max(0,x-8):min(w,X+8)]=0
             road_allowed[max(0,y-8):min(h,Y+8),max(0,x-8):min(w,X+8)]=0
         contrast=cv2.subtract(hsv[:,:,2],cv2.GaussianBlur(hsv[:,:,2],(0,0),5))
-        masks={'white':(hsv[:,:,1]<65)&(hsv[:,:,2]>110)&(contrast>12),
-               'yellow':(hsv[:,:,0]>=18)&(hsv[:,:,0]<=40)&(hsv[:,:,1]>75)&(hsv[:,:,2]>70)}
+        lab=cv2.cvtColor(image,cv2.COLOR_BGR2LAB)
+        yellow_mask=((hsv[:,:,0]>=10)&(hsv[:,:,0]<=42)&(hsv[:,:,1]>35)&(hsv[:,:,2]>70)&(lab[:,:,2]>=138)) | ((hsv[:,:,0]>=18)&(hsv[:,:,0]<=40)&(hsv[:,:,1]>75)&(hsv[:,:,2]>70))
+        masks={'white':(hsv[:,:,1]<65)&(hsv[:,:,2]>110)&(contrast>12)&(~yellow_mask),
+               'yellow':yellow_mask}
         masks['crossbar']=masks['white']
         white_support=cv2.dilate(masks['white'].astype('uint8'),np.ones((3,3),np.uint8))
         t=f['camera_time_s'];yaw=np.interp(t,times,yaws)

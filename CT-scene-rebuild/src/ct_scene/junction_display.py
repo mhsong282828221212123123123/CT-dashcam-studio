@@ -9,16 +9,13 @@ from .road_frame import world,coordinates
 
 
 def display_bounds(road,station):
-    single=(road.get('opposing_display') or {}).get('total_lanes')==1
-    def _trim(b):return list(b[-2:]) if single and len(b)>=3 else b
-    if section_at(road,station):return _trim(boundaries_at(road,station))
+    if section_at(road,station):return boundaries_at(road,station)
     sections=road.get('lane_sections',[])
     before=[s for s in sections if s['station_range_m'][1]<=station]
     after=[s for s in sections if s['station_range_m'][0]>=station]
-    if not before or not after:return _trim(boundaries_at(road,station))
+    if not before or not after:return boundaries_at(road,station)
     a=max(before,key=lambda s:s['station_range_m'][1]);b=min(after,key=lambda s:s['station_range_m'][0]);lo=a['station_range_m'][1];hi=b['station_range_m'][0]
-    ab=_trim(a['boundaries_y']);bb=_trim(b['boundaries_y'])
-    w=(station-lo)/max(.001,hi-lo);left=(1-w)*ab[0]+w*bb[0];right=(1-w)*ab[-1]+w*bb[-1]
+    w=(station-lo)/max(.001,hi-lo);left=(1-w)*a['boundaries_y'][0]+w*b['boundaries_y'][0];right=(1-w)*a['boundaries_y'][-1]+w*b['boundaries_y'][-1]
     return [float(left),float(right)]
 
 
@@ -52,10 +49,7 @@ def mouth_edges(road,station):
 def opposing_width(road,station=None):
     opp=road.get('opposing_display') or {}
     if not opp.get('enabled'):return 0.
-    max_same=opp.get('max_same_dir_lanes')
     b=display_bounds(road,station) if station is not None else road.get('boundaries_y',[3.5,0.])
-    if max_same is not None and road.get('left_boundary_role')=='inferred_extent_not_confirmed_centreline' and len(b)-1>max_same:
-        return 0.
     return max(3.0,float(b[0]-b[-1]))
 
 
