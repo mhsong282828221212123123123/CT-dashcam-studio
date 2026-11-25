@@ -1,0 +1,2379 @@
+{
+  "records": [
+    {
+      "id": "oct02-000",
+      "split": "train",
+      "session": "oct02",
+      "camera": "front",
+      "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+      "tracks_artifact_id": "e352e0242c00993960d3039c402148acbf46141370bce986c1933aa020a5621d",
+      "frame_id": "0ba14ac3fd0080490ab3df09b88f4ec4f13d79fe75150116174eec6389bcb5b4:74083:1/10000",
+      "local_track_id": "front-0001",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-six-clip-suite-009\\2026-10-02_14-58-03\\source\\images\\00037.jpg",
+      "source_image_sha256": "ade3677a84900c4e1a20267295b15734e6b9fdde4c3eda292d8eb017ba00968e",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct02-000.jpg",
+      "crop_rect_xyxy": [
+        224,
+        374,
+        440,
+        604
+      ],
+      "bbox_xyxy": [
+        244.83132934570312,
+        395.17254638671875,
+        419.3491516113281,
+        574.8231811523438
+      ],
+      "tile_transform": {
+        "scale": 1.0,
+        "dx": 72,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        170,
+        201
+      ],
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct02-001",
+      "split": "train",
+      "session": "oct02",
+      "camera": "front",
+      "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+      "tracks_artifact_id": "e352e0242c00993960d3039c402148acbf46141370bce986c1933aa020a5621d",
+      "frame_id": "0ba14ac3fd0080490ab3df09b88f4ec4f13d79fe75150116174eec6389bcb5b4:255916:1/10000",
+      "local_track_id": "front-0026",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-six-clip-suite-009\\2026-10-02_14-58-03\\source\\images\\00128.jpg",
+      "source_image_sha256": "6e5114e706a140c2d204e0d7f5acc775192f3a0b5346c04d24e0d67c7f45fa58",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct02-001.jpg",
+      "crop_rect_xyxy": [
+        145,
+        411,
+        282,
+        491
+      ],
+      "bbox_xyxy": [
+        158.49554443359375,
+        418.88250732421875,
+        268.61053466796875,
+        480.62261962890625
+      ],
+      "tile_transform": {
+        "scale": 2.627737226277372,
+        "dx": 0,
+        "dy": 10
+      },
+      "contact_tile_xy": null,
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct02-002",
+      "split": "train",
+      "session": "oct02",
+      "camera": "front",
+      "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+      "tracks_artifact_id": "e352e0242c00993960d3039c402148acbf46141370bce986c1933aa020a5621d",
+      "frame_id": "0ba14ac3fd0080490ab3df09b88f4ec4f13d79fe75150116174eec6389bcb5b4:383942:1/10000",
+      "local_track_id": "front-0038",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-six-clip-suite-009\\2026-10-02_14-58-03\\source\\images\\00192.jpg",
+      "source_image_sha256": "196260ed4ba737515d000a19e14c1cdea591a06555adb5b96c3abf04387ef648",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct02-002.jpg",
+      "crop_rect_xyxy": [
+        65,
+        423,
+        259,
+        494
+      ],
+      "bbox_xyxy": [
+        84.0650405883789,
+        429.689208984375,
+        240.63980102539062,
+        485.045166015625
+      ],
+      "tile_transform": {
+        "scale": 1.8556701030927836,
+        "dx": 0,
+        "dy": 49
+      },
+      "contact_tile_xy": null,
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct02-003",
+      "split": "train",
+      "session": "oct02",
+      "camera": "front",
+      "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+      "tracks_artifact_id": "e352e0242c00993960d3039c402148acbf46141370bce986c1933aa020a5621d",
+      "frame_id": "0ba14ac3fd0080490ab3df09b88f4ec4f13d79fe75150116174eec6389bcb5b4:573855:1/10000",
+      "local_track_id": "front-0052",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-six-clip-suite-009\\2026-10-02_14-58-03\\source\\images\\00287.jpg",
+      "source_image_sha256": "d6460c69d214279f7ebbad77a88344203ae9114a088aa5d2d578e3db29504b5c",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct02-003.jpg",
+      "crop_rect_xyxy": [
+        928,
+        374,
+        1135,
+        572
+      ],
+      "bbox_xyxy": [
+        948.271240234375,
+        392.6337890625,
+        1114.54833984375,
+        547.377197265625
+      ],
+      "tile_transform": {
+        "scale": 1.1616161616161615,
+        "dx": 60,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        181,
+        201
+      ],
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct02-004",
+      "split": "train",
+      "session": "oct02",
+      "camera": "left_repeater",
+      "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+      "tracks_artifact_id": "e352e0242c00993960d3039c402148acbf46141370bce986c1933aa020a5621d",
+      "frame_id": "303979a546bfc0308f0dc1c797f01d0ae161beb63db7ef25202ad1320c7ab1e7:18089:1/10000",
+      "local_track_id": "left_repeater-0001",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-six-clip-suite-009\\2026-10-02_14-58-03\\source\\images\\00607.jpg",
+      "source_image_sha256": "48e2a0d57b6f729a85a75333957b07788c0f39e2e19231fb881714770c3a21d0",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct02-004.jpg",
+      "crop_rect_xyxy": [
+        405,
+        433,
+        799,
+        604
+      ],
+      "bbox_xyxy": [
+        443.36474609375,
+        449.27001953125,
+        760.9334716796875,
+        582.355224609375
+      ],
+      "tile_transform": {
+        "scale": 0.9137055837563451,
+        "dx": 0,
+        "dy": 37
+      },
+      "contact_tile_xy": [
+        111,
+        158
+      ],
+      "direction": "right",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct02-005",
+      "split": "train",
+      "session": "oct02",
+      "camera": "left_repeater",
+      "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+      "tracks_artifact_id": "e352e0242c00993960d3039c402148acbf46141370bce986c1933aa020a5621d",
+      "frame_id": "303979a546bfc0308f0dc1c797f01d0ae161beb63db7ef25202ad1320c7ab1e7:205949:1/10000",
+      "local_track_id": "left_repeater-0003",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-six-clip-suite-009\\2026-10-02_14-58-03\\source\\images\\00701.jpg",
+      "source_image_sha256": "06f9b750a5ead1acca2d365dc2b6daa9b85427833726391eedc7da121eee1365",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct02-005.jpg",
+      "crop_rect_xyxy": [
+        183,
+        317,
+        651,
+        650
+      ],
+      "bbox_xyxy": [
+        228.17510986328125,
+        347.88714599609375,
+        606.097900390625,
+        608.1868286132812
+      ],
+      "tile_transform": {
+        "scale": 0.6906906906906907,
+        "dx": 18,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        126,
+        192
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct02-006",
+      "split": "train",
+      "session": "oct02",
+      "camera": "left_repeater",
+      "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+      "tracks_artifact_id": "e352e0242c00993960d3039c402148acbf46141370bce986c1933aa020a5621d",
+      "frame_id": "303979a546bfc0308f0dc1c797f01d0ae161beb63db7ef25202ad1320c7ab1e7:376015:1/10000",
+      "local_track_id": "left_repeater-0022",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-six-clip-suite-009\\2026-10-02_14-58-03\\source\\images\\00786.jpg",
+      "source_image_sha256": "6b63fa29ea05be775731e1c0f71b909aeb2399acf4090049aeb55935de66cfee",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct02-006.jpg",
+      "crop_rect_xyxy": [
+        556,
+        394,
+        915,
+        509
+      ],
+      "bbox_xyxy": [
+        590.612060546875,
+        404.99090576171875,
+        880.221435546875,
+        494.30560302734375
+      ],
+      "tile_transform": {
+        "scale": 1.0027855153203342,
+        "dx": 0,
+        "dy": 57
+      },
+      "contact_tile_xy": null,
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct02-007",
+      "split": "train",
+      "session": "oct02",
+      "camera": "left_repeater",
+      "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+      "tracks_artifact_id": "e352e0242c00993960d3039c402148acbf46141370bce986c1933aa020a5621d",
+      "frame_id": "303979a546bfc0308f0dc1c797f01d0ae161beb63db7ef25202ad1320c7ab1e7:541980:1/10000",
+      "local_track_id": "left_repeater-0023",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-six-clip-suite-009\\2026-10-02_14-58-03\\source\\images\\00869.jpg",
+      "source_image_sha256": "06824d237cc684be536ab4a100ac436af604c2cc4496c6e5a165b435d89a7a88",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct02-007.jpg",
+      "crop_rect_xyxy": [
+        108,
+        457,
+        219,
+        552
+      ],
+      "bbox_xyxy": [
+        118.79402160644531,
+        466.1116943359375,
+        208.1406707763672,
+        540.2247314453125
+      ],
+      "tile_transform": {
+        "scale": 2.4210526315789473,
+        "dx": 45,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        167,
+        195
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct02-008",
+      "split": "train",
+      "session": "oct02",
+      "camera": "right_repeater",
+      "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+      "tracks_artifact_id": "e352e0242c00993960d3039c402148acbf46141370bce986c1933aa020a5621d",
+      "frame_id": "be849fbb1f4867cedf9f8038aa95c21343758e237c5611913f727ca5a2ff91f4:523929:1/10000",
+      "local_track_id": "right_repeater-0003",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-six-clip-suite-009\\2026-10-02_14-58-03\\source\\images\\01158.jpg",
+      "source_image_sha256": "6b9beee3abbe71ea4dab4e6ae364d64be46526ae50b5e67504c6183512ac0a20",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct02-008.jpg",
+      "crop_rect_xyxy": [
+        674,
+        409,
+        1023,
+        597
+      ],
+      "bbox_xyxy": [
+        707.613525390625,
+        426.8133544921875,
+        989.6318359375,
+        573.3492431640625
+      ],
+      "tile_transform": {
+        "scale": 1.0315186246418337,
+        "dx": 0,
+        "dy": 18
+      },
+      "contact_tile_xy": [
+        174,
+        181
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct02-009",
+      "split": "train",
+      "session": "oct02",
+      "camera": "right_repeater",
+      "source_artifact_id": "66941f33999fa1733fb0624bc0a55be256379e446313eed9e3e0dfa489f0b498",
+      "tracks_artifact_id": "e352e0242c00993960d3039c402148acbf46141370bce986c1933aa020a5621d",
+      "frame_id": "be849fbb1f4867cedf9f8038aa95c21343758e237c5611913f727ca5a2ff91f4:580037:1/10000",
+      "local_track_id": "right_repeater-0004",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-six-clip-suite-009\\2026-10-02_14-58-03\\source\\images\\01186.jpg",
+      "source_image_sha256": "03c7fa9791e32b649f484f13dc908edd0c0d5d9ac9b0854ba06368411a96b3fa",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct02-009.jpg",
+      "crop_rect_xyxy": [
+        408,
+        412,
+        834,
+        602
+      ],
+      "bbox_xyxy": [
+        449.18743896484375,
+        429.5196533203125,
+        792.3901977539062,
+        578.1339111328125
+      ],
+      "tile_transform": {
+        "scale": 0.8450704225352113,
+        "dx": 0,
+        "dy": 34
+      },
+      "contact_tile_xy": [
+        248,
+        171
+      ],
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-010",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "front",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "04fddb604c2f4b83c5f4815e7f2e3cec0c502a8c4bed02342d0a7cf1f66c969a:124049:1/10000",
+      "local_track_id": "front-0006",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\00062.jpg",
+      "source_image_sha256": "3981eb7cd06c263a1290a401c44fd4bedd8c3218b55c85d771fc9a13e8e8954b",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-010.jpg",
+      "crop_rect_xyxy": [
+        0,
+        503,
+        136,
+        576
+      ],
+      "bbox_xyxy": [
+        9.408798217773438,
+        510.1995849609375,
+        122.16598510742188,
+        566.630859375
+      ],
+      "tile_transform": {
+        "scale": 2.6470588235294117,
+        "dx": 0,
+        "dy": 18
+      },
+      "contact_tile_xy": null,
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-011",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "front",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "04fddb604c2f4b83c5f4815e7f2e3cec0c502a8c4bed02342d0a7cf1f66c969a:164010:1/10000",
+      "local_track_id": "front-0009",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\00082.jpg",
+      "source_image_sha256": "38178e22d8fb10f7be0ae60b55168a56af8eb217ba6f9e768d85b2fd103f98f7",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-011.jpg",
+      "crop_rect_xyxy": [
+        792,
+        553,
+        1154,
+        686
+      ],
+      "bbox_xyxy": [
+        827.401123046875,
+        565.0350952148438,
+        1119.070068359375,
+        669.2489624023438
+      ],
+      "tile_transform": {
+        "scale": 0.994475138121547,
+        "dx": 0,
+        "dy": 49
+      },
+      "contact_tile_xy": [
+        200,
+        164
+      ],
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-012",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "front",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "04fddb604c2f4b83c5f4815e7f2e3cec0c502a8c4bed02342d0a7cf1f66c969a:195984:1/10000",
+      "local_track_id": "front-0018",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\00098.jpg",
+      "source_image_sha256": "21e2b1db0a065a05051498349e9a4743b6e87fce5a66fa8c673aa09d2a5a6c11",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-012.jpg",
+      "crop_rect_xyxy": [
+        381,
+        468,
+        637,
+        633
+      ],
+      "bbox_xyxy": [
+        406.0816650390625,
+        483.4678955078125,
+        612.4068603515625,
+        611.967529296875
+      ],
+      "tile_transform": {
+        "scale": 1.393939393939394,
+        "dx": 1,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        172,
+        198
+      ],
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-013",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "front",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "04fddb604c2f4b83c5f4815e7f2e3cec0c502a8c4bed02342d0a7cf1f66c969a:580048:1/10000",
+      "local_track_id": "front-0060",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\00290.jpg",
+      "source_image_sha256": "527504f1c2942f2af7af3c51ffdf054e3e6b7ea19204a1c138ad284aa58c252f",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-013.jpg",
+      "crop_rect_xyxy": [
+        112,
+        421,
+        433,
+        650
+      ],
+      "bbox_xyxy": [
+        142.829345703125,
+        442.760986328125,
+        401.8287353515625,
+        621.3388671875
+      ],
+      "tile_transform": {
+        "scale": 1.0043668122270741,
+        "dx": 19,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        179,
+        199
+      ],
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-014",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "left_repeater",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "8d9d0c4d38c191dc0de515966ff6dbcd3b1c3974e58582267c0e3499622c9125:177863:1/10000",
+      "local_track_id": "left_repeater-0010",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\00684.jpg",
+      "source_image_sha256": "9fb3fa56388770c8039b8c42af34966a58bb9012a4002fa3a54b6ceec5ad77e7",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-014.jpg",
+      "crop_rect_xyxy": [
+        857,
+        452,
+        969,
+        535
+      ],
+      "bbox_xyxy": [
+        867.8603515625,
+        460.2374267578125,
+        958.186279296875,
+        524.7269287109375
+      ],
+      "tile_transform": {
+        "scale": 2.7710843373493974,
+        "dx": 25,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        169,
+        194
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-015",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "left_repeater",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "8d9d0c4d38c191dc0de515966ff6dbcd3b1c3974e58582267c0e3499622c9125:214025:1/10000",
+      "local_track_id": "left_repeater-0028",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\00702.jpg",
+      "source_image_sha256": "a59c7e1fc85788c76d3df10317ba64fb2bf9d4e8f065f29b22bdd6138f855914",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-015.jpg",
+      "crop_rect_xyxy": [
+        682,
+        448,
+        1036,
+        585
+      ],
+      "bbox_xyxy": [
+        716.1207275390625,
+        460.8204345703125,
+        1001.7159423828125,
+        568.066650390625
+      ],
+      "tile_transform": {
+        "scale": 1.0169491525423728,
+        "dx": 0,
+        "dy": 45
+      },
+      "contact_tile_xy": [
+        126,
+        168
+      ],
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-016",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "left_repeater",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "8d9d0c4d38c191dc0de515966ff6dbcd3b1c3974e58582267c0e3499622c9125:292070:1/10000",
+      "local_track_id": "left_repeater-0046",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\00741.jpg",
+      "source_image_sha256": "a0029a63e84ac1eaeafa2a27c9130ee841552d6036d7a8802184bbb160e7eee6",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-016.jpg",
+      "crop_rect_xyxy": [
+        1033,
+        433,
+        1232,
+        589
+      ],
+      "bbox_xyxy": [
+        1051.8316650390625,
+        447.488037109375,
+        1212.6700439453125,
+        569.84765625
+      ],
+      "tile_transform": {
+        "scale": 1.4743589743589745,
+        "dx": 33,
+        "dy": 0
+      },
+      "contact_tile_xy": null,
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-017",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "left_repeater",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "8d9d0c4d38c191dc0de515966ff6dbcd3b1c3974e58582267c0e3499622c9125:581984:1/10000",
+      "local_track_id": "left_repeater-0068",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\00886.jpg",
+      "source_image_sha256": "0e4197ac7f81387876ee2f26c340458002fb3865cfa7827573af025bc6eaa90a",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-017.jpg",
+      "crop_rect_xyxy": [
+        123,
+        466,
+        241,
+        550
+      ],
+      "bbox_xyxy": [
+        134.430908203125,
+        474.0645751953125,
+        229.18292236328125,
+        539.7847900390625
+      ],
+      "tile_transform": {
+        "scale": 2.738095238095238,
+        "dx": 18,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        186,
+        194
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-018",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "right_repeater",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "9638fe2cb51d157a9320d765d2b9144cb54f3e7b048ed17944d96e74e526edbe:181948:1/10000",
+      "local_track_id": "right_repeater-0005",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\00983.jpg",
+      "source_image_sha256": "20a52d15f7286d5a52a6a8b6b8bcffee5a8ec2ebf8c108b11964e9fdac724d9a",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-018.jpg",
+      "crop_rect_xyxy": [
+        745,
+        466,
+        1009,
+        554
+      ],
+      "bbox_xyxy": [
+        770.51513671875,
+        474.048095703125,
+        983.23876953125,
+        542.914794921875
+      ],
+      "tile_transform": {
+        "scale": 1.3636363636363635,
+        "dx": 0,
+        "dy": 55
+      },
+      "contact_tile_xy": [
+        172,
+        158
+      ],
+      "direction": "right",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-019",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "right_repeater",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "9638fe2cb51d157a9320d765d2b9144cb54f3e7b048ed17944d96e74e526edbe:283853:1/10000",
+      "local_track_id": "right_repeater-0006",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\01034.jpg",
+      "source_image_sha256": "83f8f465d75deb0d5d89a5fd291a7f19a7a33671764584d02adee878e859a588",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-019.jpg",
+      "crop_rect_xyxy": [
+        855,
+        351,
+        1084,
+        569
+      ],
+      "bbox_xyxy": [
+        876.6942138671875,
+        371.452880859375,
+        1061.5301513671875,
+        542.115966796875
+      ],
+      "tile_transform": {
+        "scale": 1.055045871559633,
+        "dx": 59,
+        "dy": 0
+      },
+      "contact_tile_xy": null,
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-020",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "right_repeater",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "9638fe2cb51d157a9320d765d2b9144cb54f3e7b048ed17944d96e74e526edbe:481851:1/10000",
+      "local_track_id": "right_repeater-0009",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\01133.jpg",
+      "source_image_sha256": "d6b0c908e57fd24aa898751e013b073b6edfaf90ad6c053835c037dc8e19bef8",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-020.jpg",
+      "crop_rect_xyxy": [
+        298,
+        461,
+        437,
+        541
+      ],
+      "bbox_xyxy": [
+        311.286865234375,
+        468.8150634765625,
+        423.7984619140625,
+        531.0091552734375
+      ],
+      "tile_transform": {
+        "scale": 2.5899280575539567,
+        "dx": 0,
+        "dy": 11
+      },
+      "contact_tile_xy": null,
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18turn-021",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "right_repeater",
+      "source_artifact_id": "803642b8b65e8818332e06c8c4ce689198501b13fd1d6ef83e4f48640b1303fa",
+      "tracks_artifact_id": "76126461603d2a369d08ddb3dad5efeee6c1e02e42a41930f09c083312f7fdad",
+      "frame_id": "9638fe2cb51d157a9320d765d2b9144cb54f3e7b048ed17944d96e74e526edbe:519963:1/10000",
+      "local_track_id": "right_repeater-0012",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-junction-002\\source\\images\\01152.jpg",
+      "source_image_sha256": "3f00422f977a552776c1fbabd09b0a80eb50c7100840b206976d2db0e7f74990",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18turn-021.jpg",
+      "crop_rect_xyxy": [
+        279,
+        451,
+        460,
+        537
+      ],
+      "bbox_xyxy": [
+        296.27215576171875,
+        458.90081787109375,
+        442.83953857421875,
+        526.5408325195312
+      ],
+      "tile_transform": {
+        "scale": 1.988950276243094,
+        "dx": 0,
+        "dy": 29
+      },
+      "contact_tile_xy": null,
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18ramp-022",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "front",
+      "source_artifact_id": "c6753636fc7db8bd67d730dd00d270d56f9f8ab0b76c1fe595e55e83189bb09b",
+      "tracks_artifact_id": "3bc2e72766473efc0fc8e722c30580e01a3f96d69d3b7fb9f849ed8f7bef20d0",
+      "frame_id": "11ae47abb73d6b90cb7b7a68b5841d21f6c1eab6032251ce4130d48c42b0dac2:216062:1/10000",
+      "local_track_id": "front-0001",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-ramp-001\\source\\images\\00108.jpg",
+      "source_image_sha256": "b661f77961c669ad1872fe86a2c6759e38fa0c7853795554491756cb8aab509d",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18ramp-022.jpg",
+      "crop_rect_xyxy": [
+        429,
+        460,
+        631,
+        628
+      ],
+      "bbox_xyxy": [
+        448.45513916015625,
+        475.59765625,
+        611.0015258789062,
+        606.940185546875
+      ],
+      "tile_transform": {
+        "scale": 1.369047619047619,
+        "dx": 41,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        177,
+        200
+      ],
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18ramp-023",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "front",
+      "source_artifact_id": "c6753636fc7db8bd67d730dd00d270d56f9f8ab0b76c1fe595e55e83189bb09b",
+      "tracks_artifact_id": "3bc2e72766473efc0fc8e722c30580e01a3f96d69d3b7fb9f849ed8f7bef20d0",
+      "frame_id": "11ae47abb73d6b90cb7b7a68b5841d21f6c1eab6032251ce4130d48c42b0dac2:574105:1/10000",
+      "local_track_id": "front-0022",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-ramp-001\\source\\images\\00287.jpg",
+      "source_image_sha256": "5bfb32c03e6419cdf0966f84bbd4bfa34d84e510c6d8efc5e3e4b0e395bcbdae",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18ramp-023.jpg",
+      "crop_rect_xyxy": [
+        60,
+        472,
+        181,
+        558
+      ],
+      "bbox_xyxy": [
+        71.33636474609375,
+        479.9794921875,
+        168.92214965820312,
+        547.6285400390625
+      ],
+      "tile_transform": {
+        "scale": 2.6744186046511627,
+        "dx": 18,
+        "dy": 0
+      },
+      "contact_tile_xy": null,
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18ramp-024",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "left_repeater",
+      "source_artifact_id": "c6753636fc7db8bd67d730dd00d270d56f9f8ab0b76c1fe595e55e83189bb09b",
+      "tracks_artifact_id": "3bc2e72766473efc0fc8e722c30580e01a3f96d69d3b7fb9f849ed8f7bef20d0",
+      "frame_id": "705b7b8b150f2f5c28abf842ed9b6d83be91114711a9b40c45bb16684f9da809:59918:1/10000",
+      "local_track_id": "left_repeater-0002",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-ramp-001\\source\\images\\00627.jpg",
+      "source_image_sha256": "c7ea0b07b5ac8fd39ceaf8f7df11b94402a3eda19eab448302cec128d914ab56",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18ramp-024.jpg",
+      "crop_rect_xyxy": [
+        63,
+        450,
+        172,
+        557
+      ],
+      "bbox_xyxy": [
+        73.80085754394531,
+        460.29052734375,
+        161.38717651367188,
+        543.293212890625
+      ],
+      "tile_transform": {
+        "scale": 2.149532710280374,
+        "dx": 63,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        182,
+        198
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18ramp-025",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "left_repeater",
+      "source_artifact_id": "c6753636fc7db8bd67d730dd00d270d56f9f8ab0b76c1fe595e55e83189bb09b",
+      "tracks_artifact_id": "3bc2e72766473efc0fc8e722c30580e01a3f96d69d3b7fb9f849ed8f7bef20d0",
+      "frame_id": "705b7b8b150f2f5c28abf842ed9b6d83be91114711a9b40c45bb16684f9da809:337908:1/10000",
+      "local_track_id": "left_repeater-0003",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-ramp-001\\source\\images\\00766.jpg",
+      "source_image_sha256": "ff2479fd168d9320e47edbaa26ed6f86a4368d9f321bdb87030ec0cda7e83423",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18ramp-025.jpg",
+      "crop_rect_xyxy": [
+        40,
+        400,
+        186,
+        597
+      ],
+      "bbox_xyxy": [
+        53.9884147644043,
+        418.45001220703125,
+        172.23023986816406,
+        572.2754516601562
+      ],
+      "tile_transform": {
+        "scale": 1.16751269035533,
+        "dx": 95,
+        "dy": 0
+      },
+      "contact_tile_xy": null,
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18ramp-026",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "left_repeater",
+      "source_artifact_id": "c6753636fc7db8bd67d730dd00d270d56f9f8ab0b76c1fe595e55e83189bb09b",
+      "tracks_artifact_id": "3bc2e72766473efc0fc8e722c30580e01a3f96d69d3b7fb9f849ed8f7bef20d0",
+      "frame_id": "705b7b8b150f2f5c28abf842ed9b6d83be91114711a9b40c45bb16684f9da809:442124:1/10000",
+      "local_track_id": "left_repeater-0006",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-ramp-001\\source\\images\\00818.jpg",
+      "source_image_sha256": "0a07f7822d077b299dce04d54272982613ebc723ba3ae4b1281079fabb44781a",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18ramp-026.jpg",
+      "crop_rect_xyxy": [
+        733,
+        477,
+        902,
+        556
+      ],
+      "bbox_xyxy": [
+        749.6242065429688,
+        484.76617431640625,
+        885.8873901367188,
+        546.2201538085938
+      ],
+      "tile_transform": {
+        "scale": 2.1301775147928996,
+        "dx": 0,
+        "dy": 31
+      },
+      "contact_tile_xy": null,
+      "direction": null,
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18ramp-027",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "left_repeater",
+      "source_artifact_id": "c6753636fc7db8bd67d730dd00d270d56f9f8ab0b76c1fe595e55e83189bb09b",
+      "tracks_artifact_id": "3bc2e72766473efc0fc8e722c30580e01a3f96d69d3b7fb9f849ed8f7bef20d0",
+      "frame_id": "705b7b8b150f2f5c28abf842ed9b6d83be91114711a9b40c45bb16684f9da809:590091:1/10000",
+      "local_track_id": "left_repeater-0010",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-ramp-001\\source\\images\\00892.jpg",
+      "source_image_sha256": "735b14aee8f5ea53f111a0488897cb712c86b988d87e038db924070dbe8cf994",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18ramp-027.jpg",
+      "crop_rect_xyxy": [
+        486,
+        471,
+        645,
+        560
+      ],
+      "bbox_xyxy": [
+        501.22882080078125,
+        479.3519287109375,
+        629.4081420898438,
+        548.9383544921875
+      ],
+      "tile_transform": {
+        "scale": 2.2641509433962264,
+        "dx": 0,
+        "dy": 14
+      },
+      "contact_tile_xy": [
+        138,
+        195
+      ],
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "oct18ramp-028",
+      "split": "train",
+      "session": "2026-10-18",
+      "camera": "right_repeater",
+      "source_artifact_id": "c6753636fc7db8bd67d730dd00d270d56f9f8ab0b76c1fe595e55e83189bb09b",
+      "tracks_artifact_id": "3bc2e72766473efc0fc8e722c30580e01a3f96d69d3b7fb9f849ed8f7bef20d0",
+      "frame_id": "a04da347f1002337e19ffc9250b0ea3e1a8ea22b8f19bd0a1fe3a42e97094b44:410001:1/10000",
+      "local_track_id": "right_repeater-0001",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-oct18-ramp-001\\source\\images\\01100.jpg",
+      "source_image_sha256": "831950d2dd61b0e82d2636c9eea7ff215616515c4e2ab524c737a81c03334b62",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\oct18ramp-028.jpg",
+      "crop_rect_xyxy": [
+        1077,
+        399,
+        1188,
+        550
+      ],
+      "bbox_xyxy": [
+        1087.66259765625,
+        413.6114501953125,
+        1177.2275390625,
+        531.4088134765625
+      ],
+      "tile_transform": {
+        "scale": 1.5231788079470199,
+        "dx": 95,
+        "dy": 0
+      },
+      "contact_tile_xy": null,
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-029",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "front",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "d887a73ba03b6fd9244f74888c89fa7889171f04c5f54d6ec68a0e5a6c84f16e:5968:1/10000",
+      "local_track_id": "front-0001",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\00003.jpg",
+      "source_image_sha256": "80a0f24808fa9adef9d97856a8af1de8b3bb2e6024d32261393f134bdbd1fa98",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-029.jpg",
+      "crop_rect_xyxy": [
+        271,
+        392,
+        502,
+        520
+      ],
+      "bbox_xyxy": [
+        293.0129089355469,
+        404.3896484375,
+        479.3715515136719,
+        504.236328125
+      ],
+      "tile_transform": {
+        "scale": 1.5584415584415585,
+        "dx": 0,
+        "dy": 15
+      },
+      "contact_tile_xy": null,
+      "direction": "right",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-030",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "front",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "d887a73ba03b6fd9244f74888c89fa7889171f04c5f54d6ec68a0e5a6c84f16e:305873:1/10000",
+      "local_track_id": "front-0039",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\00153.jpg",
+      "source_image_sha256": "6993261af2e99599a2a02689ca8e6db33bff89362779950643d3b9c6fbec5813",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-030.jpg",
+      "crop_rect_xyxy": [
+        84,
+        421,
+        200,
+        548
+      ],
+      "bbox_xyxy": [
+        95.43882751464844,
+        432.8851318359375,
+        189.09556579589844,
+        532.3240966796875
+      ],
+      "tile_transform": {
+        "scale": 1.811023622047244,
+        "dx": 75,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        150,
+        199
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-031",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "front",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "d887a73ba03b6fd9244f74888c89fa7889171f04c5f54d6ec68a0e5a6c84f16e:392013:1/10000",
+      "local_track_id": "front-0061",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\00196.jpg",
+      "source_image_sha256": "9dc81fa1f44c74c81add9093b1be689536240aee37879fd02e6d272848604763",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-031.jpg",
+      "crop_rect_xyxy": [
+        1018,
+        427,
+        1205,
+        528
+      ],
+      "bbox_xyxy": [
+        1036.328369140625,
+        436.42486572265625,
+        1187.051513671875,
+        515.7600708007812
+      ],
+      "tile_transform": {
+        "scale": 1.9251336898395721,
+        "dx": 0,
+        "dy": 18
+      },
+      "contact_tile_xy": null,
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-032",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "front",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "d887a73ba03b6fd9244f74888c89fa7889171f04c5f54d6ec68a0e5a6c84f16e:594072:1/10000",
+      "local_track_id": "front-0080",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\00297.jpg",
+      "source_image_sha256": "341f567841a640c5bfcbbdde868fee38ec8a7c0c95165245f44997ad638f5c9e",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-032.jpg",
+      "crop_rect_xyxy": [
+        680,
+        419,
+        805,
+        520
+      ],
+      "bbox_xyxy": [
+        692.1436157226562,
+        428.3927001953125,
+        792.7018432617188,
+        507.5172119140625
+      ],
+      "tile_transform": {
+        "scale": 2.277227722772277,
+        "dx": 37,
+        "dy": 0
+      },
+      "contact_tile_xy": null,
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-033",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "left_repeater",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "de7c34675982dd809b8b5745fd19b999707be3660b2ca2fa12a0d22715656e23:68125:1/10000",
+      "local_track_id": "left_repeater-0001",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\00633.jpg",
+      "source_image_sha256": "07372533c6555e24fa05ef0762224e26b6f9c2dcbc46777848452aff090a3237",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-033.jpg",
+      "crop_rect_xyxy": [
+        28,
+        407,
+        147,
+        656
+      ],
+      "bbox_xyxy": [
+        39.256011962890625,
+        430.7740478515625,
+        135.21200561523438,
+        625.2579345703125
+      ],
+      "tile_transform": {
+        "scale": 0.9236947791164659,
+        "dx": 125,
+        "dy": 0
+      },
+      "contact_tile_xy": null,
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-034",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "left_repeater",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "de7c34675982dd809b8b5745fd19b999707be3660b2ca2fa12a0d22715656e23:321980:1/10000",
+      "local_track_id": "left_repeater-0044",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\00760.jpg",
+      "source_image_sha256": "6aa400615ce2ca2c9b7ac66f8ac366fc1497398d48716159f23be0bb70e04c03",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-034.jpg",
+      "crop_rect_xyxy": [
+        351,
+        456,
+        518,
+        569
+      ],
+      "bbox_xyxy": [
+        367.350830078125,
+        466.662841796875,
+        502.1298828125,
+        555.02880859375
+      ],
+      "tile_transform": {
+        "scale": 2.0353982300884956,
+        "dx": 10,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        187,
+        195
+      ],
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-035",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "left_repeater",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "de7c34675982dd809b8b5745fd19b999707be3660b2ca2fa12a0d22715656e23:361959:1/10000",
+      "local_track_id": "left_repeater-0062",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\00780.jpg",
+      "source_image_sha256": "72213c5d99ac36f6f42bc7777e1426f3591ec0873371b9b2effe5705b7e0b5bd",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-035.jpg",
+      "crop_rect_xyxy": [
+        465,
+        408,
+        666,
+        578
+      ],
+      "bbox_xyxy": [
+        484.5721435546875,
+        424.0396728515625,
+        646.18115234375,
+        556.637939453125
+      ],
+      "tile_transform": {
+        "scale": 1.3529411764705883,
+        "dx": 44,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        130,
+        194
+      ],
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-036",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "left_repeater",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "de7c34675982dd809b8b5745fd19b999707be3660b2ca2fa12a0d22715656e23:410007:1/10000",
+      "local_track_id": "left_repeater-0076",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\00804.jpg",
+      "source_image_sha256": "be6ccae72867fcd8309b28959284280712527e5beb4c1ac7b2f29cede3ae1b31",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-036.jpg",
+      "crop_rect_xyxy": [
+        163,
+        425,
+        420,
+        614
+      ],
+      "bbox_xyxy": [
+        188.07247924804688,
+        442.67510986328125,
+        395.0003967285156,
+        590.2564086914062
+      ],
+      "tile_transform": {
+        "scale": 1.216931216931217,
+        "dx": 23,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        185,
+        195
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-037",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "right_repeater",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "53336e9aea103fe31b306d2cfb62050c2b87add519341e30f667309a16e3c716:11856:1/10000",
+      "local_track_id": "right_repeater-0001",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\00905.jpg",
+      "source_image_sha256": "2ec05637fc1e1cf06ade3dbec116f396fbc0119bf62b15d05b4bd772be560c76",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-037.jpg",
+      "crop_rect_xyxy": [
+        901,
+        366,
+        1213,
+        575
+      ],
+      "bbox_xyxy": [
+        931.3590087890625,
+        385.9495849609375,
+        1183.1810302734375,
+        549.1298828125
+      ],
+      "tile_transform": {
+        "scale": 1.1004784688995215,
+        "dx": 8,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        143,
+        192
+      ],
+      "direction": "right",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-038",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "right_repeater",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "53336e9aea103fe31b306d2cfb62050c2b87add519341e30f667309a16e3c716:117932:1/10000",
+      "local_track_id": "right_repeater-0024",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\00958.jpg",
+      "source_image_sha256": "82bbe083371379327cc0e136383a0e3f9e8a113e908054fba9e577fd9157906b",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-038.jpg",
+      "crop_rect_xyxy": [
+        406,
+        426,
+        538,
+        517
+      ],
+      "bbox_xyxy": [
+        419.06585693359375,
+        434.44622802734375,
+        525.6314697265625,
+        505.64154052734375
+      ],
+      "tile_transform": {
+        "scale": 2.5274725274725274,
+        "dx": 13,
+        "dy": 0
+      },
+      "contact_tile_xy": null,
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-039",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "right_repeater",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "53336e9aea103fe31b306d2cfb62050c2b87add519341e30f667309a16e3c716:419889:1/10000",
+      "local_track_id": "right_repeater-0049",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\01109.jpg",
+      "source_image_sha256": "533a45d8bc27574362ef225cec8f3d100c54e29801135dbfcffeb2c22411bd39",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-039.jpg",
+      "crop_rect_xyxy": [
+        309,
+        395,
+        641,
+        528
+      ],
+      "bbox_xyxy": [
+        341.18115234375,
+        407.7188720703125,
+        608.7900390625,
+        511.7515869140625
+      ],
+      "tile_transform": {
+        "scale": 1.0843373493975903,
+        "dx": 0,
+        "dy": 43
+      },
+      "contact_tile_xy": null,
+      "direction": "right",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "aug20-040",
+      "split": "validation",
+      "session": "aug20",
+      "camera": "right_repeater",
+      "source_artifact_id": "3295ec241277b8eac0b68b39fe8bf231085fc6d484eb2a2b15a0cd088f46a727",
+      "tracks_artifact_id": "21c549b2c0f36923d792c725f48350a7bc638c0dc625140785127793d12098bd",
+      "frame_id": "53336e9aea103fe31b306d2cfb62050c2b87add519341e30f667309a16e3c716:572070:1/10000",
+      "local_track_id": "right_repeater-0073",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\new-replacement-source-inputs-001\\2026-08-20_07-34-02\\source\\images\\01185.jpg",
+      "source_image_sha256": "f9d658668f0d1b76d6ba5393a69eecc7ab04003529e008b93a9ccbab34294621",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\aug20-040.jpg",
+      "crop_rect_xyxy": [
+        68,
+        349,
+        568,
+        532
+      ],
+      "bbox_xyxy": [
+        116.43769836425781,
+        365.9940185546875,
+        519.3200073242188,
+        508.9537353515625
+      ],
+      "tile_transform": {
+        "scale": 0.72,
+        "dx": 0,
+        "dy": 49
+      },
+      "contact_tile_xy": null,
+      "direction": "right",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01-041",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "front",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "tracks_artifact_id": "a6ca0f44bc6a9198d045a8b416503f59161531420848c00a7e2ce628056759aa",
+      "frame_id": "97fb0a0c0c7a1574f54b851b1b209546cb5f2cb0984585efbd26bd9390447cf3:149924:1/10000",
+      "local_track_id": "front-0006",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-highway-001\\source\\images\\00075.jpg",
+      "source_image_sha256": "49ed21478f70fbbea04c9e239fc8754fc331338fed0df563d9204e46f226772a",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01-041.jpg",
+      "crop_rect_xyxy": [
+        247,
+        366,
+        461,
+        566
+      ],
+      "bbox_xyxy": [
+        267.86126708984375,
+        384.50244140625,
+        440.15557861328125,
+        541.2298583984375
+      ],
+      "tile_transform": {
+        "scale": 1.15,
+        "dx": 57,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        174,
+        198
+      ],
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01-042",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "front",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "tracks_artifact_id": "a6ca0f44bc6a9198d045a8b416503f59161531420848c00a7e2ce628056759aa",
+      "frame_id": "97fb0a0c0c7a1574f54b851b1b209546cb5f2cb0984585efbd26bd9390447cf3:275995:1/10000",
+      "local_track_id": "front-0012",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-highway-001\\source\\images\\00138.jpg",
+      "source_image_sha256": "5a26171662f5f02335d644ba9cdd2d79e12bc65f1d54f77a40c737e2c71f9615",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01-042.jpg",
+      "crop_rect_xyxy": [
+        81,
+        446,
+        285,
+        586
+      ],
+      "bbox_xyxy": [
+        100.94790649414062,
+        458.888427734375,
+        265.5089111328125,
+        568.5322265625
+      ],
+      "tile_transform": {
+        "scale": 1.6428571428571428,
+        "dx": 12,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        152,
+        199
+      ],
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01-043",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "front",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "tracks_artifact_id": "a6ca0f44bc6a9198d045a8b416503f59161531420848c00a7e2ce628056759aa",
+      "frame_id": "97fb0a0c0c7a1574f54b851b1b209546cb5f2cb0984585efbd26bd9390447cf3:582189:1/10000",
+      "local_track_id": "front-0018",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-highway-001\\source\\images\\00291.jpg",
+      "source_image_sha256": "a1278351a200b4d0ea4c0c0c7fe28d02a0c929bf673cd117e92662af50bfd31c",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01-043.jpg",
+      "crop_rect_xyxy": [
+        763,
+        393,
+        890,
+        527
+      ],
+      "bbox_xyxy": [
+        775.7158203125,
+        405.8050537109375,
+        877.515869140625,
+        510.5794677734375
+      ],
+      "tile_transform": {
+        "scale": 1.7164179104477613,
+        "dx": 71,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        163,
+        198
+      ],
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01-044",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "front",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "tracks_artifact_id": "a6ca0f44bc6a9198d045a8b416503f59161531420848c00a7e2ce628056759aa",
+      "frame_id": "97fb0a0c0c7a1574f54b851b1b209546cb5f2cb0984585efbd26bd9390447cf3:589997:1/10000",
+      "local_track_id": "front-0037",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-highway-001\\source\\images\\00295.jpg",
+      "source_image_sha256": "54cd4e79f1b40ecd236df86fde6a1c5a6b6d02c36395ad02758a721c0632a5b0",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01-044.jpg",
+      "crop_rect_xyxy": [
+        108,
+        409,
+        394,
+        619
+      ],
+      "bbox_xyxy": [
+        135.73068237304688,
+        429.1085205078125,
+        366.23931884765625,
+        592.7540283203125
+      ],
+      "tile_transform": {
+        "scale": 1.0952380952380953,
+        "dx": 23,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        176,
+        199
+      ],
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01-045",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "left_repeater",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "tracks_artifact_id": "a6ca0f44bc6a9198d045a8b416503f59161531420848c00a7e2ce628056759aa",
+      "frame_id": "ed34910ae43553fce60a89e9bc7cc00d616be145e72a9ef95aaade598b9e02ef:41939:1/10000",
+      "local_track_id": "left_repeater-0001",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-highway-001\\source\\images\\00617.jpg",
+      "source_image_sha256": "28478c8881f475ac8bb8306c33030185e1fe51a903a012836cb9bf673c7bf1ef",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01-045.jpg",
+      "crop_rect_xyxy": [
+        455,
+        421,
+        833,
+        609
+      ],
+      "bbox_xyxy": [
+        491.1054382324219,
+        438.45916748046875,
+        796.1298828125,
+        585.0610961914062
+      ],
+      "tile_transform": {
+        "scale": 0.9523809523809523,
+        "dx": 0,
+        "dy": 25
+      },
+      "contact_tile_xy": [
+        115,
+        173
+      ],
+      "direction": "right",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01-046",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "left_repeater",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "tracks_artifact_id": "a6ca0f44bc6a9198d045a8b416503f59161531420848c00a7e2ce628056759aa",
+      "frame_id": "ed34910ae43553fce60a89e9bc7cc00d616be145e72a9ef95aaade598b9e02ef:317886:1/10000",
+      "local_track_id": "left_repeater-0010",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-highway-001\\source\\images\\00755.jpg",
+      "source_image_sha256": "692855ec87df3d2714d5c1fb885d6aacfa7761c37b5a78cdef1f6ce40e010527",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01-046.jpg",
+      "crop_rect_xyxy": [
+        298,
+        445,
+        507,
+        571
+      ],
+      "bbox_xyxy": [
+        318.36181640625,
+        457.1051025390625,
+        487.12158203125,
+        555.060791015625
+      ],
+      "tile_transform": {
+        "scale": 1.722488038277512,
+        "dx": 0,
+        "dy": 6
+      },
+      "contact_tile_xy": [
+        166,
+        195
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01-047",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "left_repeater",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "tracks_artifact_id": "a6ca0f44bc6a9198d045a8b416503f59161531420848c00a7e2ce628056759aa",
+      "frame_id": "ed34910ae43553fce60a89e9bc7cc00d616be145e72a9ef95aaade598b9e02ef:550039:1/10000",
+      "local_track_id": "left_repeater-0016",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-highway-001\\source\\images\\00871.jpg",
+      "source_image_sha256": "0ec848bd553cccd49782b870a820e64744092acca2cc21f7c309d179f40da12b",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01-047.jpg",
+      "crop_rect_xyxy": [
+        139,
+        414,
+        414,
+        605
+      ],
+      "bbox_xyxy": [
+        165.84652709960938,
+        432.34637451171875,
+        387.7547302246094,
+        581.1002807617188
+      ],
+      "tile_transform": {
+        "scale": 1.2041884816753927,
+        "dx": 14,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        182,
+        199
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01-048",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "left_repeater",
+      "source_artifact_id": "585d38911f91e7e900f17f310591b94e2f06ac05615378aeee4df918590ebabd",
+      "tracks_artifact_id": "a6ca0f44bc6a9198d045a8b416503f59161531420848c00a7e2ce628056759aa",
+      "frame_id": "ed34910ae43553fce60a89e9bc7cc00d616be145e72a9ef95aaade598b9e02ef:589951:1/10000",
+      "local_track_id": "left_repeater-0018",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-highway-001\\source\\images\\00891.jpg",
+      "source_image_sha256": "d3d33a693ac648ff055a11278093eb79c1f5dfa52fd28930427e5f647fa5b0b6",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01-048.jpg",
+      "crop_rect_xyxy": [
+        106,
+        463,
+        227,
+        558
+      ],
+      "bbox_xyxy": [
+        117.52068328857422,
+        472.287841796875,
+        215.69012451171875,
+        546.0224609375
+      ],
+      "tile_transform": {
+        "scale": 2.4210526315789473,
+        "dx": 33,
+        "dy": 0
+      },
+      "contact_tile_xy": [
+        181,
+        199
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-049",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "front",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "ef1ed36c23ec94156c6bcdf01f9871ce8b3c4d6fb5e24298ec85fba0eade7bb0:136046:1/10000",
+      "local_track_id": "front-0003",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\00068.jpg",
+      "source_image_sha256": "221a5d70de127ff990f56a026562e6777de4fda24c69562dc7f6aa2d80a114f5",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-049.jpg",
+      "crop_rect_xyxy": [
+        367,
+        440,
+        517,
+        535
+      ],
+      "bbox_xyxy": [
+        381.3896484375,
+        448.6146240234375,
+        502.2645263671875,
+        523.3599853515625
+      ],
+      "tile_transform": {
+        "scale": 2.4,
+        "dx": 0,
+        "dy": 1
+      },
+      "contact_tile_xy": null,
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-050",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "front",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "ef1ed36c23ec94156c6bcdf01f9871ce8b3c4d6fb5e24298ec85fba0eade7bb0:228030:1/10000",
+      "local_track_id": "front-0001",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\00114.jpg",
+      "source_image_sha256": "aecfc3233eadddeeec8702086a4d088f0e8548b27febebd6f6f2ce7b91d1d73c",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-050.jpg",
+      "crop_rect_xyxy": [
+        479,
+        464,
+        614,
+        545
+      ],
+      "bbox_xyxy": [
+        491.63720703125,
+        471.541015625,
+        600.688232421875,
+        535.167724609375
+      ],
+      "tile_transform": {
+        "scale": 2.6666666666666665,
+        "dx": 0,
+        "dy": 7
+      },
+      "contact_tile_xy": [
+        158,
+        192
+      ],
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-051",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "front",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "ef1ed36c23ec94156c6bcdf01f9871ce8b3c4d6fb5e24298ec85fba0eade7bb0:305993:1/10000",
+      "local_track_id": "front-0022",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\00153.jpg",
+      "source_image_sha256": "9725b3e4456c906412688c52049f171afb380d54e96c9087e0aab17d1e99f4d9",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-051.jpg",
+      "crop_rect_xyxy": [
+        440,
+        422,
+        884,
+        601
+      ],
+      "bbox_xyxy": [
+        483.2909851074219,
+        438.96295166015625,
+        841.35986328125,
+        578.9127807617188
+      ],
+      "tile_transform": {
+        "scale": 0.8108108108108109,
+        "dx": 0,
+        "dy": 42
+      },
+      "contact_tile_xy": [
+        197,
+        141
+      ],
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-052",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "front",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "ef1ed36c23ec94156c6bcdf01f9871ce8b3c4d6fb5e24298ec85fba0eade7bb0:576007:1/10000",
+      "local_track_id": "front-0049",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\00288.jpg",
+      "source_image_sha256": "0ded92c62503c216b6285e2fe80966447c392811b80f86abe021ee6c574ed40e",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-052.jpg",
+      "crop_rect_xyxy": [
+        106,
+        449,
+        235,
+        537
+      ],
+      "bbox_xyxy": [
+        118.42001342773438,
+        457.6785888671875,
+        222.69989013671875,
+        525.9505615234375
+      ],
+      "tile_transform": {
+        "scale": 2.6136363636363638,
+        "dx": 11,
+        "dy": 0
+      },
+      "contact_tile_xy": null,
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-053",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "left_repeater",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "acbd272241ad0f264fe0b3a19e80aae102ff657d0175f0f3a873fe82b1be7be5:126129:1/10000",
+      "local_track_id": "left_repeater-0001",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\00654.jpg",
+      "source_image_sha256": "57f4eb70ce5532acb9fa93b2629a5585ee2ad501af1ea39f7db8e773fcb16174",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-053.jpg",
+      "crop_rect_xyxy": [
+        32,
+        391,
+        243,
+        528
+      ],
+      "bbox_xyxy": [
+        52.1611328125,
+        403.5322265625,
+        222.45635986328125,
+        510.9813232421875
+      ],
+      "tile_transform": {
+        "scale": 1.6788321167883211,
+        "dx": 3,
+        "dy": 0
+      },
+      "contact_tile_xy": null,
+      "direction": null,
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-054",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "left_repeater",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "acbd272241ad0f264fe0b3a19e80aae102ff657d0175f0f3a873fe82b1be7be5:256102:1/10000",
+      "local_track_id": "left_repeater-0009",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\00719.jpg",
+      "source_image_sha256": "40793c8b43de9d05e3810d745eb6044fdf3bdf035f6031664c2a976c7e9398b0",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-054.jpg",
+      "crop_rect_xyxy": [
+        453,
+        462,
+        653,
+        566
+      ],
+      "bbox_xyxy": [
+        472.66986083984375,
+        471.569580078125,
+        633.7916870117188,
+        552.6292724609375
+      ],
+      "tile_transform": {
+        "scale": 1.8,
+        "dx": 0,
+        "dy": 21
+      },
+      "contact_tile_xy": [
+        119,
+        180
+      ],
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-055",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "left_repeater",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "acbd272241ad0f264fe0b3a19e80aae102ff657d0175f0f3a873fe82b1be7be5:340021:1/10000",
+      "local_track_id": "left_repeater-0023",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\00761.jpg",
+      "source_image_sha256": "36381735be9f2f3363b99a83e6a9f5d58723fba0af33389f52c67fa5cd265939",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-055.jpg",
+      "crop_rect_xyxy": [
+        316,
+        455,
+        565,
+        569
+      ],
+      "bbox_xyxy": [
+        340.10809326171875,
+        465.71710205078125,
+        541.2984619140625,
+        554.3847045898438
+      ],
+      "tile_transform": {
+        "scale": 1.4457831325301205,
+        "dx": 0,
+        "dy": 32
+      },
+      "contact_tile_xy": [
+        140,
+        166
+      ],
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-056",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "left_repeater",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "acbd272241ad0f264fe0b3a19e80aae102ff657d0175f0f3a873fe82b1be7be5:397964:1/10000",
+      "local_track_id": "left_repeater-0058",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\00790.jpg",
+      "source_image_sha256": "85b66f31c38d9c5c891a87f60ffdcdff5b54c676493cf4379a4a402c2f048cac",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-056.jpg",
+      "crop_rect_xyxy": [
+        281,
+        456,
+        510,
+        584
+      ],
+      "bbox_xyxy": [
+        303.62408447265625,
+        467.8447265625,
+        487.9979248046875,
+        567.7906494140625
+      ],
+      "tile_transform": {
+        "scale": 1.5720524017467248,
+        "dx": 0,
+        "dy": 14
+      },
+      "contact_tile_xy": null,
+      "direction": "away",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-057",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "right_repeater",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "dea862985f1a018abdb912936e73cbd91c9a3501f4178b9c8baf25028c15ed53:324160:1/10000",
+      "local_track_id": "right_repeater-0011",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\01048.jpg",
+      "source_image_sha256": "307b0588bf1e321a386cfc8e7d5305821befc0b4810f292401803386edc91815",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-057.jpg",
+      "crop_rect_xyxy": [
+        940,
+        439,
+        1086,
+        520
+      ],
+      "bbox_xyxy": [
+        953.80517578125,
+        446.2802734375,
+        1072.263427734375,
+        509.561279296875
+      ],
+      "tile_transform": {
+        "scale": 2.4657534246575343,
+        "dx": 0,
+        "dy": 15
+      },
+      "contact_tile_xy": [
+        181,
+        182
+      ],
+      "direction": "toward",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-058",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "right_repeater",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "dea862985f1a018abdb912936e73cbd91c9a3501f4178b9c8baf25028c15ed53:348054:1/10000",
+      "local_track_id": "right_repeater-0012",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\01060.jpg",
+      "source_image_sha256": "78e51e7c6ab5b858b1492b517fa81c4c441fb3c9952a9eea7a5a85be512f9103",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-058.jpg",
+      "crop_rect_xyxy": [
+        719,
+        331,
+        1219,
+        526
+      ],
+      "bbox_xyxy": [
+        767.4635009765625,
+        348.866943359375,
+        1170.395751953125,
+        501.5933837890625
+      ],
+      "tile_transform": {
+        "scale": 0.72,
+        "dx": 0,
+        "dy": 45
+      },
+      "contact_tile_xy": [
+        166,
+        151
+      ],
+      "direction": "right",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "visible",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": 8,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-059",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "right_repeater",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "dea862985f1a018abdb912936e73cbd91c9a3501f4178b9c8baf25028c15ed53:368024:1/10000",
+      "local_track_id": "right_repeater-0013",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\01070.jpg",
+      "source_image_sha256": "01b675efc029b4092162f17e6a9ac6d791f07631076db5cbfdcdd91aac70e51d",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-059.jpg",
+      "crop_rect_xyxy": [
+        769,
+        383,
+        1054,
+        503
+      ],
+      "bbox_xyxy": [
+        796.339111328125,
+        394.2513427734375,
+        1026.6571044921875,
+        488.0198974609375
+      ],
+      "tile_transform": {
+        "scale": 1.263157894736842,
+        "dx": 0,
+        "dy": 39
+      },
+      "contact_tile_xy": null,
+      "direction": "right",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    },
+    {
+      "id": "nov01city-060",
+      "split": "test",
+      "session": "2026-11-01",
+      "camera": "right_repeater",
+      "source_artifact_id": "8f3667c7ed79eec44cb4a0ce182584659fed9f85e6ae313d3c517f53cef9dd77",
+      "tracks_artifact_id": "952600c8d78f6e59219050d7633c1528c8ca4c330a55d269b94b5573fb1a12f8",
+      "frame_id": "dea862985f1a018abdb912936e73cbd91c9a3501f4178b9c8baf25028c15ed53:457959:1/10000",
+      "local_track_id": "right_repeater-0018",
+      "source_image": "G:\\3d\\CT-scene-rebuild\\runs\\fresh-nov01-city-001\\source\\images\\01115.jpg",
+      "source_image_sha256": "2f4913d91c2b65c65de87e61d1fdec178236800404f8cbe545fc20f022f0af9c",
+      "crop": "G:\\3d\\CT-scene-rebuild\\runs\\contact-learning-labels-003\\nov01city-060.jpg",
+      "crop_rect_xyxy": [
+        316,
+        424,
+        586,
+        509
+      ],
+      "bbox_xyxy": [
+        342.30303955078125,
+        432.2869873046875,
+        559.52001953125,
+        498.8433837890625
+      ],
+      "tile_transform": {
+        "scale": 1.3333333333333333,
+        "dx": 0,
+        "dy": 58
+      },
+      "contact_tile_xy": null,
+      "direction": "left",
+      "annotation_status": "visual_review_by_codex",
+      "contact_visibility": "occluded_or_unresolved",
+      "reviewer": "Codex image inspection; not independent human ground truth",
+      "contact_uncertainty_tile_px": null,
+      "annotation_note": "Visible tire-contact midpoint only; no metric vehicle centre or precise 3D heading label. Null contact must be masked in loss."
+    }
+  ],
+  "coordinate_target": "visible_tire_contact_midpoint; image_only",
+  "directions": [
+    "away",
+    "toward",
+    "left",
+    "right"
+  ],
+  "metric_xyz_labels": false,
+  "directions_definition": "Dominant visible vehicle nose direction in the image: away/toward/left/right. Not world yaw.",
+  "independent_human_review": false
+}
