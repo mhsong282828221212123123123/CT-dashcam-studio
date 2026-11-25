@@ -14,16 +14,14 @@ class DrivingScenePanel(QWidget):
         self.setObjectName('drivingScenePanel')
         editor = Path(__file__).resolve().parents[1]
         candidates = (editor / 'CT-scene-rebuild', editor.parent / 'CT-scene-rebuild')
-        root = next((p for p in candidates if (p / '.venv/Scripts/python.exe').is_file()), candidates[0])
-        if not (root / '.venv/Scripts/python.exe').is_file():
-            raise FileNotFoundError('주행 재현 엔진을 찾지 못했습니다: ' + str(root))
+        # Source follows this Git checkout; only the interpreter may be shared.
+        root = next((p for p in candidates if (p / 'src/ct_scene/review_app.py').is_file()), candidates[0])
         source = str(root / 'src')
         if source not in sys.path:
             sys.path.insert(0, source)
-        # The source-workspace installation already carries manifest validation
-        # dependencies. Append (never prefer) it; existing editor Qt/numpy stay
-        # loaded from the editor. GPU analysis still uses the engine executable.
-        dependencies = str(root / '.venv/Lib/site-packages')
+        from ct_scene.runtime_paths import runtime_python
+        python = runtime_python(root)
+        dependencies = str(python.parents[1] / 'Lib/site-packages')
         if dependencies not in sys.path:
             sys.path.append(dependencies)
         from ct_scene.review_app import ReviewWindow

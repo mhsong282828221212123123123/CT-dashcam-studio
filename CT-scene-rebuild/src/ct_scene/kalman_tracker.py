@@ -11,6 +11,7 @@ from collections import defaultdict
 import math
 import numpy as np
 from .actor_lane_motion import observation_usable
+from .crossing_smoother import smooth_crossing,bearing_conflict
 from .junctions import inside as inside_junction
 from .road_frame import coordinates as road_coordinates, world as road_world
 from .road_geometry import boundaries_at, lane_at, lane_bounds, pocket_width, supported as road_supported
@@ -171,6 +172,8 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
         v_cap = 36.0
     lane_idx_actor = actor.get('lane_index')
     is_crossing = lane_idx_actor == -2
+    # A crossing car is independent of the ego road nearest-segment projection.
+    use_road_frame = use_road_frame and not is_crossing
 
     # Group all real camera observations by 20Hz/10Hz timestamp bin (0.05s)
     obs_pool = [r for r in (raw_member_rows if raw_member_rows is not None else samples)
@@ -202,7 +205,7 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
         return sd_arr[:, :2]
 
     # Precompute observation (s, d) and (sigma_s, sigma_d)
-    step_obs = []
+    step_obs = [];world_step_obs=[];bearing_guard_obs=[]
     for k, s_row in enumerate(samples):
         tk = float(s_row['time_s'])
         bkey = round(tk * 20.0) / 20.0
@@ -211,15 +214,30 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
             cands = [s_row]
         ep = np.array([np.interp(tk, ego_times, ego_positions[:, 0]),
                        np.interp(tk, ego_times, ego_positions[:, 1])], float)
-        parsed = []
+        parsed = [];world_parsed=[];guard_parsed=[]
         for r in cands:
             # Use raw unrefined camera observation so Kalman replaces ad-hoc clamps cleanly
             p_raw = np.asarray(r.get('unrefined_position_W', r['position_W'])[:2], float)
             sd, _ = to_frame(p_raw[None, :])
             dist = float(np.linalg.norm(p_raw - ep))
             sig_s, sig_d = observation_cov_sd(r, dist)
-            parsed.append((sd[0], sig_s * sig_s, sig_d * sig_d, r.get('camera_id')))
-        step_obs.append(parsed)
+            radial=p_raw-ep
+            if np.linalg.norm(radial)<1e-6:continue
+            radial=radial/np.linalg.norm(radial);tangent=np.array([-radial[1],radial[0]])
+            basis=np.column_stack([radial,tangent])
+            world_cov=basis@np.diag([sig_s*sig_s,sig_d*sig_d])@basis.T
+            world_row=(p_raw,sig_s*sig_s,sig_d*sig_d,r.get('camera_id'),world_cov)
+            world_parsed.append(world_row)
+            box=r.get('bbox_xyxy')
+            if (r.get('camera_id')=='front' and r.get('support')=='detector_observation' and box is not None
+                    and box[2]-box[0]>=30 and box[3]-box[1]>=25
+                    and min(box[0],box[1],r.get('image_width',1280)-box[2],r.get('image_height',960)-box[3])>6):
+                guard_parsed.append(world_row)
+            parsed.append((sd[0],sig_s*sig_s,sig_d*sig_d,r.get('camera_id'),world_cov if is_crossing else None))
+        step_obs.append(parsed);world_step_obs.append(world_parsed);bearing_guard_obs.append(guard_parsed)
+
+    if is_crossing:
+        return smooth_crossing(actor,samples,step_obs)
 
     # Initialize state from first two observed steps
     first_idx = next((i for i, o in enumerate(step_obs) if o), 0)
@@ -266,7 +284,7 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
 
         # Fuse all camera measurements at timestamp tk
         dt_step = max(0.05, tk - float(samples[k - 1]['time_s'])) if k > 0 else 0.05
-        for z_sd, var_s, var_d, _ in step_obs[k]:
+        for z_sd, var_s, var_d, _, _ in step_obs[k]:
             # Chi-square (2-DOF 99% = 9.21) + kinematic jump gate against end-of-track ID glitches
             innov = z_sd - x_u[:2]
             mahal = (innov[0] ** 2) / max(P_u[0, 0] + var_s, 1.0) + (innov[1] ** 2) / max(P_u[1, 1] + var_d, 1.0)
@@ -348,6 +366,17 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
                 x_sm[k, 1] = max(hi_edge, dk - max_move)
 
     xy_sm = from_frame(x_sm[:, :2])
+    # An inherited lane without usable measurements cannot overrule a sequence
+    # of precise camera bearings. Refit jointly instead of clipping or hiding.
+    if actor.get('lane_motion_evidence',{}).get('clear_observations')==0:
+        conflict=bearing_conflict(xy_sm,bearing_guard_obs,[r['time_s'] for r in samples])
+        if conflict['trigger']:
+            result=smooth_crossing(actor,samples,world_step_obs,coordinate_frame='world_xy_unresolved_lane')
+            result['camera_bearing_fallback']=conflict
+            for row in samples:
+                row['lane_index']=None;row['lane_prior']='disabled_unresolved_lane_conflicts_with_direct_camera_bearing'
+            return result
+
     if use_road_frame:
         headings_road = road_coordinates(road, np.c_[xy_sm, np.zeros(n)])[:, 2]
     else:
@@ -382,6 +411,7 @@ def smooth_actor_rts(actor, road, ego_times, ego_positions, raw_member_rows=None
 
     return dict(
         applied=True,
+        coordinate_frame='road_sd' if use_road_frame else 'world_xy',
         samples=n,
         multi_camera_fused_steps=multi_cam_fused_steps,
         median_posterior_sigma_m=float(np.median([s['kalman_sigma_m'] for s in samples])),

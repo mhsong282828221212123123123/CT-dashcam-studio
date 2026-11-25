@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import QApplication,QWidget,QVBoxLayout,QHBoxLayout,QPushBu
 from PyQt6.QtMultimedia import QMediaPlayer,QAudioOutput,QVideoSink
 
 ROOT=Path(__file__).resolve().parents[2]
+from .runtime_paths import runtime_python,scene_models_root
 
 
 def model_assets_root():
@@ -149,6 +150,11 @@ class ReviewWindow(QWidget):
         if self.presence_screen['gate']=='REJECTED':
             self.status.setText('차량 누락 의심 · 검출량에 비해 재현 차량이 매우 적습니다 · 원본 대조 필요')
             self.log.appendPlainText('검토 필요: 차량이 검출됐지만 대부분 월드에 반영되지 않았습니다. 정상 결과로 채택하지 마세요.')
+        from .quality_review import stored_overlap_failure
+        if stored_overlap_failure(report):
+            if self.presence_screen['gate']!='REJECTED':
+                self.status.setText('검증 실패 · 차량 겹침이 남아 있습니다 · 원본 대조 필요')
+            self.log.appendPlainText('검증 실패: 기존 결과에 차량 겹침이 기록되어 있습니다. 정상 완료로 판정하지 않았습니다.')
         self.log.appendPlainText('결과: '+str(result));return True
 
     def analyze(self):
@@ -159,8 +165,8 @@ class ReviewWindow(QWidget):
             if not {'front','back','left_repeater','right_repeater'}<=cameras.keys():raise ValueError('같은 시각의 원본 4채널이 필요합니다.')
             if Path(self.output.text()).resolve()==ROOT:raise ValueError('runs 아래 별도의 작업 폴더를 선택하세요.')
         except (ValueError,OSError) as error:self.log.appendPlainText(str(error));return
-        python=ROOT/'.venv/Scripts/python.exe';assets=model_assets_root()
-        args=['-m','ct_scene','analyze','--front',self.source.text(),'--output',self.output.text(),'--detector',str(ROOT.parent/'scene-models/yolo11x.onnx'),'--road-model',str(ROOT.parent/'scene-models/model-review/yolopv2-roads.onnx'),'--lens-config',str(ROOT/'configs/multicam-optical-candidates.json'),'--prototype-config',str(ROOT/'configs/surrounding-prototype.json'),'--assets-root',str(assets)]
+        python=runtime_python(ROOT);assets=model_assets_root();models=scene_models_root(ROOT)
+        args=['-m','ct_scene','analyze','--front',self.source.text(),'--output',self.output.text(),'--detector',str(models/'yolo11x.onnx'),'--road-model',str(models/'model-review/yolopv2-roads.onnx'),'--lens-config',str(ROOT/'configs/multicam-optical-candidates.json'),'--prototype-config',str(ROOT/'configs/surrounding-prototype.json'),'--assets-root',str(assets)]
         map_path=self.map.text().strip()
         if not map_path and self.auto_map.isChecked():
             candidate=ROOT/'map-cache'/(Path(self.source.text()).name.removesuffix('-front.mp4')+'.osm')
@@ -217,7 +223,7 @@ class ReviewWindow(QWidget):
         self.process.setProcessEnvironment(env);self.process.setWorkingDirectory(str(ROOT));self.process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
         self.process.readyReadStandardOutput.connect(self.read_log);self.process.finished.connect(self.finished);self.process.errorOccurred.connect(self.process_error)
         self.pending_result=target;self.start.setEnabled(False);self.manual.setEnabled(False);self.replay.setEnabled(False);self.cancel.setEnabled(True)
-        self.status.setText('화면 다시 렌더 중 · 기존 추론·좌표 재사용 · 원본 결과 보존');self.process.start(str(ROOT/'.venv/Scripts/python.exe'),args)
+        self.status.setText('화면 다시 렌더 중 · 기존 추론·좌표 재사용 · 원본 결과 보존');self.process.start(str(runtime_python(ROOT)),args)
 
     def manual_copy(self):
         if self.process or not self.result or self.manifest['stage']!='surrounding_world_prototype':return
@@ -257,7 +263,7 @@ class ReviewWindow(QWidget):
         args=['-m','ct_scene','manual-render','--scene',str(self.result),'--base',str(base),'--corrections',str(layer_path),'--assets-root',str(model_assets_root()),'--prototype-config',str(ROOT/'configs/surrounding-prototype.json'),'--output',str(target)]
         self.process=QProcess(self);env=QProcessEnvironment.systemEnvironment();env.insert('PYTHONPATH',str(ROOT/'src'));env.insert('PYTHONUNBUFFERED','1');self.process.setProcessEnvironment(env);self.process.setWorkingDirectory(str(ROOT));self.process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
         self.process.readyReadStandardOutput.connect(self.read_log);self.process.finished.connect(self.finished);self.process.errorOccurred.connect(self.process_error)
-        self.pending_result=target;self.start.setEnabled(False);self.manual.setEnabled(False);self.replay.setEnabled(False);self.cancel.setEnabled(True);self.status.setText('수동 교정본 생성 중 · 자동 결과 보존');self.process.start(str(ROOT/'.venv/Scripts/python.exe'),args)
+        self.pending_result=target;self.start.setEnabled(False);self.manual.setEnabled(False);self.replay.setEnabled(False);self.cancel.setEnabled(True);self.status.setText('수동 교정본 생성 중 · 자동 결과 보존');self.process.start(str(runtime_python(ROOT)),args)
 
     def stop(self):
         if not self.process:return

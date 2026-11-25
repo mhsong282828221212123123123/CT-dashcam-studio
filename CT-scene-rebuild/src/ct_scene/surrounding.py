@@ -48,6 +48,8 @@ from .side_contact_recovery import recover as recover_side_contacts
 from .side_contact_fusion import fuse_side_sample,calibrate_side_height_tails
 from .front_pitch_fusion import estimate_front_pitch_profile,project_front_ray_and_depths,fuse_front_track_depths
 from .kalman_tracker import smooth_actor_rts,limit_yaw_rate
+from .far_lead_stability import refine_far_leads
+from .image_motion_audit import audit as audit_image_motion
 from .driving_road_scope import mark_raw_scope,filter_plan as filter_driving_road_plan
 from .collision_constraints import constrain as constrain_collisions, omit_conflicting_predictions
 from .side_paint_geometry import extract as extract_side_paint,apply as apply_side_paint,extend_calibrated_tail
@@ -901,6 +903,10 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     revision_names.append('left_median_membership.py')
     revision_names.append('side_contact_recovery.py')
     revision_names.append('collision_constraints.py')
+    revision_names.append('far_lead_stability.py')
+    revision_names.append('kalman_tracker.py')
+    revision_names.append('crossing_smoother.py')
+    revision_names.append('image_motion_audit.py')
     revision_names.append('side_paint_geometry.py')
     revision_names.append('inside_median_pockets.py')
     revision_names.append('lane_prior_geometry.py')
@@ -1493,6 +1499,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     scene_plan,prediction_display_review=omit_conflicting_predictions(scene_plan,dimensions)
     scene_plan,collision_review=constrain_collisions(scene_plan,road,dimensions,max_iterations=cfg.get('collision_policy',{}).get('max_iterations',16))
     road_scope_removed.extend(filter_driving_road_plan(scene_plan,global_actors,road))
+    far_front_review=refine_far_leads(scene_plan,global_actors,profiles['front'],dimensions,cfg['cameras']['front'])
     with av.open(str(video),'w',options={'movflags':'+faststart'}) as output:
         stream=output.add_stream('libx264',rate=fps);stream.width=1280;stream.height=1000;stream.pix_fmt='yuv420p';stream.options={'crf':'20','preset':'veryfast'}
         for j,planned in enumerate(scene_plan):
@@ -1539,7 +1546,7 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
             d.text((10,970),footer,font=font,fill=(200,207,212))
             frame=av.VideoFrame.from_image(canvas);frame.pts=j;frame.time_base=Fraction(1,fps)
             for packet in stream.encode(frame):output.mux(packet)
-            render_counts.append(len(active));render_audit.append({'time_s':t,'ego_position_W':ep.tolist(),'ego_yaw_rad':yaw,'ego_lamps':lamp_state,'camera_view':{'mode':'lane_change_road_reference' if vw>0 else 'ego_follow','weight':vw,'position_W':vp.tolist(),'yaw_rad':vy},'visible_unlocalized_ids':unlocalized,'actors':[{'id':a['id'],'position_W':a['position_W'].tolist(),'yaw_rad':a['yaw_rad'],'ghost':a['ghost'],
+            render_counts.append(len(active));render_audit.append({'time_s':t,'ego_position_W':ep.tolist(),'ego_yaw_rad':yaw,'ego_lamps':lamp_state,'camera_view':{'mode':'lane_change_road_reference' if vw>0 else 'ego_follow','weight':vw,'position_W':vp.tolist(),'yaw_rad':vy},'visible_unlocalized_ids':unlocalized,'actors':[{'id':a['id'],'position_W':np.asarray(a['position_W']).tolist(),'yaw_rad':a['yaw_rad'],'ghost':a['ghost'],
                 'source_visible':a['source_visible'],'position_support':a['position_support'],'rear_appearance':a['rear_appearance'],'model':a['model'],
                 **({k:a[k] for k in ('position_before_collision_W','collision_correction_W') if k in a})} for a in active]})
             if (preview_times is not None and j<6) or j in [0,80,160,320,480,640]:snapshots.append(canvas.resize((640,500)))
@@ -1588,6 +1595,13 @@ def run(package,tracks,base,lens_config,prototype_config,assets,destination,road
     payloads={'surrounding-world.mp4':video.read_bytes(),'report.json':canonical(report),'actors.json':canonical(global_actors),
         'association-review.json':canonical(edges),'paired-fov-review.json':canonical(pair_review),'render-states.jsonl':b''.join(canonical(r)+b'\n' for r in render_audit),'proof/contact.jpg':buf.getvalue()}
     payloads['driving-road-scope-review.json']=canonical(dict(removed=road_scope_removed,raw_observations_preserved=True,ego_pose_modified=False,policy='ego_carriageway_only; crossing_inside_supported_junction_retained; unsupported_road_abstains'))
+    image_motion_review=audit_image_motion(render_audit,global_actors,profiles['front'],dimensions,cfg['cameras']['front'])
+    payloads['image-motion-review.json']=canonical(image_motion_review)
+    report['image_motion_review']={k:v for k,v in image_motion_review.items() if k!='tracks'}
+    payloads['far-front-refinement-review.json']=canonical(far_front_review)
+    report['ego_and_lead_source']='frozen ego; lead positions explicitly refined after upstream frozen estimates' if far_front_review['applied_actor_ids'] else report['ego_and_lead_source']
+    report['far_front_refinement']=dict(applied_actor_ids=far_front_review['applied_actor_ids'],metric_accuracy='NOT_EVALUATED',actor_lane_audit_role='pre_final_position_refinement' if far_front_review['applied_actor_ids'] else 'unchanged')
+    payloads['report.json']=canonical(report)
     payloads['collision-review.json']=canonical(collision_review)
     payloads['local-road-extent-review.json']=canonical(local_extent_review)
     payloads['right-edge-profile-review.json']=canonical(right_edge_profile_review)

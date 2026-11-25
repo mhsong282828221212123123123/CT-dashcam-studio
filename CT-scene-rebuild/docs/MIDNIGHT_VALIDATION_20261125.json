@@ -1,0 +1,135 @@
+{
+  "deadline_local": "2026-11-26T00:00:00+09:00",
+  "unit_tests": 489,
+  "ui_checks_normal_result": 14,
+  "ui_checks_failed_result": 15,
+  "metric_accuracy": "NOT_EVALUATED",
+  "principal_scenes": {
+    "oct22": {
+      "decoded_frames": 1188,
+      "body_overlap_pair_frames": 0,
+      "ego_and_clock_exact": true,
+      "raw_camera_evidence_exact": true,
+      "road_equal": true,
+      "source_motion_alerts_before": 34,
+      "source_motion_alerts_after": 21,
+      "direct_source_samples_before": 218,
+      "direct_source_samples_after": 218,
+      "changed_actor_ids": [
+        "front-0011",
+        "front-0025",
+        "front-0031",
+        "front-0045",
+        "front-0048",
+        "front-0058",
+        "front-0069",
+        "front-0070",
+        "front-0083",
+        "front-0087",
+        "front-0090",
+        "front-0093",
+        "front-0096",
+        "left_repeater-0035",
+        "left_repeater-0051"
+      ]
+    },
+    "junction": {
+      "decoded_frames": 1196,
+      "body_overlap_pair_frames": 0,
+      "ego_and_clock_exact": true,
+      "raw_camera_evidence_exact": true,
+      "road_equal": true,
+      "source_motion_alerts_before": 10,
+      "source_motion_alerts_after": 6,
+      "direct_source_samples_before": 458,
+      "direct_source_samples_after": 458,
+      "changed_actor_ids": [
+        "front-0029",
+        "front-0037",
+        "right_repeater-0003"
+      ]
+    },
+    "highway": {
+      "decoded_frames": 1190,
+      "body_overlap_pair_frames": 0,
+      "ego_and_clock_exact": true,
+      "raw_camera_evidence_exact": true,
+      "road_equal": true,
+      "source_motion_alerts_before": 16,
+      "source_motion_alerts_after": 16,
+      "direct_source_samples_before": 1393,
+      "direct_source_samples_after": 1393,
+      "changed_actor_ids": []
+    }
+  },
+  "independent_holdout_claim": false,
+  "additional_date": {
+    "date": "2026-08-28",
+    "status": "FAIL",
+    "decoded_frames": 1187,
+    "body_overlap_pair_frames_before": 82,
+    "body_overlap_pair_frames_after": 82,
+    "same_overlap_events_exact": true,
+    "ego_and_raw_camera_evidence_exact": true,
+    "source_motion_alerts_before": 42,
+    "source_motion_alerts_after": 42,
+    "unresolved_issue": "different observed vehicles share estimated lane/depth; conditional tracker covariance omits correlated calibration/model error",
+    "failure_reference_url": "https://drive.google.com/file/d/1nGeMAV4KKtavyWpS8tiy8Mngt0aWMX8A/view?usp=drivesdk"
+  },
+  "delivery": [
+    {
+      "key": "review",
+      "path": "G:/3d/CT-scene-road-scope/runs/midnight-review-40s-011.mp4",
+      "id": "1ZA8FFCxrqJSMMlHT3Y_SXXScuyLfp5BH",
+      "url": "https://drive.google.com/file/d/1ZA8FFCxrqJSMMlHT3Y_SXXScuyLfp5BH/view?usp=drivesdk",
+      "bytes": 9020260,
+      "sha256": "56ecf8a1460b42547b55b79005fc10f090543fbdf9e1087dd80f46a5865556cc",
+      "verified_parent_folder": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30"
+    },
+    {
+      "key": "oct22",
+      "path": "G:/3d/CT-scene-road-scope/runs/midnight-oct22-011/surrounding-world.mp4",
+      "id": "1k_X4VgUf9iPQ46jxWBzfCOevs3DqbFXv",
+      "url": "https://drive.google.com/file/d/1k_X4VgUf9iPQ46jxWBzfCOevs3DqbFXv/view?usp=drivesdk",
+      "bytes": 15787632,
+      "sha256": "553a948b5420bcf2c05df6916f46d54382492fb615be4e8e460c8d2f27772385",
+      "verified_parent_folder": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30"
+    },
+    {
+      "key": "junction",
+      "path": "G:/3d/CT-scene-road-scope/runs/midnight-junction-011/surrounding-world.mp4",
+      "id": "1uE6s0qVTyOYKKkdBv5GWOktUAFMG-98O",
+      "url": "https://drive.google.com/file/d/1uE6s0qVTyOYKKkdBv5GWOktUAFMG-98O/view?usp=drivesdk",
+      "bytes": 12883077,
+      "sha256": "2966c10665278d1c61634b3e3ab6d0acfa038d13ecfeeda3403f16f3ea04c016",
+      "verified_parent_folder": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30"
+    },
+    {
+      "key": "highway",
+      "path": "G:/3d/CT-scene-road-scope/runs/midnight-highway-011/surrounding-world.mp4",
+      "id": "1WQDTjSaAULI96GKA6niLgIMz3mZ04UCx",
+      "url": "https://drive.google.com/file/d/1WQDTjSaAULI96GKA6niLgIMz3mZ04UCx/view?usp=drivesdk",
+      "bytes": 10261698,
+      "sha256": "ceebcb2e417eaf478c526f170486c43e069c7b6854e445e73dabd75eaaf28a1a",
+      "verified_parent_folder": "19Q8hPBlHfhKbCJdIuGColfhl_SCECX30"
+    }
+  ],
+  "format": {
+    "frames": 800,
+    "duration_s": 40.0,
+    "codec": "h264",
+    "width": 1280,
+    "height": 1000,
+    "pixel_format": "yuv420p",
+    "fps": 20.0,
+    "faststart": true,
+    "original_problem_interval": {
+      "start_s": 24,
+      "end_s": 27,
+      "frames": 61,
+      "unlocalized_side_ids_absent": true
+    }
+  },
+  "no_cuda": true,
+  "build_or_release": false
+}

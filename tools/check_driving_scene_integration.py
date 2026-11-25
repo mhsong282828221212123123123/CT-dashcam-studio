@@ -20,7 +20,11 @@ p.add_argument('--scene', type=Path)
 p.add_argument('--front', type=Path)
 a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
-root = Path(__file__).resolve().parents[2] / 'CT-scene-rebuild'
+editor = Path(__file__).resolve().parents[1]
+root = editor / 'CT-scene-rebuild' if (editor / 'CT-scene-rebuild/src').is_dir() else editor.parent / 'CT-scene-rebuild'
+sys.path.insert(0,str(root/'src'))
+from ct_scene.runtime_paths import runtime_python
+analysis_python=runtime_python(root)
 scene = a.scene.resolve() if a.scene else root / 'runs/local-extents-aug20-full-001'
 front = a.front.resolve() if a.front else Path('E:/tesla/a3/TeslaCam/SavedClips/2026-08-20_07-39-45/2026-08-20_07-34-02-front.mp4')
 app = QApplication([])
@@ -51,16 +55,21 @@ def finish():
         target = a.output / 'export.mp4'
         with patch.object(QFileDialog, 'getSaveFileName', return_value=(str(target), 'MP4')):
             review.save_video()
+        loaded_report=json.loads((scene/'report.json').read_text(encoding='utf-8'))
+        expected_overlap_failure=loaded_report.get('collision_constraints',{}).get('after',{}).get('gate')=='FAIL'
+        checks['known_overlap_failure_flagged']=not expected_overlap_failure or '검증 실패' in review.status.text()
         checks['export_exact'] = hashlib.sha256(target.read_bytes()).digest() == hashlib.sha256((scene / 'surrounding-world.mp4').read_bytes()).digest()
         calls = []
         with patch.object(QProcess, 'start', lambda self, program, args: calls.append((program, args))):
             review.analyze()
         assert len(calls) == 1
         program, args = calls[0]
-        checks['isolated_analysis_python'] = Path(program) == root / '.venv/Scripts/python.exe'
+        checks['isolated_analysis_python'] = Path(program) == analysis_python
         checks['analysis_front_passed'] = args[args.index('--front') + 1] == str(front)
         env = review.process.processEnvironment()
         checks['isolated_analysis_source'] = env.value('PYTHONPATH') == str(root / 'src')
+        import ct_scene.review_app as loaded_review
+        checks['checkout_engine_source_loaded'] = loaded_review.ROOT == root
         event = QCloseEvent()
         with patch.object(QMessageBox, 'information', return_value=QMessageBox.StandardButton.Ok):
             window.closeEvent(event)

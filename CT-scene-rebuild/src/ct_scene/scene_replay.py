@@ -44,7 +44,7 @@ def run(scene,assets_root,prototype_config,output):
     from PIL import ImageDraw,ImageFont
     from .surrounding import SurroundRenderer
     scene,assets_root,output=map(Path,[scene,assets_root,output]);manifest=verify(scene)
-    if manifest['stage'] not in ('surrounding_world_prototype','scene_replay','road_display_revision','driving_road_scope_plan'):
+    if manifest['stage'] not in ('surrounding_world_prototype','scene_replay','road_display_revision','driving_road_scope_plan','far_front_refinement_plan'):
         raise ValueError('Replay requires an automatic scene, not a manual correction')
     if output.exists():raise FileExistsError(output)
     states_bytes=(scene/'render-states.jsonl').read_bytes()
@@ -92,7 +92,7 @@ def run(scene,assets_root,prototype_config,output):
                   replay_geometry_unchanged=True,replay_style=style,replay_inference_calls=0)
     payloads={'surrounding-world.mp4':video.read_bytes(),'report.json':canonical(report),
               'render-states.jsonl':states_bytes,'replay-review.json':canonical(proof),'display-style.json':canonical(style)}
-    for name in ('actors.json','ego-lane-state.json','actor-lane-state.json','prediction-display-review.json','road-display-review.json','blindspot-inference-review.json','branch-hints-review.json','local-road-extent-review.json','camera-crossing-road-review.json','right-edge-profile-review.json','camera-strip-coverage.json','driving-road-scope-review.json','observation-world-audit.json','local-solid-corridor-review.json','local-scope-display-review.json'):
+    for name in ('actors.json','ego-lane-state.json','actor-lane-state.json','prediction-display-review.json','road-display-review.json','blindspot-inference-review.json','branch-hints-review.json','local-road-extent-review.json','camera-crossing-road-review.json','right-edge-profile-review.json','camera-strip-coverage.json','driving-road-scope-review.json','observation-world-audit.json','local-solid-corridor-review.json','local-scope-display-review.json','far-front-refinement-review.json','image-motion-review.json'):
         if (scene/name).is_file():payloads[name]=(scene/name).read_bytes()
     return publish(output,stage='scene_replay',payloads=payloads,
                    inputs=[dict(role='frozen_scene',artifact_id=manifest['artifact_id'])],

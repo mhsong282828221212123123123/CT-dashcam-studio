@@ -1,3 +1,5 @@
+자정 검토 최신011: [40초 원본4채널 검토](https://drive.google.com/file/d/1ZA8FFCxrqJSMMlHT3Y_SXXScuyLfp5BH/view?usp=drivesdk). 로컬 G:/3d/CT-scene-road-scope/runs/midnight-review-40s-011.mp4. [전체3편·실패 참고본·검증 보고서](./MIDNIGHT_REVIEW_20261125.md). Aug28 추가 검증은 FAIL이며 전체 날짜의 재현 완성은 아니다.
+
 최신005: [실제 초입 수정30초](https://drive.google.com/file/d/17BA95JsbsEPWxhHEXSeHMmfVPnbCWq-2/view?usp=drivesdk). 로컬 G:/3d/CT-scene-road-scope/runs/road-scope-preview-30s-005.mp4. [검수 누락 원인·수정 범위·남은 앞차 문제](./OPENING_FLIGHT_FAILURE_20261125.md).
 
 별도 도로 범위 수정: [30초 검토](https://drive.google.com/file/d/1jTCQOuYtospG4hWdeZSUuPIvQXaWdKJJ/view?usp=drivesdk). 로컬 G:/3d/CT-scene-road-scope/runs/road-scope-preview-30s-004.mp4. [전체3편·검증·한계](./DRIVING_ROAD_SCOPE_20261125.md). 남은 차량의 좌표·방향은 기준과 동일하다.

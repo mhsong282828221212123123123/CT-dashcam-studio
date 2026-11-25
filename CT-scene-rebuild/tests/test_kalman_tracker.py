@@ -120,3 +120,51 @@ class KalmanTrackerTests(unittest.TestCase):
         self.assertTrue(res['applied'])
         true_x8 = 290.0 + 25.0 * (8 * 0.2)
         self.assertLess(abs(actor['samples'][8]['position_W'][0] - true_x8), 2.5)
+
+
+class CrossingWorldFrameTests(unittest.TestCase):
+    def scene(self,angle=0):
+        c,s=np.cos(angle),np.sin(angle);R=np.array([[c,-s],[s,c]])
+        ts=np.arange(0,4.001,.2);ego=np.c_[ts*3,np.zeros(len(ts)),np.zeros(len(ts))];ego[:,:2]=ego[:,:2]@R.T
+        samples=[]
+        for i,t in enumerate(ts):
+            xy=R@np.array([30+.25*np.sin(i),-12+6*t])
+            samples.append(dict(time_s=float(t),camera_id='front',position_W=[*xy,0],unrefined_position_W=[*xy,0],position_sigma_m=3.,support='detector_observation',yaw_rad=angle+np.pi/2,bbox_xyxy=[500,440,550,480]))
+        return ts,ego,dict(global_id='cross',lane_index=-2,samples=samples)
+
+    def test_crossing_motion_does_not_depend_on_ego_route_shape(self):
+        import copy
+        ts,ego,a=self.scene();b=copy.deepcopy(a)
+        straight=dict(reference_line=dict(points_W_xy=[[0,0],[100,0]],supported_extent_m=[0,100]),junctions=[])
+        turn=dict(reference_line=dict(points_W_xy=[[0,0],[20,0],[20,60]],supported_extent_m=[0,80]),junctions=[])
+        smooth_actor_rts(a,straight,ts,ego);smooth_actor_rts(b,turn,ts,ego)
+        np.testing.assert_allclose([r['position_W'] for r in a['samples']],[r['position_W'] for r in b['samples']],atol=1e-8)
+        self.assertLess(np.max(np.linalg.norm(np.array([r['position_W'][:2] for r in a['samples']])-np.array([[30,-12+6*t] for t in ts]),axis=1)),1.)
+
+    def test_crossing_covariance_and_dynamics_rotate_with_scene(self):
+        angle=1.1;c,s=np.cos(angle),np.sin(angle);R=np.array([[c,-s],[s,c]])
+        ts,ego,a=self.scene();ts2,ego2,b=self.scene(angle)
+        road=dict(reference_line=dict(points_W_xy=[[0,0],[100,0]],supported_extent_m=[0,100]),junctions=[])
+        r1=smooth_actor_rts(a,road,ts,ego);r2=smooth_actor_rts(b,road,ts2,ego2)
+        self.assertEqual(r1['coordinate_frame'],'world_xy_crossing')
+        expected=np.array([r['position_W'][:2] for r in a['samples']])@R.T
+        np.testing.assert_allclose(expected,[r['position_W'][:2] for r in b['samples']],atol=1e-7)
+
+
+    def test_first_range_glitch_does_not_become_persistent_crossing_velocity(self):
+        ts,ego,a=self.scene()
+        a['samples'][0]['position_W'][0]+=25
+        a['samples'][0]['unrefined_position_W'][0]+=25
+        smooth_actor_rts(a,{},ts,ego)
+        p=np.array([r['position_W'][:2] for r in a['samples']]);expected=np.array([[30,-12+6*t] for t in ts])
+        self.assertLess(np.max(np.linalg.norm(p[3:]-expected[3:],axis=1)),2.)
+        self.assertLess(np.max(np.linalg.norm(np.diff(p,axis=0)/.2,axis=1)),12.)
+
+
+    def test_bearing_guard_does_not_confuse_depth_uncertainty_with_sideways_motion(self):
+        from ct_scene.crossing_smoother import bearing_conflict
+        ts=np.arange(8)*.2
+        obs=[[(np.array([60.,0.]),100.,.25,'front',np.diag([100.,.25]))] for t in ts]
+        self.assertFalse(bearing_conflict(np.array([[80.,0.] for t in ts]),obs,ts)['trigger'])
+        self.assertTrue(bearing_conflict(np.array([[60.,3.] for t in ts]),obs,ts)['trigger'])
+        self.assertFalse(bearing_conflict(np.array([[60.,3.] for t in ts[:4]]),obs[:4],ts[:4])['trigger'])

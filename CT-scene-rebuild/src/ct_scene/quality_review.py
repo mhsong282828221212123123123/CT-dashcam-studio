@@ -64,3 +64,9 @@ def review(directory,destination):
                 warning='Coverage, identity, lane membership and source agreement require independent original-video review.')
     destination=Path(destination);destination.mkdir(parents=True,exist_ok=False);(destination/'review.json').write_bytes(canonical(result))
     return result
+
+
+def stored_overlap_failure(report):
+    """Surface an already known failed geometry check when opening a result."""
+    after=report.get('collision_constraints',{}).get('after',{})
+    return after.get('gate')=='FAIL' or int(after.get('overlapping_pair_frames') or 0)>0
